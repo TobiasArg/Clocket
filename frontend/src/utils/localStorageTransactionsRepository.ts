@@ -33,6 +33,7 @@ const isTransactionItem = (value: unknown): value is TransactionItem => {
     typeof item.iconBg === "string" &&
     typeof item.name === "string" &&
     typeof item.category === "string" &&
+    (item.categoryId === undefined || typeof item.categoryId === "string") &&
     typeof item.amount === "string" &&
     typeof item.amountColor === "string" &&
     typeof item.meta === "string"

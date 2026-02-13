@@ -224,6 +224,7 @@ export interface SettingsSection {
 // === Categorias ===
 
 export interface Category {
+  id?: string;
   icon: string;
   iconBg: string;
   name: string;

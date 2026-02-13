@@ -2,6 +2,7 @@ import type { TransactionDetailed } from "@/types";
 
 export interface TransactionItem extends TransactionDetailed {
   id: string;
+  categoryId?: string;
 }
 
 export type CreateTransactionInput = Omit<TransactionItem, "id">;
