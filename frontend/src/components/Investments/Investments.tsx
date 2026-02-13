@@ -1,12 +1,18 @@
+import { useMemo, useState } from "react";
 import type { NavItem, StockCard as StockCardType } from "@/types";
-import { Avatar } from "@/components";
-import { IconBadge } from "@/components";
-import { TextBadge } from "@/components";
-import { StatDisplay } from "@/components";
-import { BottomNavigation } from "@/components";
-import { CardSection } from "@/components";
-import { StockCard } from "@/components";
-import { SummaryPanel } from "@/components";
+import {
+  ActionButton,
+  Avatar,
+  BottomNavigation,
+  CardSection,
+  IconBadge,
+  StatDisplay,
+  StockCard,
+  SummaryPanel,
+  TextBadge,
+} from "@/components";
+import { useInvestments } from "@/hooks";
+import { formatCurrency } from "@/utils";
 
 export interface InvestmentsProps {
   avatarInitials?: string;
@@ -15,20 +21,46 @@ export interface InvestmentsProps {
   addButtonBg?: string;
   summaryTitle?: string;
   totalLabel?: string;
-  totalValue?: string;
   gainLabel?: string;
-  gainValue?: string;
-  gainValueColor?: string;
-  gainPercentText?: string;
-  gainPercentColor?: string;
-  gainPercentBg?: string;
   listTitle?: string;
-  stocks?: StockCardType[];
+  quickAddTitle?: string;
+  quickAddTickerLabel?: string;
+  quickAddNameLabel?: string;
+  quickAddSharesLabel?: string;
+  quickAddCostBasisLabel?: string;
+  quickAddCurrentPriceLabel?: string;
+  quickAddSubmitLabel?: string;
+  loadingLabel?: string;
+  emptyTitle?: string;
+  emptyHint?: string;
+  errorLabel?: string;
+  deleteActionLabel?: string;
   navItems?: NavItem[];
   onAddClick?: () => void;
   onStockClick?: (index: number) => void;
   onNavItemClick?: (index: number) => void;
 }
+
+const parsePositiveNumber = (value: string): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+};
+
+const getChangePresentation = (value: number) => {
+  if (value >= 0) {
+    return {
+      text: `+${value.toFixed(2)}%`,
+      color: "text-[#10B981]",
+      bg: "bg-[#D1FAE5]",
+    };
+  }
+
+  return {
+    text: `${value.toFixed(2)}%`,
+    color: "text-[#DC2626]",
+    bg: "bg-[#FEE2E2]",
+  };
+};
 
 export function Investments({
   avatarInitials = "JS",
@@ -37,44 +69,20 @@ export function Investments({
   addButtonBg = "bg-[#10B981]",
   summaryTitle = "Resumen del Portfolio",
   totalLabel = "Valor Total",
-  totalValue = "$12,450.00",
   gainLabel = "Ganancia/Pérdida",
-  gainValue = "+$1,234.56",
-  gainValueColor = "text-[#10B981]",
-  gainPercentText = "+11.02%",
-  gainPercentColor = "text-[#10B981]",
-  gainPercentBg = "bg-[#D1FAE5]",
   listTitle = "Mis Acciones",
-  stocks = [
-    {
-      ticker: "AAPL", name: "Apple Inc.", exchange: "NASDAQ: AAPL",
-      changeText: "+2.34%", changeColor: "text-[#10B981]", changeBg: "bg-[#D1FAE5]",
-      row1: [
-        { label: "Precio Actual", value: "$178.50" },
-        { label: "Cantidad", value: "15 acc." },
-        { label: "Valor Total", value: "$2,677.50" },
-      ],
-      row2: [
-        { label: "Costo Promedio", value: "$165.20" },
-        { label: "Invertido", value: "$2,478.00" },
-        { label: "Ganancia", value: "+$199.50", valueColor: "text-[#10B981]" },
-      ],
-    },
-    {
-      ticker: "TSLA", name: "Tesla Inc.", exchange: "NASDAQ: TSLA",
-      changeText: "-1.87%", changeColor: "text-[#DC2626]", changeBg: "bg-[#FEE2E2]",
-      row1: [
-        { label: "Precio Actual", value: "$245.30" },
-        { label: "Cantidad", value: "8 acc." },
-        { label: "Valor Total", value: "$1,962.40" },
-      ],
-      row2: [
-        { label: "Costo Promedio", value: "$268.75" },
-        { label: "Invertido", value: "$2,150.00" },
-        { label: "Pérdida", value: "-$187.60", valueColor: "text-[#DC2626]" },
-      ],
-    },
-  ],
+  quickAddTitle = "Nueva inversión",
+  quickAddTickerLabel = "Ticker",
+  quickAddNameLabel = "Nombre",
+  quickAddSharesLabel = "Cantidad",
+  quickAddCostBasisLabel = "Costo promedio",
+  quickAddCurrentPriceLabel = "Precio actual",
+  quickAddSubmitLabel = "Guardar inversión",
+  loadingLabel = "Cargando inversiones...",
+  emptyTitle = "No hay inversiones",
+  emptyHint = "Agrega tu primera posición para seguir tu portfolio.",
+  errorLabel = "No pudimos cargar inversiones. Intenta nuevamente.",
+  deleteActionLabel = "Delete",
   navItems = [
     { icon: "house", label: "Home" },
     { icon: "wallet", label: "Budgets" },
@@ -86,6 +94,116 @@ export function Investments({
   onStockClick,
   onNavItemClick,
 }: InvestmentsProps) {
+  const { items, isLoading, error, create, remove } = useInvestments();
+
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
+  const [tickerInput, setTickerInput] = useState<string>("");
+  const [nameInput, setNameInput] = useState<string>("");
+  const [sharesInput, setSharesInput] = useState<string>("");
+  const [costBasisInput, setCostBasisInput] = useState<string>("");
+  const [currentPriceInput, setCurrentPriceInput] = useState<string>("");
+  const [showValidation, setShowValidation] = useState<boolean>(false);
+
+  const shares = parsePositiveNumber(sharesInput);
+  const costBasis = parsePositiveNumber(costBasisInput);
+  const currentPrice = parsePositiveNumber(currentPriceInput);
+  const isTickerValid = tickerInput.trim().length > 0;
+  const isNameValid = nameInput.trim().length > 0;
+  const isFormValid = isTickerValid && isNameValid && shares > 0 && costBasis > 0 && currentPrice > 0;
+
+  const summary = useMemo(() => {
+    const invested = items.reduce((sum, item) => sum + item.shares * item.costBasis, 0);
+    const current = items.reduce((sum, item) => sum + item.shares * item.currentPrice, 0);
+    const gainAmount = current - invested;
+    const gainPercent = invested > 0 ? (gainAmount / invested) * 100 : 0;
+
+    return {
+      invested,
+      current,
+      gainAmount,
+      gainPercent,
+    };
+  }, [items]);
+
+  const stockCards = useMemo<StockCardType[]>(() => {
+    return items.map((item) => {
+      const invested = item.shares * item.costBasis;
+      const current = item.shares * item.currentPrice;
+      const gainAmount = current - invested;
+      const gainPercent = invested > 0 ? (gainAmount / invested) * 100 : 0;
+      const change = getChangePresentation(gainPercent);
+
+      return {
+        ticker: item.ticker,
+        name: item.name,
+        exchange: item.exchange,
+        changeText: change.text,
+        changeColor: change.color,
+        changeBg: change.bg,
+        row1: [
+          { label: "Precio Actual", value: formatCurrency(item.currentPrice) },
+          { label: "Cantidad", value: `${item.shares.toFixed(2)} acc.` },
+          { label: "Valor Total", value: formatCurrency(current) },
+        ],
+        row2: [
+          { label: "Costo Promedio", value: formatCurrency(item.costBasis) },
+          { label: "Invertido", value: formatCurrency(invested) },
+          {
+            label: gainAmount >= 0 ? "Ganancia" : "Pérdida",
+            value: `${gainAmount >= 0 ? "+" : "-"}${formatCurrency(Math.abs(gainAmount))}`,
+            valueColor: gainAmount >= 0 ? "text-[#10B981]" : "text-[#DC2626]",
+          },
+        ],
+      };
+    });
+  }, [items]);
+
+  const handleHeaderAction = () => {
+    if (isEditorOpen) {
+      setIsEditorOpen(false);
+      setTickerInput("");
+      setNameInput("");
+      setSharesInput("");
+      setCostBasisInput("");
+      setCurrentPriceInput("");
+      setShowValidation(false);
+    } else {
+      setIsEditorOpen(true);
+      setShowValidation(false);
+    }
+
+    onAddClick?.();
+  };
+
+  const handleCreate = async () => {
+    setShowValidation(true);
+    if (!isFormValid) {
+      return;
+    }
+
+    const created = await create({
+      ticker: tickerInput,
+      name: nameInput,
+      shares,
+      costBasis,
+      currentPrice,
+    });
+
+    if (!created) {
+      return;
+    }
+
+    setIsEditorOpen(false);
+    setTickerInput("");
+    setNameInput("");
+    setSharesInput("");
+    setCostBasisInput("");
+    setCurrentPriceInput("");
+    setShowValidation(false);
+  };
+
+  const summaryChange = getChangePresentation(summary.gainPercent);
+
   return (
     <div className="flex flex-col h-full w-full bg-[#F5F5F5]">
       <div className="flex items-center justify-between px-5 py-4 bg-white">
@@ -99,15 +217,107 @@ export function Investments({
           />
           <span className="text-xl font-semibold text-[#18181B] font-['Outfit']">{headerTitle}</span>
         </div>
-        <button type="button" onClick={onAddClick} aria-label="Agregar inversión">
+        <button type="button" onClick={handleHeaderAction} aria-label="Agregar inversión">
           <IconBadge
-            icon="plus"
+            icon={isEditorOpen ? "x" : "plus"}
             bg={addButtonBg}
             size="w-[40px] h-[40px]"
             rounded="rounded-[20px]"
           />
         </button>
       </div>
+
+      {isEditorOpen && (
+        <div className="px-5 py-3 bg-white">
+          <div className="flex flex-col gap-3 rounded-2xl bg-[#F4F4F5] p-4">
+            <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+              {quickAddTitle}
+            </span>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#52525B]">{quickAddTickerLabel}</span>
+              <input
+                type="text"
+                value={tickerInput}
+                onChange={(event) => setTickerInput(event.target.value)}
+                placeholder="AAPL"
+                className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#52525B]">{quickAddNameLabel}</span>
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(event) => setNameInput(event.target.value)}
+                placeholder="Apple Inc."
+                className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+              />
+            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#52525B]">{quickAddSharesLabel}</span>
+                <input
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  value={sharesInput}
+                  onChange={(event) => setSharesInput(event.target.value)}
+                  placeholder="1"
+                  className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#52525B]">{quickAddCurrentPriceLabel}</span>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={currentPriceInput}
+                  onChange={(event) => setCurrentPriceInput(event.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+                />
+              </label>
+            </div>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#52525B]">{quickAddCostBasisLabel}</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={costBasisInput}
+                onChange={(event) => setCostBasisInput(event.target.value)}
+                placeholder="0.00"
+                className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+              />
+            </label>
+
+            {showValidation && !isFormValid && (
+              <span className="text-[11px] font-medium text-[#71717A]">
+                Complete los campos requeridos con valores mayores a 0.
+              </span>
+            )}
+
+            <ActionButton
+              icon="plus"
+              label={quickAddSubmitLabel}
+              iconColor="text-white"
+              labelColor="text-white"
+              bg={isFormValid && !isLoading ? "bg-black" : "bg-[#A1A1AA]"}
+              padding="px-4 py-3"
+              className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
+              onClick={() => {
+                void handleCreate();
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <SummaryPanel
         title={summaryTitle}
@@ -119,18 +329,20 @@ export function Investments({
         <div className="flex justify-between w-full">
           <StatDisplay
             label={totalLabel}
-            value={totalValue}
+            value={formatCurrency(summary.current)}
             labelClassName="text-xs font-normal text-[#71717A]"
             valueClassName="text-2xl font-bold text-[#18181B] font-['Outfit']"
           />
           <div className="flex flex-col gap-1 items-end">
             <span className="text-xs font-normal text-[#71717A]">{gainLabel}</span>
             <div className="flex items-center gap-2">
-              <span className={`text-lg font-semibold font-['Outfit'] ${gainValueColor}`}>{gainValue}</span>
+              <span className={`text-lg font-semibold font-['Outfit'] ${summaryChange.color}`}>
+                {`${summary.gainAmount >= 0 ? "+" : "-"}${formatCurrency(Math.abs(summary.gainAmount))}`}
+              </span>
               <TextBadge
-                text={gainPercentText}
-                bg={gainPercentBg}
-                textColor={gainPercentColor}
+                text={summaryChange.text}
+                bg={summaryChange.bg}
+                textColor={summaryChange.color}
                 rounded="rounded-lg"
                 padding="px-2 py-1"
                 fontSize="text-xs"
@@ -147,19 +359,44 @@ export function Investments({
           titleClassName="text-base font-semibold text-[#18181B] font-['Outfit']"
           gap="gap-3"
         >
-          {stocks.map((stock, i) => (
-            <StockCard
-              key={stock.ticker}
-              ticker={stock.ticker}
-              name={stock.name}
-              exchange={stock.exchange}
-              changeText={stock.changeText}
-              changeColor={stock.changeColor}
-              changeBg={stock.changeBg}
-              row1={stock.row1}
-              row2={stock.row2}
-              onClick={() => onStockClick?.(i)}
-            />
+          {isLoading && items.length === 0 && (
+            <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+          )}
+
+          {!isLoading && error && (
+            <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+          )}
+
+          {!isLoading && !error && items.length === 0 && (
+            <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
+              <span className="block text-sm font-semibold text-black font-['Outfit']">{emptyTitle}</span>
+              <span className="block text-xs font-medium text-[#71717A] mt-1">{emptyHint}</span>
+            </div>
+          )}
+
+          {stockCards.map((stock, index) => (
+            <div key={items[index].id} className="flex flex-col gap-2">
+              <StockCard
+                ticker={stock.ticker}
+                name={stock.name}
+                exchange={stock.exchange}
+                changeText={stock.changeText}
+                changeColor={stock.changeColor}
+                changeBg={stock.changeBg}
+                row1={stock.row1}
+                row2={stock.row2}
+                onClick={() => onStockClick?.(index)}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void remove(items[index].id);
+                }}
+                className="w-fit text-xs font-medium text-[#71717A]"
+              >
+                {deleteActionLabel}
+              </button>
+            </div>
           ))}
         </CardSection>
       </div>

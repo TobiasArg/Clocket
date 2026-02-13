@@ -1,12 +1,30 @@
-import type { NavItem, Transaction, SpendingCategory, GoalCardSimple, CuotaItem } from "@/types";
-import { Avatar } from "@/components";
-import { IconBadge } from "@/components";
-import { PhosphorIcon } from "@/components";
-import { ListItemRow } from "@/components";
-import { SpendingBar } from "@/components";
-import { BottomNavigation } from "@/components";
-import { CardSection } from "@/components";
-import { HeroBalance } from "@/components";
+import { useMemo } from "react";
+import type {
+  CuotaItem,
+  GoalCardSimple,
+  NavItem,
+  SpendingCategory,
+  Transaction,
+} from "@/types";
+import {
+  Avatar,
+  BottomNavigation,
+  CardSection,
+  HeroBalance,
+  IconBadge,
+  ListItemRow,
+  PhosphorIcon,
+  SpendingBar,
+} from "@/components";
+import { useCategories, useCuotas, useTransactions } from "@/hooks";
+import {
+  formatCurrency,
+  getCurrentMonthWindow,
+  getMonthlyBalance,
+  getPendingInstallmentsTotalForMonth,
+  getTransactionDateForMonthBalance,
+  isCuotaActiveInMonth,
+} from "@/utils";
 
 export interface HomeProps {
   avatarInitials?: string;
@@ -24,43 +42,78 @@ export interface HomeProps {
   spendingTitle?: string;
   spendingTotal?: string;
   spendingCategories?: SpendingCategory[];
+  spendingPendingLabel?: string;
   goalsTitle?: string;
   goals?: GoalCardSimple[];
   cuotasTitle?: string;
   cuotasViewAll?: string;
   cuotas?: CuotaItem[];
   navItems?: NavItem[];
+  loadingLabel?: string;
+  errorLabel?: string;
+  emptyTransactionsLabel?: string;
+  emptySpendingLabel?: string;
+  emptyCuotasLabel?: string;
   onNavItemClick?: (index: number) => void;
   onMenuClick?: () => void;
   onSeeAllTransactions?: () => void;
   onSeeAllCuotas?: () => void;
 }
 
+interface HomeTransactionRow {
+  key: string;
+  icon: string;
+  iconBg: string;
+  name: string;
+  date: string;
+  amount: string;
+  amountColor?: string;
+}
+
+const RECENT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
+const SPENDING_COLORS = [
+  "bg-[#DC2626]",
+  "bg-[#2563EB]",
+  "bg-[#7C3AED]",
+  "bg-[#71717A]",
+] as const;
+
+const parseSignedAmount = (value: string): number => {
+  const normalized = value.replace(/[^0-9+.-]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getAmountColor = (amount: string, amountColor?: string): string => {
+  if (amountColor) {
+    return amountColor;
+  }
+
+  return amount.trim().startsWith("+") ? "text-[#16A34A]" : "text-[#DC2626]";
+};
+
 export function Home({
   avatarInitials = "JS",
   greeting = "Good morning",
   userName = "John",
-  totalBalance = "$24,563",
+  totalBalance,
   incomeLabel = "Income",
-  incomeValue = "$8,420",
+  incomeValue,
   expenseLabel = "Expenses",
-  expenseValue = "$3,842",
+  expenseValue,
   activeDot = 0,
   recentTitle = "Recent",
   recentViewAll = "See all",
-  transactions = [
-    { icon: "briefcase", iconBg: "bg-green-600", name: "Salary", date: "Feb 1, 2024", amount: "+$5,200", amountColor: "text-[#058743]" },
-    { icon: "shopping-bag", iconBg: "bg-orange-600", name: "Amazon", date: "Feb 2, 2024", amount: "-$156" },
-    { icon: "fork-knife", iconBg: "bg-red-600", name: "Restaurant", date: "Feb 3, 2024", amount: "-$89" },
-  ],
+  transactions,
   spendingTitle = "Spending",
-  spendingTotal = "$3,842",
-  spendingCategories = [
-    { label: "Food", percentage: 28, color: "bg-red-600" },
-    { label: "Transport", percentage: 23, color: "bg-blue-600" },
-    { label: "Shopping", percentage: 19, color: "bg-orange-600" },
-    { label: "Other", percentage: 30, color: "bg-[#71717A]" },
-  ],
+  spendingTotal,
+  spendingCategories,
+  spendingPendingLabel = "Pending installments",
   goalsTitle = "Goals",
   goals = [
     { icon: "airplane", name: "Vacation", progress: "48%", highlighted: true },
@@ -69,11 +122,7 @@ export function Home({
   ],
   cuotasTitle = "Planes de Cuotas",
   cuotasViewAll = "Ver todos",
-  cuotas = [
-    { name: "iPhone 15 Pro", progressLabel: "3/6 cuotas", amount: "$199" },
-    { name: "MacBook Air M3", progressLabel: "8/12 cuotas", amount: "$125" },
-    { name: "Seguro Auto", progressLabel: "2/4 cuotas", amount: "$89" },
-  ],
+  cuotas,
   navItems = [
     { icon: "house", label: "Home", active: true },
     { icon: "wallet", label: "Budgets" },
@@ -81,11 +130,142 @@ export function Home({
     { icon: "trend-up", label: "Inversiones" },
     { icon: "dots-three", label: "Más" },
   ],
+  loadingLabel = "Loading...",
+  errorLabel = "We couldn’t load this section. Please try again.",
+  emptyTransactionsLabel = "No transactions yet.",
+  emptySpendingLabel = "No spending yet this month.",
+  emptyCuotasLabel = "No active installments.",
   onNavItemClick,
   onMenuClick,
   onSeeAllTransactions,
   onSeeAllCuotas,
 }: HomeProps) {
+  const {
+    items: transactionItems,
+    isLoading: isTransactionsLoading,
+    error: transactionsError,
+  } = useTransactions();
+  const { items: categories } = useCategories();
+  const {
+    items: cuotaItems,
+    isLoading: isCuotasLoading,
+    error: cuotasError,
+  } = useCuotas();
+
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    categories.forEach((category) => {
+      map.set(category.id, category.name);
+    });
+
+    return map;
+  }, [categories]);
+
+  const monthlyBalance = useMemo(
+    () => getMonthlyBalance(transactionItems),
+    [transactionItems],
+  );
+  const monthlyPendingInstallments = useMemo(
+    () => getPendingInstallmentsTotalForMonth(cuotaItems),
+    [cuotaItems],
+  );
+
+  const recentTransactions = useMemo<HomeTransactionRow[]>(() => {
+    if (transactions) {
+      return transactions.map((transaction, index) => ({
+        key: `${transaction.name}-${index}`,
+        ...transaction,
+      }));
+    }
+
+    return [...transactionItems]
+      .sort((left, right) => {
+        const leftDate = getTransactionDateForMonthBalance(left)?.getTime() ?? 0;
+        const rightDate = getTransactionDateForMonthBalance(right)?.getTime() ?? 0;
+        return rightDate - leftDate;
+      })
+      .slice(0, 3)
+      .map((transaction) => ({
+        key: transaction.id,
+        icon: transaction.icon,
+        iconBg: transaction.iconBg,
+        name: transaction.name,
+        date: RECENT_DATE_FORMATTER.format(
+          getTransactionDateForMonthBalance(transaction) ?? new Date(),
+        ),
+        amount: transaction.amount,
+        amountColor: getAmountColor(transaction.amount, transaction.amountColor),
+      }));
+  }, [transactionItems, transactions]);
+
+  const computedSpendingCategories = useMemo<SpendingCategory[]>(() => {
+    const monthWindow = getCurrentMonthWindow();
+    const grouped = new Map<string, number>();
+
+    transactionItems.forEach((transaction) => {
+      const transactionDate = getTransactionDateForMonthBalance(transaction);
+      if (!transactionDate) {
+        return;
+      }
+
+      if (
+        transactionDate < monthWindow.start ||
+        transactionDate >= monthWindow.end
+      ) {
+        return;
+      }
+
+      const signedAmount = parseSignedAmount(transaction.amount);
+      if (signedAmount >= 0) {
+        return;
+      }
+
+      const categoryLabel = transaction.categoryId
+        ? (categoryNameById.get(transaction.categoryId) ?? "Uncategorized")
+        : (transaction.category || "Uncategorized");
+
+      grouped.set(categoryLabel, (grouped.get(categoryLabel) ?? 0) + Math.abs(signedAmount));
+    });
+
+    const total = Array.from(grouped.values()).reduce((sum, value) => sum + value, 0);
+    if (total <= 0) {
+      return [];
+    }
+
+    return Array.from(grouped.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 4)
+      .map(([label, amount], index) => ({
+        label,
+        percentage: Math.max(1, Math.round((amount / total) * 100)),
+        color: SPENDING_COLORS[index % SPENDING_COLORS.length],
+      }));
+  }, [categoryNameById, transactionItems]);
+
+  const activeCuotas = useMemo(() => {
+    if (cuotas) {
+      return cuotas;
+    }
+
+    return cuotaItems
+      .filter((cuota) => isCuotaActiveInMonth(cuota))
+      .slice(0, 3)
+      .map<CuotaItem>((cuota) => ({
+        name: cuota.title,
+        progressLabel: `${cuota.paidInstallmentsCount}/${cuota.installmentsCount} cuotas`,
+        amount: formatCurrency(cuota.installmentAmount),
+      }));
+  }, [cuotaItems, cuotas]);
+
+  const displayedTotalBalance = totalBalance ?? formatCurrency(monthlyBalance.net);
+  const displayedIncomeValue = incomeValue ?? formatCurrency(monthlyBalance.income);
+  const displayedExpenseValue = expenseValue ?? formatCurrency(monthlyBalance.expense);
+  const displayedSpendingTotal = spendingTotal ?? formatCurrency(monthlyBalance.expense);
+  const displayedSpendingCategories = spendingCategories ?? computedSpendingCategories;
+  const pendingInstallmentsLabel = isCuotasLoading && !cuotas && cuotaItems.length === 0
+    ? loadingLabel
+    : formatCurrency(monthlyPendingInstallments);
+
   return (
     <div className="flex flex-col h-full w-full bg-white">
       <div className="flex items-center justify-between px-5 py-4">
@@ -110,11 +290,11 @@ export function Home({
       <div className="flex-1 overflow-auto">
         <div className="flex flex-col gap-8 px-5 pb-5">
           <HeroBalance
-            balance={totalBalance}
+            balance={displayedTotalBalance}
             incomeLabel={incomeLabel}
-            incomeValue={incomeValue}
+            incomeValue={displayedIncomeValue}
             expenseLabel={expenseLabel}
-            expenseValue={expenseValue}
+            expenseValue={displayedExpenseValue}
             activeDot={activeDot}
           />
 
@@ -122,25 +302,46 @@ export function Home({
             title={recentTitle}
             titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
             action={
-              <button type="button" onClick={onSeeAllTransactions} className="text-sm font-medium text-[#71717A]">
+              <button
+                type="button"
+                onClick={onSeeAllTransactions}
+                className="text-sm font-medium text-[#71717A]"
+              >
                 {recentViewAll}
               </button>
             }
           >
-            {transactions.map((tx, i) => (
+            {isTransactionsLoading && !transactions && recentTransactions.length === 0 && (
+              <>
+                <div className="animate-pulse h-[64px] rounded-2xl bg-[#F4F4F5]" />
+                <div className="animate-pulse h-[64px] rounded-2xl bg-[#F4F4F5]" />
+              </>
+            )}
+
+            {!transactions && transactionsError && (
+              <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+            )}
+
+            {!transactions && !transactionsError && recentTransactions.length === 0 && !isTransactionsLoading && (
+              <span className="text-sm font-medium text-[#71717A]">{emptyTransactionsLabel}</span>
+            )}
+
+            {recentTransactions.map((transaction, index) => (
               <ListItemRow
-                key={tx.name}
-                left={<IconBadge icon={tx.icon} bg={tx.iconBg} />}
-                title={tx.name}
-                subtitle={tx.date}
+                key={transaction.key}
+                left={<IconBadge icon={transaction.icon} bg={transaction.iconBg} />}
+                title={transaction.name}
+                subtitle={transaction.date}
                 titleClassName="text-base font-semibold text-black font-['Outfit']"
                 subtitleClassName="text-xs font-normal text-[#A1A1AA]"
                 right={
-                  <span className={`text-base font-bold font-['Outfit'] ${tx.amountColor ?? "text-black"}`}>
-                    {tx.amount}
+                  <span
+                    className={`text-base font-bold font-['Outfit'] ${transaction.amountColor ?? "text-black"}`}
+                  >
+                    {transaction.amount}
                   </span>
                 }
-                showBorder={i < transactions.length - 1}
+                showBorder={index < recentTransactions.length - 1}
                 padding="py-4"
               />
             ))}
@@ -150,15 +351,30 @@ export function Home({
             title={spendingTitle}
             titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
             action={
-              <span className="text-xl font-light text-[#71717A] font-['Outfit']">{spendingTotal}</span>
+              <div className="flex flex-col items-end">
+                <span className="text-xl font-light text-[#71717A] font-['Outfit']">
+                  {displayedSpendingTotal}
+                </span>
+                <span className="text-[11px] font-medium text-[#A1A1AA]">
+                  {spendingPendingLabel}: {pendingInstallmentsLabel}
+                </span>
+              </div>
             }
           >
-            {spendingCategories.map((cat) => (
+            {isTransactionsLoading && !spendingCategories && displayedSpendingCategories.length === 0 && (
+              <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+            )}
+
+            {!spendingCategories && displayedSpendingCategories.length === 0 && !isTransactionsLoading && (
+              <span className="text-sm font-medium text-[#71717A]">{emptySpendingLabel}</span>
+            )}
+
+            {displayedSpendingCategories.map((category) => (
               <SpendingBar
-                key={cat.label}
-                label={cat.label}
-                percentage={cat.percentage}
-                barColor={cat.color}
+                key={category.label}
+                label={category.label}
+                percentage={category.percentage}
+                barColor={category.color}
               />
             ))}
           </CardSection>
@@ -181,10 +397,14 @@ export function Home({
                     className={goal.highlighted ? "text-white" : "text-black"}
                   />
                   <div className="flex flex-col gap-1">
-                    <span className={`text-base font-bold font-['Outfit'] ${goal.highlighted ? "text-white" : "text-black"}`}>
+                    <span
+                      className={`text-base font-bold font-['Outfit'] ${goal.highlighted ? "text-white" : "text-black"}`}
+                    >
                       {goal.name}
                     </span>
-                    <span className={`text-2xl font-light font-['Outfit'] ${goal.highlighted ? "text-[#A1A1AA]" : "text-[#71717A]"}`}>
+                    <span
+                      className={`text-2xl font-light font-['Outfit'] ${goal.highlighted ? "text-[#A1A1AA]" : "text-[#71717A]"}`}
+                    >
                       {goal.progress}
                     </span>
                   </div>
@@ -197,12 +417,28 @@ export function Home({
             title={cuotasTitle}
             titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
             action={
-              <button type="button" onClick={onSeeAllCuotas} className="text-sm font-medium text-[#71717A]">
+              <button
+                type="button"
+                onClick={onSeeAllCuotas}
+                className="text-sm font-medium text-[#71717A]"
+              >
                 {cuotasViewAll}
               </button>
             }
           >
-            {cuotas.map((cuota) => (
+            {!cuotas && isCuotasLoading && activeCuotas.length === 0 && (
+              <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+            )}
+
+            {!cuotas && cuotasError && (
+              <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+            )}
+
+            {!cuotas && !cuotasError && activeCuotas.length === 0 && !isCuotasLoading && (
+              <span className="text-sm font-medium text-[#71717A]">{emptyCuotasLabel}</span>
+            )}
+
+            {activeCuotas.map((cuota) => (
               <ListItemRow
                 key={cuota.name}
                 left={<></>}

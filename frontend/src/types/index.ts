@@ -59,6 +59,16 @@ export interface BudgetSummaryItem {
   highlighted?: boolean;
 }
 
+export interface BudgetPlan {
+  id: string;
+  categoryId: string;
+  name: string;
+  limitAmount: number;
+  month: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // === Metas ===
 
 export interface GoalCardSimple {
@@ -88,6 +98,16 @@ export interface GoalListItem {
   barWidthPercent: number;
   currentAmount: string;
   targetAmount: string;
+}
+
+export interface GoalPlan {
+  id: string;
+  title: string;
+  targetAmount: number;
+  savedAmount: number;
+  targetMonth: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // === Planes ===
@@ -141,6 +161,18 @@ export interface StockCard {
   changeBg: string;
   row1: StockMetric[];
   row2: StockMetric[];
+}
+
+export interface InvestmentPosition {
+  id: string;
+  ticker: string;
+  name: string;
+  exchange: string;
+  shares: number;
+  costBasis: number;
+  currentPrice: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // === Estadisticas ===
@@ -233,6 +265,13 @@ export interface SettingsItem {
 export interface SettingsSection {
   title: string;
   items: SettingsItem[];
+}
+
+export interface AppSettings {
+  currency: "USD" | "EUR";
+  language: "es" | "en";
+  notificationsEnabled: boolean;
+  theme: "light";
 }
 
 // === Categorias ===

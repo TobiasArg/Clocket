@@ -50,7 +50,14 @@ const buildInitialState = (): CategoriesStorageV1 => ({
   items: cloneCategories(DEFAULT_CATEGORIES),
 });
 
-const normalizeCategoryName = (name: string): string => name.trim();
+const normalizeCategoryName = (name: string): string => {
+  const normalized = name.trim();
+  if (!normalized) {
+    throw new Error("Category name is required.");
+  }
+
+  return normalized;
+};
 
 const isCategoryItem = (value: unknown): value is CategoryItem => {
   if (typeof value !== "object" || value === null) {
