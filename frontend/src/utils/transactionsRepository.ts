@@ -3,7 +3,7 @@ import type { TransactionDetailed } from "@/types";
 export interface TransactionItem extends TransactionDetailed {
   id: string;
   categoryId?: string;
-  date?: string;
+  date: string;
   createdAt?: string;
 }
 

@@ -36,13 +36,17 @@ export const getCurrentMonthWindow = (now: Date = new Date()): MonthWindow => {
 export const getTransactionDateForMonthBalance = (
   transaction: TransactionItem,
 ): Date | null => {
-  // Rule: prefer `date` when present, otherwise `createdAt`.
-  // Legacy fallback: older records may only have an ISO date prefix in `meta`.
-  const source = transaction.date ?? transaction.createdAt;
-  if (source) {
-    const parsed = new Date(source);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
+  // Rule: transactions must provide `date` (YYYY-MM-DD). `createdAt` and `meta`
+  // are only legacy fallbacks for malformed/old persisted records.
+  const dateValue = new Date(`${transaction.date}T00:00:00`);
+  if (!Number.isNaN(dateValue.getTime())) {
+    return dateValue;
+  }
+
+  if (transaction.createdAt) {
+    const createdAtValue = new Date(transaction.createdAt);
+    if (!Number.isNaN(createdAtValue.getTime())) {
+      return createdAtValue;
     }
   }
 
