@@ -7,9 +7,10 @@ import {
   PageHeader,
   PhosphorIcon,
 } from "@/components";
-import { useCategories, useTransactions } from "@/hooks";
+import { useCategories, useCuotas, useTransactions } from "@/hooks";
 import {
   formatCurrency,
+  getPendingInstallmentsTotalForMonth,
   getMonthlyBalance,
   getTransactionDateForMonthBalance,
   type TransactionItem,
@@ -39,6 +40,8 @@ export interface TransactionsProps {
   monthlyNetLabel?: string;
   monthlyIncomeLabel?: string;
   monthlyExpenseLabel?: string;
+  monthlyPendingInstallmentsLabel?: string;
+  monthlyPendingInstallmentsLoadingLabel?: string;
   monthlyEmptyHint?: string;
   monthlyLoadingLabel?: string;
   loadingLabel?: string;
@@ -149,6 +152,8 @@ export function Transactions({
   monthlyNetLabel = "Neto",
   monthlyIncomeLabel = "Ingresos",
   monthlyExpenseLabel = "Gastos",
+  monthlyPendingInstallmentsLabel = "Pending installments this month",
+  monthlyPendingInstallmentsLoadingLabel = "Calculating installments...",
   monthlyEmptyHint = "No transactions yet",
   monthlyLoadingLabel = "Calculando balance...",
   loadingLabel = "Cargando transacciones...",
@@ -161,6 +166,7 @@ export function Transactions({
   onTransactionClick,
 }: TransactionsProps) {
   const { items, isLoading, error, create, update, remove } = useTransactions();
+  const { items: cuotas, isLoading: isCuotasLoading } = useCuotas();
   const {
     items: categories,
     isLoading: isCategoriesLoading,
@@ -204,6 +210,10 @@ export function Transactions({
   const isDescriptionValid = normalizedDescription.length > 0;
   const isFormValid = isAmountValid && isDescriptionValid;
   const monthlyBalance = useMemo(() => getMonthlyBalance(items), [items]);
+  const monthlyPendingInstallments = useMemo(
+    () => getPendingInstallmentsTotalForMonth(cuotas),
+    [cuotas],
+  );
   const hasMonthlyTransactions = monthlyBalance.income > 0 || monthlyBalance.expense > 0;
 
   const categoriesById = useMemo(() => {
@@ -454,6 +464,17 @@ export function Transactions({
                         {formatCurrency(monthlyBalance.expense)}
                       </span>
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#71717A]">
+                      {monthlyPendingInstallmentsLabel}
+                    </span>
+                    <span className="text-sm font-semibold text-[#52525B]">
+                      {isCuotasLoading && cuotas.length === 0
+                        ? monthlyPendingInstallmentsLoadingLabel
+                        : formatCurrency(monthlyPendingInstallments)}
+                    </span>
                   </div>
 
                   {!hasMonthlyTransactions && (

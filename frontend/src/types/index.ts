@@ -171,6 +171,20 @@ export interface CuotaItem {
   amount: string;
 }
 
+export interface CuotaPlan {
+  id: string;
+  title: string;
+  description?: string;
+  totalAmount: number;
+  installmentsCount: number;
+  installmentAmount: number;
+  startMonth: string;
+  paidInstallmentsCount: number;
+  categoryId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // === Subcategorias ===
 
 export interface SubcategoryItem {

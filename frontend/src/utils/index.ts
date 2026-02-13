@@ -6,9 +6,17 @@ export {
   getTransactionDateForMonthBalance,
 } from "./monthlyBalance";
 export {
+  getPendingInstallmentsTotalForMonth,
+  isCuotaActiveInMonth,
+} from "./monthlyCuotaImpact";
+export {
   LocalStorageCategoriesRepository,
   categoriesRepository,
 } from "./localStorageCategoriesRepository";
+export {
+  LocalStorageCuotasRepository,
+  cuotasRepository,
+} from "./localStorageCuotasRepository";
 export {
   LocalStorageTransactionsRepository,
   transactionsRepository,
@@ -23,6 +31,12 @@ export type {
   CreateCategoryInput,
   UpdateCategoryPatch,
 } from "./categoriesRepository";
+export type {
+  CreateCuotaInput,
+  CuotaPlanItem,
+  CuotasRepository,
+  UpdateCuotaPatch,
+} from "./cuotasRepository";
 export type {
   CreateTransactionInput,
   TransactionItem,

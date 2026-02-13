@@ -1,3 +1,8 @@
+export { useCuotas } from "./useCuotas";
+export type {
+  UseCuotasOptions,
+  UseCuotasResult,
+} from "./useCuotas";
 export { useCategories } from "./useCategories";
 export type {
   UseCategoriesOptions,
