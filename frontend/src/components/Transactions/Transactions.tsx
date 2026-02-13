@@ -8,7 +8,12 @@ import {
   PhosphorIcon,
 } from "@/components";
 import { useCategories, useTransactions } from "@/hooks";
-import type { TransactionItem } from "@/utils";
+import {
+  formatCurrency,
+  getMonthlyBalance,
+  getTransactionDateForMonthBalance,
+  type TransactionItem,
+} from "@/utils";
 
 export interface TransactionsProps {
   headerTitle?: string;
@@ -30,6 +35,12 @@ export interface TransactionsProps {
   quickAddAmountErrorLabel?: string;
   quickAddDescriptionErrorLabel?: string;
   savedLabel?: string;
+  monthlyBalanceTitle?: string;
+  monthlyNetLabel?: string;
+  monthlyIncomeLabel?: string;
+  monthlyExpenseLabel?: string;
+  monthlyEmptyHint?: string;
+  monthlyLoadingLabel?: string;
   loadingLabel?: string;
   emptyTitle?: string;
   emptyHint?: string;
@@ -72,18 +83,7 @@ const parseAmountSign = (value: string): AmountSign => {
 };
 
 const parseTransactionDate = (transaction: TransactionItem): Date | null => {
-  const rawDate = transaction.meta.split(" • ")[0]?.trim();
-
-  if (!rawDate || !/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
-    return null;
-  }
-
-  const parsed = new Date(`${rawDate}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return parsed;
+  return getTransactionDateForMonthBalance(transaction);
 };
 
 const formatMonthTitle = (date: Date): string => {
@@ -145,6 +145,12 @@ export function Transactions({
   quickAddAmountErrorLabel = "Ingresa un monto mayor a 0.",
   quickAddDescriptionErrorLabel = "Agrega una descripción corta.",
   savedLabel = "Saved",
+  monthlyBalanceTitle = "Balance mensual",
+  monthlyNetLabel = "Neto",
+  monthlyIncomeLabel = "Ingresos",
+  monthlyExpenseLabel = "Gastos",
+  monthlyEmptyHint = "No transactions yet",
+  monthlyLoadingLabel = "Calculando balance...",
   loadingLabel = "Cargando transacciones...",
   emptyTitle = "No hay transacciones todavía",
   emptyHint = "Agrega tu primera transacción para empezar.",
@@ -197,6 +203,8 @@ export function Transactions({
   const isAmountValid = Number.isFinite(amountValue) && amountValue > 0;
   const isDescriptionValid = normalizedDescription.length > 0;
   const isFormValid = isAmountValid && isDescriptionValid;
+  const monthlyBalance = useMemo(() => getMonthlyBalance(items), [items]);
+  const hasMonthlyTransactions = monthlyBalance.income > 0 || monthlyBalance.expense > 0;
 
   const categoriesById = useMemo(() => {
     const map = new Map<string, string>();
@@ -342,6 +350,8 @@ export function Transactions({
         name: normalizedDescription,
         category: selectedCategoryName,
         categoryId: selectedCategoryId || undefined,
+        date: todayIso,
+        createdAt: new Date().toISOString(),
         amount: formatAmountWithSign(amountValue, "-"),
         amountColor: getAmountColorBySign("-"),
         meta: `${todayIso} • ${dateLabel}`,
@@ -406,6 +416,53 @@ export function Transactions({
               <span className="text-xs font-medium text-[#71717A]">{savedLabel}</span>
             </div>
           )}
+
+          <CardSection gap="gap-2">
+            <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4 flex flex-col gap-3">
+              <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+                {monthlyBalanceTitle}
+              </span>
+
+              {isLoading && items.length === 0 ? (
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-medium text-[#71717A]">{monthlyLoadingLabel}</span>
+                  <div className="animate-pulse h-8 rounded-xl bg-white" />
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium text-[#71717A]">{monthlyNetLabel}</span>
+                    <span className="text-[32px] font-bold text-black font-['Outfit'] leading-none">
+                      {formatCurrency(monthlyBalance.net)}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl bg-white px-3 py-2">
+                      <span className="block text-[11px] font-medium text-[#71717A]">
+                        {monthlyIncomeLabel}
+                      </span>
+                      <span className="block text-sm font-semibold text-[#52525B]">
+                        {formatCurrency(monthlyBalance.income)}
+                      </span>
+                    </div>
+                    <div className="rounded-xl bg-white px-3 py-2">
+                      <span className="block text-[11px] font-medium text-[#71717A]">
+                        {monthlyExpenseLabel}
+                      </span>
+                      <span className="block text-sm font-semibold text-[#52525B]">
+                        {formatCurrency(monthlyBalance.expense)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {!hasMonthlyTransactions && (
+                    <span className="text-xs font-medium text-[#71717A]">{monthlyEmptyHint}</span>
+                  )}
+                </>
+              )}
+            </div>
+          </CardSection>
 
           {isEditorOpen && (
             <div className="flex flex-col gap-3 bg-[#F4F4F5] rounded-2xl p-4">

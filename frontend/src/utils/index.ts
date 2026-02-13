@@ -1,4 +1,10 @@
+export { formatCurrency } from "./formatCurrency";
 export { getPercentWidthClass } from "./percentWidthClass";
+export {
+  getCurrentMonthWindow,
+  getMonthlyBalance,
+  getTransactionDateForMonthBalance,
+} from "./monthlyBalance";
 export {
   LocalStorageCategoriesRepository,
   categoriesRepository,
@@ -7,6 +13,10 @@ export {
   LocalStorageTransactionsRepository,
   transactionsRepository,
 } from "./localStorageTransactionsRepository";
+export type {
+  MonthWindow,
+  MonthlyBalance,
+} from "./monthlyBalance";
 export type {
   CategoriesRepository,
   CategoryItem,
