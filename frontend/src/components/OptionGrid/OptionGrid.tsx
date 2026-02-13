@@ -24,21 +24,56 @@ export function OptionGrid({
   labelClassName = "text-base font-semibold text-white font-['Outfit']",
   className = "",
 }: OptionGridProps) {
+  const navigateToPath = (to: string): void => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (window.location.pathname === to) {
+      return;
+    }
+
+    window.history.pushState(null, "", to);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
+
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
       {rows.map((row, ri) => (
         <div key={row.map((o) => o.label).join("-")} className="flex gap-4">
-          {row.map((option, oi) => (
-            <button
-              key={option.label}
-              type="button"
-              onClick={() => onOptionClick?.(ri, oi)}
-              className={`flex flex-col items-center justify-center gap-3 ${buttonBg} ${buttonRounded} ${buttonHeight} p-5 flex-1`}
-            >
-              <PhosphorIcon name={option.icon} size={iconSize} className={iconColor} />
-              <span className={labelClassName}>{option.label}</span>
-            </button>
-          ))}
+          {row.map((option, oi) => {
+            const className = `flex flex-col items-center justify-center gap-3 ${buttonBg} ${buttonRounded} ${buttonHeight} p-5 flex-1`;
+
+            if (option.to) {
+              return (
+                <a
+                  key={option.label}
+                  href={option.to}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateToPath(option.to ?? "/home");
+                    onOptionClick?.(ri, oi);
+                  }}
+                  className={className}
+                >
+                  <PhosphorIcon name={option.icon} size={iconSize} className={iconColor} />
+                  <span className={labelClassName}>{option.label}</span>
+                </a>
+              );
+            }
+
+            return (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => onOptionClick?.(ri, oi)}
+                className={className}
+              >
+                <PhosphorIcon name={option.icon} size={iconSize} className={iconColor} />
+                <span className={labelClassName}>{option.label}</span>
+              </button>
+            );
+          })}
         </div>
       ))}
     </div>

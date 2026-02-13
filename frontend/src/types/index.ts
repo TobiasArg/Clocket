@@ -4,12 +4,14 @@ export interface NavItem {
   icon: string;
   label: string;
   active?: boolean;
+  to?: string;
 }
 
 export interface SidebarNavItem {
   icon: string;
   label: string;
   active?: boolean;
+  to?: string;
 }
 
 // === Transacciones ===
@@ -290,4 +292,5 @@ export interface Category {
 export interface GridOption {
   icon: string;
   label: string;
+  to?: string;
 }
