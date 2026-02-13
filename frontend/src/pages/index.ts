@@ -1,0 +1,12 @@
+export { Home } from "./Home/Home";
+export { HomeDesktop } from "./HomeDesktop/HomeDesktop";
+export { Budgets } from "./Budgets/Budgets";
+export { BudgetDetail } from "./BudgetDetail/BudgetDetail";
+export { Categories } from "./Categories/Categories";
+export { Goals } from "./Goals/Goals";
+export { Investments } from "./Investments/Investments";
+export { More } from "./More/More";
+export { Plans } from "./Plans/Plans";
+export { Settings } from "./Settings/Settings";
+export { Statistics } from "./Statistics/Statistics";
+export { Transactions } from "./Transactions/Transactions";

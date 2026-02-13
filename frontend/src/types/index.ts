@@ -1,0 +1,239 @@
+// === Navegacion ===
+
+export interface NavItem {
+  icon: string;
+  label: string;
+  active?: boolean;
+}
+
+export interface SidebarNavItem {
+  icon: string;
+  label: string;
+  active?: boolean;
+}
+
+// === Transacciones ===
+
+export interface Transaction {
+  icon: string;
+  iconBg: string;
+  name: string;
+  date: string;
+  amount: string;
+  amountColor?: string;
+}
+
+export interface TransactionDetailed {
+  icon: string;
+  iconBg: string;
+  name: string;
+  category: string;
+  amount: string;
+  amountColor: string;
+  meta: string;
+}
+
+// === Presupuestos ===
+
+export interface BudgetListItem {
+  icon: string;
+  name: string;
+  meta: string;
+  percentText: string;
+  percentColor: string;
+  percentBg: string;
+  barColor: string;
+  barWidthPercent: number;
+  spentAmount: string;
+  totalAmount: string;
+}
+
+export interface BudgetSummaryItem {
+  icon: string;
+  iconBg: string;
+  name: string;
+  meta: string;
+  percent: string;
+  percentColor: string;
+  statusLabel?: string;
+  highlighted?: boolean;
+}
+
+// === Metas ===
+
+export interface GoalCardSimple {
+  icon: string;
+  name: string;
+  progress: string;
+  highlighted?: boolean;
+}
+
+export interface GoalCardDetailed {
+  icon: string;
+  name: string;
+  progressText: string;
+  percent: string;
+  barWidthPercent: number;
+  highlighted?: boolean;
+}
+
+export interface GoalListItem {
+  icon: string;
+  name: string;
+  date: string;
+  percentText: string;
+  percentColor: string;
+  percentBg: string;
+  barColor: string;
+  barWidthPercent: number;
+  currentAmount: string;
+  targetAmount: string;
+}
+
+// === Planes ===
+
+export interface PlanListItem {
+  name: string;
+  description: string;
+  currentInstallment: number;
+  totalInstallments: number;
+  monthlyAmount: string;
+  totalCost: string;
+  highlighted?: boolean;
+}
+
+export interface PlanSummaryItem {
+  name: string;
+  detail: string;
+  remaining: string;
+  highlighted?: boolean;
+}
+
+// === Gastos ===
+
+export interface SpendingCategory {
+  label: string;
+  percentage: number;
+  color: string;
+}
+
+export interface SpendingCategoryDetailed {
+  name: string;
+  value: string;
+  barColor: string;
+  barWidthPercent: number;
+}
+
+// === Inversiones ===
+
+export interface StockMetric {
+  label: string;
+  value: string;
+  valueColor?: string;
+}
+
+export interface StockCard {
+  ticker: string;
+  name: string;
+  exchange: string;
+  changeText: string;
+  changeColor: string;
+  changeBg: string;
+  row1: StockMetric[];
+  row2: StockMetric[];
+}
+
+// === Estadisticas ===
+
+export interface LegendItem {
+  color: string;
+  label: string;
+}
+
+export interface CategoryBreakdown {
+  dotColor: string;
+  name: string;
+  value: string;
+}
+
+export interface DonutSegment {
+  color: string;
+  name: string;
+  value: string;
+  percentage: number;
+}
+
+// === Cuotas ===
+
+export interface CuotaItem {
+  name: string;
+  progressLabel: string;
+  amount: string;
+}
+
+// === Subcategorias ===
+
+export interface SubcategoryItem {
+  dotColor: string;
+  name: string;
+  amount: string;
+  percent: string;
+  barColor: string;
+  barWidthPercent: number;
+}
+
+// === Usuario ===
+
+export interface UserProfile {
+  initial: string;
+  name: string;
+  email: string;
+}
+
+// === Tarjetas de estadisticas ===
+
+export interface StatCard {
+  label: string;
+  value: string;
+  change: string;
+  changeColor: string;
+}
+
+// === Agrupacion de transacciones ===
+
+export interface MonthGroup {
+  title: string;
+  total: string;
+  totalColor?: string;
+  transactions: TransactionDetailed[];
+}
+
+// === Configuracion ===
+
+export interface SettingsItem {
+  icon: string;
+  name: string;
+  description: string;
+}
+
+export interface SettingsSection {
+  title: string;
+  items: SettingsItem[];
+}
+
+// === Categorias ===
+
+export interface Category {
+  icon: string;
+  iconBg: string;
+  name: string;
+  subcategoryCount: number;
+  subcategories?: string[];
+}
+
+// === Grid ===
+
+export interface GridOption {
+  icon: string;
+  label: string;
+}

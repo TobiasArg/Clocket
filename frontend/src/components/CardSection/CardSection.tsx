@@ -1,0 +1,31 @@
+import type { ReactNode } from "react";
+
+export interface CardSectionProps {
+  title?: string;
+  titleClassName?: string;
+  action?: ReactNode;
+  gap?: string;
+  children: ReactNode;
+  className?: string;
+}
+
+export function CardSection({
+  title,
+  titleClassName = "text-xl font-bold text-black font-['Outfit']",
+  action,
+  gap = "gap-4",
+  children,
+  className = "",
+}: CardSectionProps) {
+  return (
+    <div className={`flex flex-col ${gap} ${className}`}>
+      {(title || action) && (
+        <div className="flex items-center justify-between">
+          {title && <span className={titleClassName}>{title}</span>}
+          {action}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
