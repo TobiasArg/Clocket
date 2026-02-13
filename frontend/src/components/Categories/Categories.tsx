@@ -250,6 +250,12 @@ export function Categories({
             const usageCount = categoryId
               ? (usageCountByCategoryId.get(categoryId) ?? 0)
               : 0;
+            const subcategoryList = Array.isArray(category.subcategories)
+              ? category.subcategories
+              : [];
+            const subcategoryCount = subcategoryList.length > 0
+              ? subcategoryList.length
+              : category.subcategoryCount;
 
             return (
               <ExpandableListItem
@@ -263,18 +269,18 @@ export function Categories({
                   />
                 }
                 title={category.name}
-                subtitle={`${category.subcategoryCount} subcategorías`}
+                subtitle={`${subcategoryCount} subcategorías`}
                 titleClassName="text-base font-semibold text-black font-['Outfit']"
                 subtitleClassName="text-xs font-medium text-[#71717A]"
                 isExpanded={expandedIndex === index}
                 onToggle={() => handleToggle(index)}
               >
                 <div className="pl-[52px] pb-2 flex flex-col">
-                  {category.subcategories?.length ? (
-                    category.subcategories.map((sub, subIndex) => (
+                  {subcategoryList.length > 0 ? (
+                    subcategoryList.map((sub, subIndex) => (
                       <div
                         key={sub}
-                        className={`py-3 ${subIndex < category.subcategories.length - 1 ? "border-b border-[#F4F4F5]" : ""}`}
+                        className={`py-3 ${subIndex < subcategoryList.length - 1 ? "border-b border-[#F4F4F5]" : ""}`}
                       >
                         <span className="text-sm font-medium text-[#52525B]">{sub}</span>
                       </div>

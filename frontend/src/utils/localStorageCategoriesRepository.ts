@@ -65,12 +65,20 @@ const isCategoryItem = (value: unknown): value is CategoryItem => {
   }
 
   const item = value as Partial<CategoryItem>;
+  const hasValidSubcategories =
+    item.subcategories === undefined ||
+    (Array.isArray(item.subcategories) &&
+      item.subcategories.every((subcategory) => typeof subcategory === "string"));
+
   return (
     typeof item.id === "string" &&
     typeof item.name === "string" &&
     typeof item.icon === "string" &&
     typeof item.iconBg === "string" &&
-    typeof item.subcategoryCount === "number"
+    typeof item.subcategoryCount === "number" &&
+    Number.isFinite(item.subcategoryCount) &&
+    item.subcategoryCount >= 0 &&
+    hasValidSubcategories
   );
 };
 
