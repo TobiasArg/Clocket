@@ -5,6 +5,7 @@ export {
   getMonthlyBalance,
   getTransactionDateForMonthBalance,
 } from "./monthlyBalance";
+export { buildStatisticsDailyFlow } from "./statisticsFlow";
 export {
   getPendingInstallmentsTotalForMonth,
   isCuotaActiveInMonth,

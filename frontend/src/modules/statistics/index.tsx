@@ -24,4 +24,6 @@ export type {
   CategoryBreakdown,
   LegendItem,
   NavItem,
+  StatisticsFlowCategoryAmount,
+  StatisticsFlowDay,
 } from "@/types";

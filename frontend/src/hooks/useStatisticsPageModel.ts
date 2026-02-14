@@ -2,10 +2,12 @@ import { useMemo } from "react";
 import type {
   CategoryBreakdown,
   DonutSegment,
+  StatisticsFlowDay,
 } from "@/types";
 import { useCategories } from "./useCategories";
 import { useTransactions } from "./useTransactions";
 import {
+  buildStatisticsDailyFlow,
   formatCurrency,
   getCurrentMonthWindow,
   getMonthlyBalance,
@@ -29,6 +31,7 @@ export interface UseStatisticsPageModelOptions {
 
 export interface UseStatisticsPageModelResult {
   categoryRows: CategoryBreakdown[];
+  dailyFlow: StatisticsFlowDay[];
   donutSegments: DonutSegment[];
   isLoading: boolean;
   hasError: boolean;
@@ -67,6 +70,12 @@ const parsePercentFromLabel = (value: string): number => {
   }
 
   return Number(match[1]);
+};
+
+const parseAmountLabelFromCategoryValue = (value: string): string => {
+  const [amountPart] = value.split("(");
+  const normalized = amountPart?.trim();
+  return normalized && normalized.length > 0 ? normalized : value;
 };
 
 const buildMonthKey = (date: Date): string => {
@@ -159,12 +168,15 @@ export const useStatisticsPageModel = (
   const categoryRows = categories ?? computedCategoryRows;
 
   const donutSegments = useMemo<DonutSegment[]>(() => {
-    return categoryRows.map((category, index) => ({
-      color: DONUT_COLORS[index % DONUT_COLORS.length],
-      name: category.name,
-      value: category.value,
-      percentage: parsePercentFromLabel(category.value),
-    }));
+    return categoryRows.map((category, index) => {
+      const percentage = parsePercentFromLabel(category.value);
+      return {
+        color: DONUT_COLORS[index % DONUT_COLORS.length],
+        name: category.name,
+        value: parseAmountLabelFromCategoryValue(category.value),
+        percentage,
+      };
+    });
   }, [categoryRows]);
 
   const trendPoints = useMemo<StatisticsTrendPoint[]>(() => {
@@ -207,6 +219,11 @@ export const useStatisticsPageModel = (
     }));
   }, [transactions]);
 
+  const dailyFlow = useMemo<StatisticsFlowDay[]>(
+    () => buildStatisticsDailyFlow({ categoryNameById, transactions }),
+    [categoryNameById, transactions],
+  );
+
   const net = monthlyBalance.net;
   const monthlyGoal = Math.max(0, monthlyBalance.income * 0.6);
   const savingsPercent = monthlyGoal > 0
@@ -215,6 +232,7 @@ export const useStatisticsPageModel = (
 
   return {
     categoryRows,
+    dailyFlow,
     donutSegments,
     isLoading,
     hasError: Boolean(error),

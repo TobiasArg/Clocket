@@ -197,6 +197,22 @@ export interface DonutSegment {
   percentage: number;
 }
 
+export interface StatisticsFlowCategoryAmount {
+  amount: number;
+  category: string;
+  color: string;
+}
+
+export interface StatisticsFlowDay {
+  dateKey: string;
+  dateLabel: string;
+  expenseByCategory: StatisticsFlowCategoryAmount[];
+  expenseTotal: number;
+  incomeByCategory: StatisticsFlowCategoryAmount[];
+  incomeTotal: number;
+  label: string;
+}
+
 // === Cuotas ===
 
 export interface CuotaItem {

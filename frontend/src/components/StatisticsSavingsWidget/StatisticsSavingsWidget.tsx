@@ -1,10 +1,8 @@
 import type { StatisticsTrendPoint } from "@/hooks";
-import {
-  StatDisplay,
-  SummaryPanel,
-  TextBadge,
-  TrendLine,
-} from "@/components";
+import { memo } from "react";
+import { SummaryPanel } from "../SummaryPanel/SummaryPanel";
+import { TextBadge } from "../TextBadge/TextBadge";
+import { TrendLine } from "../TrendLine/TrendLine";
 
 export interface StatisticsSavingsWidgetProps {
   savingsBadge?: string;
@@ -17,7 +15,7 @@ export interface StatisticsSavingsWidgetProps {
   trendPoints?: StatisticsTrendPoint[];
 }
 
-export function StatisticsSavingsWidget({
+export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
   savingsBadge = "+0%",
   savingsBg = "bg-[#059669]",
   savingsGoalLabel = "Meta mensual",
@@ -27,14 +25,19 @@ export function StatisticsSavingsWidget({
   savingsValue = "$0.00",
   trendPoints = [],
 }: StatisticsSavingsWidgetProps) {
+  const metrics = [
+    { label: savingsLabel, value: savingsValue, valueClassName: "font-bold" },
+    { label: savingsGoalLabel, value: savingsGoalValue, valueClassName: "font-semibold" },
+  ] as const;
+
   return (
     <SummaryPanel
       bg={savingsBg}
       rounded="rounded-[20px]"
       padding="p-5"
     >
-      <div className="flex items-center justify-between w-full">
-        <span className="text-base font-bold text-white font-['Outfit']">{savingsTitle}</span>
+      <div className="flex items-start justify-between w-full">
+        <span className="text-sm font-semibold text-white/90 font-['Outfit']">{savingsTitle}</span>
         <TextBadge
           text={savingsBadge}
           bg="bg-white/20"
@@ -45,24 +48,17 @@ export function StatisticsSavingsWidget({
           fontWeight="font-semibold"
         />
       </div>
-      <TrendLine points={trendPoints} />
-      <div className="flex justify-between w-full">
-        <StatDisplay
-          label={savingsLabel}
-          value={savingsValue}
-          labelClassName="text-[11px] font-medium text-white/70"
-          valueClassName="text-2xl font-bold text-white font-['Outfit']"
-          gap="gap-0.5"
-        />
-        <StatDisplay
-          label={savingsGoalLabel}
-          value={savingsGoalValue}
-          labelClassName="text-[11px] font-medium text-white/70"
-          valueClassName="text-lg font-semibold text-white font-['Outfit']"
-          gap="gap-0.5"
-          align="end"
-        />
+      <TrendLine points={trendPoints} className="h-[112px]" />
+      <div className="grid grid-cols-2 gap-2">
+        {metrics.map((metric) => (
+          <div key={metric.label} className="rounded-xl bg-white/10 px-3 py-2">
+            <span className="block text-[10px] font-medium text-white/70">{metric.label}</span>
+            <span className={`block text-base text-white font-['Outfit'] ${metric.valueClassName}`}>
+              {metric.value}
+            </span>
+          </div>
+        ))}
       </div>
     </SummaryPanel>
   );
-}
+});

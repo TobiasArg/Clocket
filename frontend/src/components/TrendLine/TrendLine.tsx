@@ -6,6 +6,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { memo } from "react";
 
 export interface TrendLinePoint {
   label: string;
@@ -26,7 +27,10 @@ const DEFAULT_POINTS: TrendLinePoint[] = [
   { label: "JUN", value: 78 },
 ];
 
-export function TrendLine({ className = "", points = DEFAULT_POINTS }: TrendLineProps) {
+export const TrendLine = memo(function TrendLine({
+  className = "",
+  points = DEFAULT_POINTS,
+}: TrendLineProps) {
   return (
     <div className={`w-full h-[88px] relative ${className}`}>
       <ResponsiveContainer width="100%" height="100%">
@@ -56,4 +60,4 @@ export function TrendLine({ className = "", points = DEFAULT_POINTS }: TrendLine
       </ResponsiveContainer>
     </div>
   );
-}
+});

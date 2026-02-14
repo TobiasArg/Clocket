@@ -48,26 +48,26 @@ export function Statistics({
   avatarInitials = "JS",
   headerTitle = "Statistics",
   periodLabel = "Este mes",
-  balanceTitle = "Balance Mensual",
+  balanceTitle = "Flujo",
   balanceLegend = [
     { color: "bg-[#16A34A]", label: "Ingresos" },
     { color: "bg-[#DC2626]", label: "Gastos" },
   ],
-  totalIncomeLabel = "Total Ingresos",
+  totalIncomeLabel = "Ingresos",
   totalIncomeValue,
   totalIncomeColor = "text-[#16A34A]",
-  totalExpenseLabel = "Total Gastos",
+  totalExpenseLabel = "Egresos",
   totalExpenseValue,
   totalExpenseColor = "text-[#DC2626]",
-  categoryTitle = "Gastos por Categoría",
+  categoryTitle = "Categorías",
   categoryTotal,
-  categoryTotalLabel = "Total",
+  categoryTotalLabel = "",
   categories,
-  savingsTitle = "Tendencia de Ahorro",
+  savingsTitle = "Tendencia",
   savingsBadge,
-  savingsLabel = "Ahorrado este mes",
+  savingsLabel = "Ahorro",
   savingsValue,
-  savingsGoalLabel = "Meta mensual",
+  savingsGoalLabel = "Meta",
   savingsGoalValue,
   savingsBg = "bg-[#059669]",
   loadingLabel = "Cargando estadísticas...",
@@ -84,6 +84,7 @@ export function Statistics({
   onNavItemClick,
 }: StatisticsProps) {
   const {
+    dailyFlow,
     donutSegments,
     hasError,
     isLoading,
@@ -92,8 +93,6 @@ export function Statistics({
     resolvedSavingsBadge,
     resolvedSavingsGoalValue,
     resolvedSavingsValue,
-    resolvedTotalExpenseValue,
-    resolvedTotalIncomeValue,
     trendPoints,
   } = useStatisticsPageModel({
     categories,
@@ -134,22 +133,24 @@ export function Statistics({
             </div>
           )}
 
-          <StatisticsBalanceWidget
-            balanceTitle={balanceTitle}
-            balanceLegend={balanceLegend}
-            totalIncomeLabel={totalIncomeLabel}
-            totalIncomeValue={resolvedTotalIncomeValue}
-            totalIncomeColor={totalIncomeColor}
-            totalExpenseLabel={totalExpenseLabel}
-            totalExpenseValue={resolvedTotalExpenseValue}
-            totalExpenseColor={totalExpenseColor}
-          />
-
           <StatisticsCategoryWidget
             categoryTitle={categoryTitle}
             categoryTotal={resolvedCategoryTotal}
             categoryTotalLabel={categoryTotalLabel}
             donutSegments={donutSegments}
+            emptyLabel={emptyLabel}
+            chartType="donut"
+            chartSize="w-[280px] h-[280px]"
+            showMetaText={false}
+            showLegend={false}
+            showCenterValue
+          />
+
+          <StatisticsBalanceWidget
+            balanceTitle={balanceTitle}
+            flowDays={dailyFlow}
+            popupIncomeLabel={totalIncomeLabel}
+            popupExpenseLabel={totalExpenseLabel}
             emptyLabel={emptyLabel}
           />
 
