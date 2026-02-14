@@ -20,13 +20,13 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
   categoryTitle = "Gastos por Categoría",
   categoryTotal = "$0.00",
   categoryTotalLabel = "Total",
-  chartSize = "w-[160px] h-[160px]",
+  chartSize = "w-[280px] h-[280px]",
   chartType = "donut",
   donutSegments = [],
   emptyLabel = "No hay movimientos este mes.",
   showCenterValue = true,
-  showMetaText = true,
-  showLegend = true,
+  showMetaText = false,
+  showLegend = false,
 }: StatisticsCategoryWidgetProps) {
   const hasSegments = donutSegments.length > 0;
 

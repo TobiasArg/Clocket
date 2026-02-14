@@ -1,8 +1,8 @@
-import type { StatisticsTrendPoint } from "@/hooks";
 import { memo } from "react";
 import { SummaryPanel } from "../SummaryPanel/SummaryPanel";
 import { TextBadge } from "../TextBadge/TextBadge";
 import { TrendLine } from "../TrendLine/TrendLine";
+import type { TrendLinePoint } from "../TrendLine/TrendLine";
 
 export interface StatisticsSavingsWidgetProps {
   savingsBadge?: string;
@@ -12,7 +12,7 @@ export interface StatisticsSavingsWidgetProps {
   savingsLabel?: string;
   savingsTitle?: string;
   savingsValue?: string;
-  trendPoints?: StatisticsTrendPoint[];
+  trendPoints?: TrendLinePoint[];
 }
 
 export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({

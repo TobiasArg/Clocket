@@ -139,11 +139,6 @@ export function Statistics({
             categoryTotalLabel={categoryTotalLabel}
             donutSegments={donutSegments}
             emptyLabel={emptyLabel}
-            chartType="donut"
-            chartSize="w-[280px] h-[280px]"
-            showMetaText={false}
-            showLegend={false}
-            showCenterValue
           />
 
           <StatisticsBalanceWidget
