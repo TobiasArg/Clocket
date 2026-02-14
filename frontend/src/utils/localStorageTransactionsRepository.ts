@@ -4,22 +4,30 @@ import type {
   TransactionsRepository,
   UpdateTransactionPatch,
 } from "@/utils";
+import { DEFAULT_ACCOUNT_ID } from "./accountsRepository";
 
-const STORAGE_VERSION = 2 as const;
-const LEGACY_STORAGE_VERSION = 1 as const;
+const STORAGE_VERSION = 3 as const;
+const LEGACY_STORAGE_VERSION_1 = 1 as const;
+const LEGACY_STORAGE_VERSION_2 = 2 as const;
 const DEFAULT_STORAGE_KEY = "clocket.transactions";
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-interface LegacyTransactionItem extends Omit<TransactionItem, "date"> {
+interface LegacyTransactionItem extends Omit<TransactionItem, "date" | "accountId"> {
+  accountId?: string;
   date?: string;
 }
 
 interface TransactionsStorageV1 {
-  version: typeof LEGACY_STORAGE_VERSION;
+  version: typeof LEGACY_STORAGE_VERSION_1;
   items: LegacyTransactionItem[];
 }
 
 interface TransactionsStorageV2 {
+  version: typeof LEGACY_STORAGE_VERSION_2;
+  items: LegacyTransactionItem[];
+}
+
+interface TransactionsStorageV3 {
   version: typeof STORAGE_VERSION;
   items: TransactionItem[];
 }
@@ -27,7 +35,7 @@ interface TransactionsStorageV2 {
 const cloneItem = (item: TransactionItem): TransactionItem => ({ ...item });
 const cloneItems = (items: TransactionItem[]): TransactionItem[] => items.map(cloneItem);
 
-const buildInitialState = (): TransactionsStorageV2 => ({
+const buildInitialState = (): TransactionsStorageV3 => ({
   version: STORAGE_VERSION,
   items: [],
 });
@@ -82,6 +90,15 @@ const normalizeMetaWithDate = (meta: string, date: string): string => {
   return `${date} • ${trimmed}`;
 };
 
+const normalizeAccountId = (value?: string): string => {
+  const normalized = value?.trim();
+  if (normalized) {
+    return normalized;
+  }
+
+  return DEFAULT_ACCOUNT_ID;
+};
+
 const getNormalizedDate = (item: { date?: string; createdAt?: string; meta: string }): string => {
   return (
     (item.date ? parseDateCandidate(item.date) : null) ??
@@ -92,11 +109,16 @@ const getNormalizedDate = (item: { date?: string; createdAt?: string; meta: stri
 };
 
 const normalizeTransactionItem = (
-  item: Omit<TransactionItem, "date" | "meta"> & { date?: string; meta: string },
+  item: Omit<TransactionItem, "date" | "meta" | "accountId"> & {
+    accountId?: string;
+    date?: string;
+    meta: string;
+  },
 ): TransactionItem => {
   const date = getNormalizedDate(item);
   return {
     ...item,
+    accountId: normalizeAccountId(item.accountId),
     date,
     // `meta` always stores a date prefix to keep transaction metadata predictable.
     meta: normalizeMetaWithDate(item.meta, date),
@@ -115,6 +137,7 @@ const isLegacyTransactionItem = (value: unknown): value is LegacyTransactionItem
     typeof item.iconBg === "string" &&
     typeof item.name === "string" &&
     typeof item.category === "string" &&
+    (item.accountId === undefined || typeof item.accountId === "string") &&
     (item.categoryId === undefined || typeof item.categoryId === "string") &&
     (item.date === undefined || typeof item.date === "string") &&
     (item.createdAt === undefined || typeof item.createdAt === "string") &&
@@ -129,7 +152,12 @@ const isTransactionItem = (value: unknown): value is TransactionItem => {
     return false;
   }
 
-  return typeof value.date === "string" && ISO_DATE_PATTERN.test(value.date);
+  return (
+    typeof value.date === "string" &&
+    ISO_DATE_PATTERN.test(value.date) &&
+    typeof value.accountId === "string" &&
+    value.accountId.trim().length > 0
+  );
 };
 
 const isStorageShapeV1 = (value: unknown): value is TransactionsStorageV1 => {
@@ -139,7 +167,7 @@ const isStorageShapeV1 = (value: unknown): value is TransactionsStorageV1 => {
 
   const state = value as Partial<TransactionsStorageV1>;
   return (
-    state.version === LEGACY_STORAGE_VERSION &&
+    state.version === LEGACY_STORAGE_VERSION_1 &&
     Array.isArray(state.items) &&
     state.items.every(isLegacyTransactionItem)
   );
@@ -152,13 +180,33 @@ const isStorageShapeV2 = (value: unknown): value is TransactionsStorageV2 => {
 
   const state = value as Partial<TransactionsStorageV2>;
   return (
+    state.version === LEGACY_STORAGE_VERSION_2 &&
+    Array.isArray(state.items) &&
+    state.items.every(isLegacyTransactionItem)
+  );
+};
+
+const isStorageShapeV3 = (value: unknown): value is TransactionsStorageV3 => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const state = value as Partial<TransactionsStorageV3>;
+  return (
     state.version === STORAGE_VERSION &&
     Array.isArray(state.items) &&
     state.items.every(isTransactionItem)
   );
 };
 
-const migrateStorageV1 = (state: TransactionsStorageV1): TransactionsStorageV2 => {
+const migrateStorageV1 = (state: TransactionsStorageV1): TransactionsStorageV3 => {
+  return {
+    version: STORAGE_VERSION,
+    items: state.items.map((item) => normalizeTransactionItem(item)),
+  };
+};
+
+const migrateStorageV2 = (state: TransactionsStorageV2): TransactionsStorageV3 => {
   return {
     version: STORAGE_VERSION,
     items: state.items.map((item) => normalizeTransactionItem(item)),
@@ -176,7 +224,7 @@ const createTransactionId = (): string => {
 export class LocalStorageTransactionsRepository implements TransactionsRepository {
   private readonly storageKey: string;
 
-  private memoryState: TransactionsStorageV2;
+  private memoryState: TransactionsStorageV3;
 
   public constructor(storageKey: string = DEFAULT_STORAGE_KEY) {
     this.storageKey = storageKey;
@@ -251,7 +299,7 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
     return window.localStorage;
   }
 
-  private readState(): TransactionsStorageV2 {
+  private readState(): TransactionsStorageV3 {
     const storage = this.getStorage();
 
     if (!storage) {
@@ -270,7 +318,7 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
 
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (isStorageShapeV2(parsed)) {
+      if (isStorageShapeV3(parsed)) {
         return {
           version: parsed.version,
           items: cloneItems(parsed.items),
@@ -279,6 +327,12 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
 
       if (isStorageShapeV1(parsed)) {
         const migrated = migrateStorageV1(parsed);
+        this.writeState(migrated);
+        return migrated;
+      }
+
+      if (isStorageShapeV2(parsed)) {
+        const migrated = migrateStorageV2(parsed);
         this.writeState(migrated);
         return migrated;
       }
@@ -291,8 +345,8 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
     return reset;
   }
 
-  private writeState(state: TransactionsStorageV2): void {
-    const next: TransactionsStorageV2 = {
+  private writeState(state: TransactionsStorageV3): void {
+    const next: TransactionsStorageV3 = {
       version: state.version,
       items: cloneItems(state.items),
     };

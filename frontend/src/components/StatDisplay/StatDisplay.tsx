@@ -18,9 +18,9 @@ export function StatDisplay({
   className = "",
 }: StatDisplayProps) {
   return (
-    <div className={`flex flex-col ${gap} ${align === "end" ? "items-end" : ""} ${className}`}>
-      <span className={labelClassName}>{label}</span>
-      <span className={valueClassName}>{value}</span>
+    <div className={`flex min-w-0 flex-col ${gap} ${align === "end" ? "items-end" : ""} ${className}`}>
+      <span className={`block max-w-full truncate ${labelClassName}`}>{label}</span>
+      <span className={`block max-w-full truncate ${valueClassName}`}>{value}</span>
     </div>
   );
 }

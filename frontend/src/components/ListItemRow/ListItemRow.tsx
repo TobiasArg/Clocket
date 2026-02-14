@@ -29,18 +29,18 @@ export function ListItemRow({
   gap = "gap-3",
   className = "",
 }: ListItemRowProps) {
-  const classes = `flex items-center justify-between ${padding} text-left ${showBorder ? `border-b ${borderColor}` : ""} ${className}`;
+  const classes = `flex min-w-0 items-center justify-between ${padding} text-left ${showBorder ? `border-b ${borderColor}` : ""} ${className}`;
 
   const content = (
     <>
-      <div className={`flex items-center ${gap}`}>
+      <div className={`flex min-w-0 flex-1 items-center ${gap}`}>
         {left}
-        <div className="flex flex-col gap-0.5">
-          <span className={titleClassName}>{title}</span>
-          {subtitle && <span className={subtitleClassName}>{subtitle}</span>}
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className={`block truncate ${titleClassName}`}>{title}</span>
+          {subtitle && <span className={`block truncate ${subtitleClassName}`}>{subtitle}</span>}
         </div>
       </div>
-      {right && <div className="shrink-0">{right}</div>}
+      {right && <div className="shrink-0 pl-2">{right}</div>}
     </>
   );
 

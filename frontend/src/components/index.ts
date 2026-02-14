@@ -1,5 +1,7 @@
 export { ActionButton } from "./ActionButton/ActionButton";
 export type { ActionButtonProps } from "./ActionButton/ActionButton";
+export { Accounts } from "./Accounts/Accounts";
+export type { AccountsProps } from "./Accounts/Accounts";
 export { Avatar } from "./Avatar/Avatar";
 export type { AvatarProps } from "./Avatar/Avatar";
 export { BottomNavigation } from "./BottomNavigation/BottomNavigation";

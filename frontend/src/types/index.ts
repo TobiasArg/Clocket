@@ -276,6 +276,16 @@ export interface AppSettings {
   theme: "light";
 }
 
+// === Cuentas ===
+
+export interface Account {
+  id: string;
+  name: string;
+  balance: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // === Categorias ===
 
 export interface Category {

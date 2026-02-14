@@ -35,15 +35,15 @@ export function CategoryItem({
 }: CategoryItemProps) {
   return (
     <div className={`flex flex-col gap-3 ${containerClassName} ${className}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <Dot color={dotColor} size={dotSize} />
-          <span className={nameClassName}>{name}</span>
+          <span className={`block truncate ${nameClassName}`}>{name}</span>
         </div>
         {(value || secondaryValue) && (
-          <div className="flex items-center gap-2">
-            {value && <span className={valueClassName}>{value}</span>}
-            {secondaryValue && <span className={secondaryClassName}>{secondaryValue}</span>}
+          <div className="flex min-w-0 shrink-0 items-center gap-2">
+            {value && <span className={`block max-w-[120px] truncate ${valueClassName}`}>{value}</span>}
+            {secondaryValue && <span className={`block max-w-[80px] truncate ${secondaryClassName}`}>{secondaryValue}</span>}
           </div>
         )}
       </div>

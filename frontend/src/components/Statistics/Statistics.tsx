@@ -190,7 +190,7 @@ export function Statistics({
 
   return (
     <div className="flex flex-col h-full w-full bg-white">
-      <div className="relative">
+      <div className="relative pr-[120px]">
         <PageHeader title={headerTitle} avatarInitials={avatarInitials} />
         <button
           type="button"
@@ -198,7 +198,7 @@ export function Statistics({
           className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 bg-[#F4F4F5] rounded-xl px-3 py-2"
           aria-label="Seleccionar periodo"
         >
-          <span className="text-[13px] font-semibold text-black">{periodLabel}</span>
+          <span className="block max-w-[84px] truncate text-[13px] font-semibold text-black">{periodLabel}</span>
           <PhosphorIcon name="caret-down" className="text-black" size="text-[16px]" />
         </button>
       </div>

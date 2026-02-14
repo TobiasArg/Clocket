@@ -2,6 +2,7 @@ import type { TransactionDetailed } from "@/types";
 
 export interface TransactionItem extends TransactionDetailed {
   id: string;
+  accountId: string;
   categoryId?: string;
   date: string;
   createdAt?: string;

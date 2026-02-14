@@ -16,11 +16,11 @@ export function MetricGrid({
   className = "",
 }: MetricGridProps) {
   return (
-    <div className={`flex justify-between w-full ${className}`}>
+    <div className={`flex w-full gap-2 ${className}`}>
       {metrics.map((m) => (
-        <div key={m.label} className="flex flex-col gap-1">
-          <span className={labelClassName}>{m.label}</span>
-          <span className={`${valueClassName} ${m.valueColor ?? ""}`}>{m.value}</span>
+        <div key={m.label} className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className={`block truncate ${labelClassName}`}>{m.label}</span>
+          <span className={`block truncate ${valueClassName} ${m.valueColor ?? ""}`}>{m.value}</span>
         </div>
       ))}
     </div>

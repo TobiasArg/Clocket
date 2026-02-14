@@ -313,17 +313,17 @@ export function Goals({
 
             return (
               <div key={goal.id} className="flex flex-col gap-4 bg-[#F4F4F5] rounded-[20px] p-5">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center justify-between w-full gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <IconBadge
                       icon={GOAL_ICONS[index % GOAL_ICONS.length]}
                       size="w-[48px] h-[48px]"
                       rounded="rounded-[14px]"
                       iconSize="text-2xl"
                     />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-base font-semibold text-black font-['Outfit']">{goal.title}</span>
-                      <span className="text-xs font-normal text-[#71717A]">
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="block truncate text-base font-semibold text-black font-['Outfit']">{goal.title}</span>
+                      <span className="block truncate text-xs font-normal text-[#71717A]">
                         Meta: {formatMonthLabel(goal.targetMonth)}
                       </span>
                     </div>
@@ -334,6 +334,7 @@ export function Goals({
                     textColor={styles.percentColor}
                     rounded="rounded-[10px]"
                     fontWeight="font-semibold"
+                    className="shrink-0"
                   />
                 </div>
                 <ProgressSection

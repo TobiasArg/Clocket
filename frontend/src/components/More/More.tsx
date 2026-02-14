@@ -22,10 +22,13 @@ export function More({
       { icon: "receipt", label: "Transacciones", to: "/transactions" },
     ],
     [
+      { icon: "bank", label: "Cuentas", to: "/accounts" },
       { icon: "calendar", label: "Planes", to: "/plans" },
-      { icon: "gear", label: "Settings", to: "/settings" },
     ],
-    [{ icon: "target", label: "Goals", to: "/goals" }],
+    [
+      { icon: "gear", label: "Settings", to: "/settings" },
+      { icon: "target", label: "Goals", to: "/goals" },
+    ],
   ],
   navItems = [
     { icon: "house", label: "Home", to: "/home" },

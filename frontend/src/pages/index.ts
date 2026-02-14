@@ -1,5 +1,6 @@
 export { Home } from "./Home/Home";
 export { HomeDesktop } from "./HomeDesktop/HomeDesktop";
+export { Accounts } from "./Accounts/Accounts";
 export { Budgets } from "./Budgets/Budgets";
 export { BudgetDetail } from "./BudgetDetail/BudgetDetail";
 export { Categories } from "./Categories/Categories";

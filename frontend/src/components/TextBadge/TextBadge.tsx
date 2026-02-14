@@ -20,8 +20,8 @@ export function TextBadge({
   className = "",
 }: TextBadgeProps) {
   return (
-    <div className={`${bg} ${rounded} ${padding} ${className}`}>
-      <span className={`${fontSize} ${fontWeight} ${textColor}`}>{text}</span>
+    <div className={`inline-flex min-w-0 max-w-full items-center ${bg} ${rounded} ${padding} ${className}`}>
+      <span className={`block truncate ${fontSize} ${fontWeight} ${textColor}`}>{text}</span>
     </div>
   );
 }

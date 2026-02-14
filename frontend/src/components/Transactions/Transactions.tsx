@@ -7,7 +7,7 @@ import {
   PageHeader,
   PhosphorIcon,
 } from "@/components";
-import { useCategories, useCuotas, useTransactions } from "@/hooks";
+import { useAccounts, useCategories, useCuotas, useTransactions } from "@/hooks";
 import {
   formatCurrency,
   getPendingInstallmentsTotalForMonth,
@@ -19,8 +19,12 @@ import {
 export interface TransactionsProps {
   headerTitle?: string;
   quickAddTitle?: string;
+  quickAddTypeLabel?: string;
+  quickAddExpenseLabel?: string;
+  quickAddIncomeLabel?: string;
   quickAddAmountLabel?: string;
   quickAddDescriptionLabel?: string;
+  quickAddAccountLabel?: string;
   quickAddCategoryLabel?: string;
   quickAddAmountPlaceholder?: string;
   quickAddDescriptionPlaceholder?: string;
@@ -35,6 +39,7 @@ export interface TransactionsProps {
   deleteConfirmLabel?: string;
   quickAddAmountErrorLabel?: string;
   quickAddDescriptionErrorLabel?: string;
+  quickAddAccountErrorLabel?: string;
   savedLabel?: string;
   monthlyBalanceTitle?: string;
   monthlyNetLabel?: string;
@@ -49,6 +54,8 @@ export interface TransactionsProps {
   emptyHint?: string;
   errorLabel?: string;
   uncategorizedLabel?: string;
+  uncategorizedAccountLabel?: string;
+  noAccountsLabel?: string;
   onBackClick?: () => void;
   onFilterClick?: () => void;
   onTransactionClick?: (monthIndex: number, txIndex: number) => void;
@@ -131,8 +138,12 @@ const getAbsoluteAmountFromValue = (value: string): string => {
 export function Transactions({
   headerTitle = "Transacciones",
   quickAddTitle = "Quick Add",
+  quickAddTypeLabel = "Tipo",
+  quickAddExpenseLabel = "Egreso",
+  quickAddIncomeLabel = "Ingreso",
   quickAddAmountLabel = "Monto",
   quickAddDescriptionLabel = "Descripción",
+  quickAddAccountLabel = "Cuenta",
   quickAddCategoryLabel = "Categoría",
   quickAddAmountPlaceholder = "0.00",
   quickAddDescriptionPlaceholder = "Ej. Café, Uber, supermercado",
@@ -147,6 +158,7 @@ export function Transactions({
   deleteConfirmLabel = "Delete",
   quickAddAmountErrorLabel = "Ingresa un monto mayor a 0.",
   quickAddDescriptionErrorLabel = "Agrega una descripción corta.",
+  quickAddAccountErrorLabel = "Selecciona una cuenta.",
   savedLabel = "Saved",
   monthlyBalanceTitle = "Balance mensual",
   monthlyNetLabel = "Neto",
@@ -161,6 +173,8 @@ export function Transactions({
   emptyHint = "Agrega tu primera transacción para empezar.",
   errorLabel = "No pudimos cargar las transacciones. Intenta nuevamente.",
   uncategorizedLabel = "Uncategorized",
+  uncategorizedAccountLabel = "Sin cuenta",
+  noAccountsLabel = "Crea una cuenta en Más > Cuentas para registrar transacciones.",
   onBackClick,
   onFilterClick,
   onTransactionClick,
@@ -168,12 +182,18 @@ export function Transactions({
   const { items, isLoading, error, create, update, remove } = useTransactions();
   const { items: cuotas, isLoading: isCuotasLoading } = useCuotas();
   const {
+    items: accounts,
+    isLoading: isAccountsLoading,
+    error: accountsError,
+  } = useAccounts();
+  const {
     items: categories,
     isLoading: isCategoriesLoading,
     error: categoriesError,
   } = useCategories();
   const [editorMode, setEditorMode] = useState<EditorMode>(null);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [editingAmountSign, setEditingAmountSign] = useState<AmountSign>("-");
   const [amountInput, setAmountInput] = useState<string>("");
@@ -208,7 +228,8 @@ export function Transactions({
   const amountValue = Number(amountInput);
   const isAmountValid = Number.isFinite(amountValue) && amountValue > 0;
   const isDescriptionValid = normalizedDescription.length > 0;
-  const isFormValid = isAmountValid && isDescriptionValid;
+  const isAccountValid = selectedAccountId.trim().length > 0;
+  const isFormValid = isAmountValid && isDescriptionValid && isAccountValid;
   const monthlyBalance = useMemo(() => getMonthlyBalance(items), [items]);
   const monthlyPendingInstallments = useMemo(
     () => getPendingInstallmentsTotalForMonth(cuotas),
@@ -228,6 +249,33 @@ export function Transactions({
     () => [...categories].sort((left, right) => left.name.localeCompare(right.name)),
     [categories],
   );
+  const accountsById = useMemo(() => {
+    const map = new Map<string, string>();
+    accounts.forEach((account) => {
+      map.set(account.id, account.name);
+    });
+    return map;
+  }, [accounts]);
+
+  const sortedAccounts = useMemo(
+    () => [...accounts].sort((left, right) => left.name.localeCompare(right.name)),
+    [accounts],
+  );
+
+  const defaultAccountId = sortedAccounts[0]?.id ?? "";
+  const isEditorOpen = editorMode !== null;
+
+  useEffect(() => {
+    if (!isEditorOpen) {
+      return;
+    }
+
+    if (selectedAccountId || !defaultAccountId) {
+      return;
+    }
+
+    setSelectedAccountId(defaultAccountId);
+  }, [defaultAccountId, isEditorOpen, selectedAccountId]);
 
   const resolveCategoryLabel = (transaction: TransactionItem): string => {
     if (transaction.categoryId) {
@@ -238,6 +286,10 @@ export function Transactions({
     }
 
     return uncategorizedLabel;
+  };
+
+  const resolveAccountLabel = (transaction: TransactionItem): string => {
+    return accountsById.get(transaction.accountId) ?? uncategorizedAccountLabel;
   };
 
   const monthGroups = useMemo<TransactionsMonthGroup[]>(() => {
@@ -291,6 +343,7 @@ export function Transactions({
   const closeEditor = () => {
     setEditorMode(null);
     setSelectedTransactionId(null);
+    setSelectedAccountId("");
     setSelectedCategoryId("");
     setEditingAmountSign("-");
     setAmountInput("");
@@ -302,6 +355,7 @@ export function Transactions({
   const openCreateEditor = () => {
     setEditorMode("create");
     setSelectedTransactionId(null);
+    setSelectedAccountId(defaultAccountId);
     setSelectedCategoryId("");
     setEditingAmountSign("-");
     setAmountInput("");
@@ -313,6 +367,7 @@ export function Transactions({
   const openEditEditor = (transaction: TransactionItem) => {
     setEditorMode("edit");
     setSelectedTransactionId(transaction.id);
+    setSelectedAccountId(transaction.accountId);
     setSelectedCategoryId(transaction.categoryId ?? "");
     setEditingAmountSign(parseAmountSign(transaction.amount));
     setAmountInput(getAbsoluteAmountFromValue(transaction.amount));
@@ -353,17 +408,19 @@ export function Transactions({
       const selectedCategoryName =
         (selectedCategoryId ? categoriesById.get(selectedCategoryId) : undefined) ??
         uncategorizedLabel;
+      const isIncome = editingAmountSign === "+";
 
       const created = await create({
-        icon: "receipt",
-        iconBg: "bg-[#18181B]",
+        icon: isIncome ? "arrow-up-right" : "receipt",
+        iconBg: isIncome ? "bg-[#16A34A]" : "bg-[#18181B]",
         name: normalizedDescription,
+        accountId: selectedAccountId,
         category: selectedCategoryName,
         categoryId: selectedCategoryId || undefined,
         date: todayIso,
         createdAt: new Date().toISOString(),
-        amount: formatAmountWithSign(amountValue, "-"),
-        amountColor: getAmountColorBySign("-"),
+        amount: formatAmountWithSign(amountValue, editingAmountSign),
+        amountColor: getAmountColorBySign(editingAmountSign),
         meta: `${todayIso} • ${dateLabel}`,
       });
 
@@ -381,6 +438,7 @@ export function Transactions({
         uncategorizedLabel;
       const updated = await update(selectedTransactionId, {
         name: normalizedDescription,
+        accountId: selectedAccountId,
         category: selectedCategoryName,
         categoryId: selectedCategoryId || undefined,
         amount: formatAmountWithSign(amountValue, editingAmountSign),
@@ -408,8 +466,6 @@ export function Transactions({
 
     closeEditor();
   };
-
-  const isEditorOpen = editorMode !== null;
 
   return (
     <div className="flex flex-col h-full w-full bg-white">
@@ -440,9 +496,9 @@ export function Transactions({
                 </div>
               ) : (
                 <>
-                  <div className="flex flex-col gap-0.5">
+                  <div className="flex min-w-0 flex-col gap-0.5">
                     <span className="text-xs font-medium text-[#71717A]">{monthlyNetLabel}</span>
-                    <span className="text-[32px] font-bold text-black font-['Outfit'] leading-none">
+                    <span className="block max-w-full truncate text-[clamp(1.5rem,8vw,2rem)] font-bold text-black font-['Outfit'] leading-none">
                       {formatCurrency(monthlyBalance.net)}
                     </span>
                   </div>
@@ -452,7 +508,7 @@ export function Transactions({
                       <span className="block text-[11px] font-medium text-[#71717A]">
                         {monthlyIncomeLabel}
                       </span>
-                      <span className="block text-sm font-semibold text-[#52525B]">
+                      <span className="block max-w-full truncate text-sm font-semibold text-[#52525B]">
                         {formatCurrency(monthlyBalance.income)}
                       </span>
                     </div>
@@ -460,17 +516,17 @@ export function Transactions({
                       <span className="block text-[11px] font-medium text-[#71717A]">
                         {monthlyExpenseLabel}
                       </span>
-                      <span className="block text-sm font-semibold text-[#52525B]">
+                      <span className="block max-w-full truncate text-sm font-semibold text-[#52525B]">
                         {formatCurrency(monthlyBalance.expense)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-[#71717A]">
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-[#71717A]">
                       {monthlyPendingInstallmentsLabel}
                     </span>
-                    <span className="text-sm font-semibold text-[#52525B]">
+                    <span className="shrink-0 text-sm font-semibold text-[#52525B]">
                       {isCuotasLoading && cuotas.length === 0
                         ? monthlyPendingInstallmentsLoadingLabel
                         : formatCurrency(monthlyPendingInstallments)}
@@ -486,14 +542,42 @@ export function Transactions({
           </CardSection>
 
           {isEditorOpen && (
-            <div className="flex flex-col gap-3 bg-[#F4F4F5] rounded-2xl p-4">
-              <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
-                {editorMode === "create" ? quickAddTitle : editTitle}
-              </span>
+          <div className="flex flex-col gap-3 bg-[#F4F4F5] rounded-2xl p-4">
+            <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+              {editorMode === "create" ? quickAddTitle : editTitle}
+            </span>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-[#52525B]">{quickAddAmountLabel}</span>
-                <input
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#52525B]">{quickAddTypeLabel}</span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingAmountSign("-")}
+                  className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+                    editingAmountSign === "-"
+                      ? "bg-black text-white"
+                      : "bg-white text-[#52525B]"
+                  }`}
+                >
+                  {quickAddExpenseLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingAmountSign("+")}
+                  className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+                    editingAmountSign === "+"
+                      ? "bg-black text-white"
+                      : "bg-white text-[#52525B]"
+                  }`}
+                >
+                  {quickAddIncomeLabel}
+                </button>
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#52525B]">{quickAddAmountLabel}</span>
+              <input
                   type="number"
                   min="0.01"
                   step="0.01"
@@ -521,6 +605,42 @@ export function Transactions({
                 {showValidation && !isDescriptionValid && (
                   <span className="text-[11px] font-medium text-[#71717A]">
                     {quickAddDescriptionErrorLabel}
+                  </span>
+                )}
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#52525B]">{quickAddAccountLabel}</span>
+                <select
+                  value={selectedAccountId}
+                  onChange={(event) => setSelectedAccountId(event.target.value)}
+                  className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+                >
+                  <option value="">{uncategorizedAccountLabel}</option>
+                  {sortedAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+                {showValidation && !isAccountValid && (
+                  <span className="text-[11px] font-medium text-[#71717A]">
+                    {quickAddAccountErrorLabel}
+                  </span>
+                )}
+                {isAccountsLoading && (
+                  <span className="text-[11px] font-medium text-[#71717A]">
+                    Cargando cuentas...
+                  </span>
+                )}
+                {accountsError && (
+                  <span className="text-[11px] font-medium text-[#71717A]">
+                    No pudimos cargar las cuentas.
+                  </span>
+                )}
+                {!isAccountsLoading && sortedAccounts.length === 0 && (
+                  <span className="text-[11px] font-medium text-[#71717A]">
+                    {noAccountsLabel}
                   </span>
                 )}
               </label>
@@ -655,17 +775,21 @@ export function Transactions({
                     key={transaction.id}
                     left={<IconBadge icon={transaction.icon} bg={transaction.iconBg} />}
                     title={transaction.name}
-                    subtitle={resolveCategoryLabel(transaction)}
+                    subtitle={`${resolveAccountLabel(transaction)} · ${resolveCategoryLabel(transaction)}`}
                     titleClassName="text-[15px] font-semibold text-black font-['Outfit']"
                     subtitleClassName="text-[11px] font-medium text-[#71717A] truncate"
                     right={
                       <div className="flex flex-col gap-0.5 items-end shrink-0">
                         <span
-                          className={`text-[15px] font-bold font-['Outfit'] ${transaction.amountColor}`}
+                          className={`text-[15px] font-bold font-['Outfit'] ${
+                            parseAmountSign(transaction.amount) === "+"
+                              ? "text-[#16A34A]"
+                              : "text-[#DC2626]"
+                          }`}
                         >
                           {transaction.amount}
                         </span>
-                        <span className="text-[10px] font-medium text-[#A1A1AA]">
+                        <span className="block max-w-[132px] truncate text-[10px] font-medium text-[#A1A1AA]">
                           {transaction.meta}
                         </span>
                         <div className="flex items-center gap-1 text-[10px] font-medium text-[#71717A]">

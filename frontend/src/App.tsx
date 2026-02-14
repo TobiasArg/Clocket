@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Accounts,
   BudgetDetail,
   Budgets,
   Categories,
@@ -17,6 +18,7 @@ import {
 type AppPath =
   | "/"
   | "/home"
+  | "/accounts"
   | "/transactions"
   | "/categories"
   | "/budgets"
@@ -34,6 +36,7 @@ const DEFAULT_PATH: AppPath = "/home";
 const APP_PATHS = new Set<AppPath>([
   "/",
   "/home",
+  "/accounts",
   "/transactions",
   "/categories",
   "/budgets",
@@ -136,6 +139,8 @@ export function App() {
             onTransactionClick={() => undefined}
           />
         );
+      case "/accounts":
+        return <Accounts onBackClick={() => navigateTo("/more")} />;
       case "/categories":
         return <Categories onBackClick={() => navigateTo("/more")} />;
       case "/budgets":

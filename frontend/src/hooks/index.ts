@@ -3,6 +3,11 @@ export type {
   UseAppSettingsOptions,
   UseAppSettingsResult,
 } from "./useAppSettings";
+export { useAccounts } from "./useAccounts";
+export type {
+  UseAccountsOptions,
+  UseAccountsResult,
+} from "./useAccounts";
 export { useBudgets } from "./useBudgets";
 export type {
   UseBudgetsOptions,

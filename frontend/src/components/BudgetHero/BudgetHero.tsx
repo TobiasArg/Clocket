@@ -47,8 +47,8 @@ export function BudgetHero({
         </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 items-center gap-3">
           <IconBadge
             icon={icon}
             bg="bg-white/20"
@@ -57,20 +57,20 @@ export function BudgetHero({
             size="w-[52px] h-[52px]"
             rounded="rounded-[14px]"
           />
-          <div className="flex flex-col gap-0.5">
-            <span className="text-2xl font-bold text-white font-['Outfit']">{name}</span>
-            <span className="text-[13px] font-medium text-white/70">{description}</span>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="block truncate text-2xl font-bold text-white font-['Outfit']">{name}</span>
+            <span className="block truncate text-[13px] font-medium text-white/70">{description}</span>
           </div>
         </div>
 
-        <div className="flex items-end justify-between w-full">
-          <div className="flex flex-col gap-0.5">
+        <div className="flex min-w-0 items-end justify-between w-full gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[11px] font-medium text-white/70">{spentLabel}</span>
-            <span className="text-[28px] font-extrabold text-white font-['Outfit']">{spentValue}</span>
+            <span className="block truncate text-[clamp(1.25rem,7vw,1.75rem)] font-extrabold text-white font-['Outfit']">{spentValue}</span>
           </div>
           {percentBadgeText && (
-            <div className="rounded-2xl bg-white/20 px-4 py-2">
-              <span className="text-sm font-semibold text-white font-['Outfit']">{percentBadgeText}</span>
+            <div className="max-w-[96px] shrink-0 rounded-2xl bg-white/20 px-4 py-2">
+              <span className="block truncate text-sm font-semibold text-white font-['Outfit']">{percentBadgeText}</span>
             </div>
           )}
         </div>

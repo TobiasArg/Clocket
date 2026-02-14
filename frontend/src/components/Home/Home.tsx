@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   CuotaItem,
   GoalCardSimple,
@@ -16,7 +16,7 @@ import {
   PhosphorIcon,
   SpendingBar,
 } from "@/components";
-import { useCategories, useCuotas, useTransactions } from "@/hooks";
+import { useAccounts, useCategories, useCuotas, useTransactions } from "@/hooks";
 import {
   formatCurrency,
   getCurrentMonthWindow,
@@ -70,6 +70,14 @@ interface HomeTransactionRow {
   amountColor?: string;
 }
 
+interface HomeBalanceSlide {
+  id: string;
+  label: string;
+  balance: string;
+  incomeValue?: string;
+  expenseValue?: string;
+}
+
 const RECENT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -90,11 +98,16 @@ const parseSignedAmount = (value: string): number => {
 };
 
 const getAmountColor = (amount: string, amountColor?: string): string => {
-  if (amountColor) {
-    return amountColor;
+  const normalizedAmount = amount.trim();
+  if (normalizedAmount.startsWith("+")) {
+    return "text-[#16A34A]";
   }
 
-  return amount.trim().startsWith("+") ? "text-[#16A34A]" : "text-[#DC2626]";
+  if (normalizedAmount.startsWith("-")) {
+    return "text-[#DC2626]";
+  }
+
+  return amountColor ?? "text-black";
 };
 
 export function Home({
@@ -140,6 +153,7 @@ export function Home({
   onSeeAllTransactions,
   onSeeAllCuotas,
 }: HomeProps) {
+  const { items: accounts } = useAccounts();
   const {
     items: transactionItems,
     isLoading: isTransactionsLoading,
@@ -168,6 +182,46 @@ export function Home({
   const monthlyPendingInstallments = useMemo(
     () => getPendingInstallmentsTotalForMonth(cuotaItems),
     [cuotaItems],
+  );
+  const monthlyBalanceByAccountId = useMemo(() => {
+    const map = new Map<string, { income: number; expense: number; net: number }>();
+    const monthWindow = getCurrentMonthWindow();
+
+    transactionItems.forEach((transaction) => {
+      const transactionDate = getTransactionDateForMonthBalance(transaction);
+      if (!transactionDate) {
+        return;
+      }
+
+      if (
+        transactionDate < monthWindow.start ||
+        transactionDate >= monthWindow.end
+      ) {
+        return;
+      }
+
+      const amount = parseSignedAmount(transaction.amount);
+      const current = map.get(transaction.accountId) ?? {
+        income: 0,
+        expense: 0,
+        net: 0,
+      };
+
+      if (amount > 0) {
+        current.income += amount;
+      } else if (amount < 0) {
+        current.expense += Math.abs(amount);
+      }
+
+      current.net = current.income - current.expense;
+      map.set(transaction.accountId, current);
+    });
+
+    return map;
+  }, [transactionItems]);
+  const totalAccountsBalance = useMemo(
+    () => accounts.reduce((sum, account) => sum + account.balance, 0),
+    [accounts],
   );
 
   const recentTransactions = useMemo<HomeTransactionRow[]>(() => {
@@ -257,7 +311,7 @@ export function Home({
       }));
   }, [cuotaItems, cuotas]);
 
-  const displayedTotalBalance = totalBalance ?? formatCurrency(monthlyBalance.net);
+  const displayedTotalBalance = totalBalance ?? formatCurrency(totalAccountsBalance);
   const displayedIncomeValue = incomeValue ?? formatCurrency(monthlyBalance.income);
   const displayedExpenseValue = expenseValue ?? formatCurrency(monthlyBalance.expense);
   const displayedSpendingTotal = spendingTotal ?? formatCurrency(monthlyBalance.expense);
@@ -265,6 +319,57 @@ export function Home({
   const pendingInstallmentsLabel = isCuotasLoading && !cuotas && cuotaItems.length === 0
     ? loadingLabel
     : formatCurrency(monthlyPendingInstallments);
+  const balanceSlides = useMemo<HomeBalanceSlide[]>(() => {
+    const slides: HomeBalanceSlide[] = [
+      {
+        id: "total-balance",
+        label: "TOTAL BALANCE",
+        balance: displayedTotalBalance,
+        incomeValue: displayedIncomeValue,
+        expenseValue: displayedExpenseValue,
+      },
+    ];
+
+    accounts.forEach((account) => {
+      const accountBalance = monthlyBalanceByAccountId.get(account.id);
+      slides.push({
+        id: account.id,
+        label: account.name,
+        balance: formatCurrency(account.balance),
+        incomeValue: formatCurrency(accountBalance?.income ?? 0),
+        expenseValue: formatCurrency(accountBalance?.expense ?? 0),
+      });
+    });
+
+    return slides;
+  }, [
+    accounts,
+    displayedExpenseValue,
+    displayedIncomeValue,
+    displayedTotalBalance,
+    monthlyBalanceByAccountId,
+  ]);
+  const [activeBalanceSlide, setActiveBalanceSlide] = useState<number>(activeDot);
+
+  useEffect(() => {
+    setActiveBalanceSlide((current) => {
+      const maxIndex = Math.max(0, balanceSlides.length - 1);
+      if (current > maxIndex) {
+        return maxIndex;
+      }
+
+      if (current < 0) {
+        return 0;
+      }
+
+      return current;
+    });
+  }, [balanceSlides.length]);
+
+  useEffect(() => {
+    const maxIndex = Math.max(0, balanceSlides.length - 1);
+    setActiveBalanceSlide(Math.max(0, Math.min(activeDot, maxIndex)));
+  }, [activeDot, balanceSlides.length]);
 
   return (
     <div className="flex flex-col h-full w-full bg-white">
@@ -288,19 +393,42 @@ export function Home({
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="flex flex-col gap-8 px-5 pb-5">
-          <HeroBalance
-            balance={displayedTotalBalance}
-            incomeLabel={incomeLabel}
-            incomeValue={displayedIncomeValue}
-            expenseLabel={expenseLabel}
-            expenseValue={displayedExpenseValue}
-            activeDot={activeDot}
-          />
+        <div className="flex flex-col gap-4 px-5 pb-5">
+          <div className="rounded-[24px] bg-[#F4F4F5] p-4">
+            <div
+              className="flex overflow-x-auto snap-x snap-mandatory"
+              onScroll={(event) => {
+                const { scrollLeft, clientWidth } = event.currentTarget;
+                if (clientWidth <= 0) {
+                  return;
+                }
+
+                const nextIndex = Math.round(scrollLeft / clientWidth);
+                const maxIndex = Math.max(0, balanceSlides.length - 1);
+                setActiveBalanceSlide(Math.max(0, Math.min(nextIndex, maxIndex)));
+              }}
+            >
+              {balanceSlides.map((slide) => (
+                <div key={slide.id} className="w-full shrink-0 snap-center">
+                  <HeroBalance
+                    label={slide.label}
+                    balance={slide.balance}
+                    incomeLabel={incomeLabel}
+                    incomeValue={slide.incomeValue}
+                    expenseLabel={expenseLabel}
+                    expenseValue={slide.expenseValue}
+                    activeDot={activeBalanceSlide}
+                    totalDots={balanceSlides.length}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
 
           <CardSection
             title={recentTitle}
             titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
+            className="rounded-[24px] bg-[#F4F4F5] p-4"
             action={
               <button
                 type="button"
@@ -350,6 +478,7 @@ export function Home({
           <CardSection
             title={spendingTitle}
             titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
+            className="rounded-[24px] bg-[#F4F4F5] p-4"
             action={
               <div className="flex flex-col items-end">
                 <span className="text-xl font-light text-[#71717A] font-['Outfit']">
@@ -382,6 +511,7 @@ export function Home({
           <CardSection
             title={goalsTitle}
             titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
+            className="rounded-[24px] bg-[#F4F4F5] p-4"
           >
             <div className="flex gap-3 overflow-x-auto">
               {goals.map((goal) => (
@@ -416,6 +546,7 @@ export function Home({
           <CardSection
             title={cuotasTitle}
             titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
+            className="rounded-[24px] bg-[#F4F4F5] p-4"
             action={
               <button
                 type="button"

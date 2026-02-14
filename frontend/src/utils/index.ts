@@ -10,6 +10,10 @@ export {
   isCuotaActiveInMonth,
 } from "./monthlyCuotaImpact";
 export {
+  LocalStorageAccountsRepository,
+  accountsRepository,
+} from "./localStorageAccountsRepository";
+export {
   LocalStorageAppSettingsRepository,
   appSettingsRepository,
 } from "./localStorageAppSettingsRepository";
@@ -41,6 +45,12 @@ export type {
   MonthWindow,
   MonthlyBalance,
 } from "./monthlyBalance";
+export type {
+  AccountItem,
+  AccountsRepository,
+  CreateAccountInput,
+  UpdateAccountPatch,
+} from "./accountsRepository";
 export type {
   AppSettingsItem,
   AppSettingsRepository,

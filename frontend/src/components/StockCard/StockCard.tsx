@@ -40,14 +40,14 @@ export function StockCard({
 
   const content = (
     <>
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center justify-center w-[44px] h-[44px] rounded-xl ${tickerBg}`}>
+      <div className="flex min-w-0 items-center justify-between w-full gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className={`flex shrink-0 items-center justify-center w-[44px] h-[44px] rounded-xl ${tickerBg}`}>
             <span className={`text-[10px] font-bold font-['Outfit'] ${tickerTextColor}`}>{ticker}</span>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <span className={nameClassName}>{name}</span>
-            <span className={exchangeClassName}>{exchange}</span>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className={`block truncate ${nameClassName}`}>{name}</span>
+            <span className={`block truncate ${exchangeClassName}`}>{exchange}</span>
           </div>
         </div>
         <TextBadge
@@ -58,6 +58,7 @@ export function StockCard({
           padding="px-2.5 py-1.5"
           fontSize="text-xs"
           fontWeight="font-semibold"
+          className="max-w-[108px] shrink-0"
         />
       </div>
 
