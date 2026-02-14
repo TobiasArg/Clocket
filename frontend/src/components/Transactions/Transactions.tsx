@@ -555,7 +555,7 @@ export function Transactions({
                   onClick={() => setEditingAmountSign("-")}
                   className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
                     editingAmountSign === "-"
-                      ? "bg-black text-white"
+                      ? "bg-[#E4E4E7] text-[#18181B]"
                       : "bg-white text-[#52525B]"
                   }`}
                 >
@@ -566,7 +566,7 @@ export function Transactions({
                   onClick={() => setEditingAmountSign("+")}
                   className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
                     editingAmountSign === "+"
-                      ? "bg-black text-white"
+                      ? "bg-[#E4E4E7] text-[#18181B]"
                       : "bg-white text-[#52525B]"
                   }`}
                 >
@@ -674,9 +674,9 @@ export function Transactions({
               <ActionButton
                 icon={editorMode === "create" ? "plus" : "check"}
                 label={editorMode === "create" ? quickAddSubmitLabel : editSubmitLabel}
-                iconColor="text-white"
-                labelColor="text-white"
-                bg={isFormValid && !isLoading ? "bg-black" : "bg-[#A1A1AA]"}
+                iconColor="text-[#18181B]"
+                labelColor="text-[#18181B]"
+                bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"}
                 padding="px-4 py-3"
                 className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
                 onClick={() => {
@@ -713,7 +713,7 @@ export function Transactions({
                           onClick={() => {
                             void handleDelete();
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-black text-xs font-medium text-white"
+                          className="px-3 py-1.5 rounded-lg bg-[#E4E4E7] text-xs font-medium text-[#18181B]"
                         >
                           {deleteConfirmLabel}
                         </button>

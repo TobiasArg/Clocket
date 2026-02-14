@@ -182,9 +182,9 @@ export function Accounts({
               <ActionButton
                 icon="plus"
                 label={quickAddSubmitLabel}
-                iconColor="text-white"
-                labelColor="text-white"
-                bg={isFormValid && !isLoading ? "bg-black" : "bg-[#A1A1AA]"}
+                iconColor="text-[#18181B]"
+                labelColor="text-[#18181B]"
+                bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"}
                 padding="px-4 py-3"
                 className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
                 onClick={() => {

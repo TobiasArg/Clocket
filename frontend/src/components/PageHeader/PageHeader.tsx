@@ -7,6 +7,9 @@ export interface PageHeaderProps {
   onBackClick?: () => void;
   onActionClick?: () => void;
   actionIcon?: string;
+  actionAriaLabel?: string;
+  actionButtonClassName?: string;
+  actionIconClassName?: string;
 }
 
 export function PageHeader({
@@ -15,6 +18,9 @@ export function PageHeader({
   onBackClick,
   onActionClick,
   actionIcon = "plus",
+  actionAriaLabel,
+  actionButtonClassName = "bg-[#F4F4F5] border border-[#E4E4E7]",
+  actionIconClassName = "text-[#3F3F46]",
 }: PageHeaderProps) {
   return (
     <div className="flex min-w-0 items-center justify-between px-5 py-4">
@@ -39,10 +45,10 @@ export function PageHeader({
         <button
           type="button"
           onClick={onActionClick}
-          className="flex shrink-0 items-center justify-center w-[44px] h-[44px] rounded-full bg-black"
-          aria-label={actionIcon === "plus" ? "Agregar" : actionIcon}
+          className={`flex shrink-0 items-center justify-center w-[44px] h-[44px] rounded-full ${actionButtonClassName}`}
+          aria-label={actionAriaLabel ?? (actionIcon === "plus" ? "Agregar" : actionIcon)}
         >
-          <PhosphorIcon name={actionIcon} className="text-white" />
+          <PhosphorIcon name={actionIcon} className={actionIconClassName} />
         </button>
       )}
     </div>

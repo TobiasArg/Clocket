@@ -42,15 +42,25 @@ export function More({
   onNavItemClick,
 }: MoreProps) {
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full w-full bg-[#FAFAFA]">
       <PageHeader
         title={headerTitle}
         avatarInitials={avatarInitials}
         onActionClick={onCloseClick}
-        actionIcon="x"
+        actionIcon="sign-out"
+        actionAriaLabel="Salir"
+        actionButtonClassName="bg-[#F4F4F5] border border-[#E4E4E7]"
+        actionIconClassName="text-[#3F3F46]"
       />
       <div className="flex-1 overflow-auto px-5 py-8">
-        <OptionGrid rows={gridRows} onOptionClick={onOptionClick} />
+        <OptionGrid
+          rows={gridRows}
+          onOptionClick={onOptionClick}
+          buttonBg="bg-white border border-[#E4E4E7]"
+          iconColor="text-[#3F3F46]"
+          labelClassName="text-base font-semibold text-[#27272A] font-['Outfit']"
+          className="rounded-3xl"
+        />
       </div>
       <BottomNavigation items={navItems} onItemClick={onNavItemClick} />
     </div>

@@ -204,9 +204,9 @@ export function Categories({
               <ActionButton
                 icon="plus"
                 label={quickAddSubmitLabel}
-                iconColor="text-white"
-                labelColor="text-white"
-                bg={isCategoryNameValid && !isLoading ? "bg-black" : "bg-[#A1A1AA]"}
+                iconColor="text-[#18181B]"
+                labelColor="text-[#18181B]"
+                bg={isCategoryNameValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"}
                 padding="px-4 py-3"
                 className={isCategoryNameValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
                 onClick={() => {
@@ -324,7 +324,7 @@ export function Categories({
                               onClick={() => {
                                 void handleDeleteCategory(category);
                               }}
-                              className="px-3 py-1.5 rounded-lg bg-black text-xs font-medium text-white"
+                              className="px-3 py-1.5 rounded-lg bg-[#E4E4E7] text-xs font-medium text-[#18181B]"
                             >
                               {deleteConfirmLabel}
                             </button>
