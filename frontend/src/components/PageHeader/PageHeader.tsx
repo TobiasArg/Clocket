@@ -1,5 +1,5 @@
-import { Avatar } from "@/components";
-import { PhosphorIcon } from "@/components";
+import { Avatar } from "../Avatar/Avatar";
+import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
 export interface PageHeaderProps {
   title: string;

@@ -1,8 +1,5 @@
 import type { DonutSegment } from "@/types";
-import { Dot } from "@/components";
-
-const DONUT_RADIUS = 40;
-const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 export interface DonutChartProps {
   segments: DonutSegment[];
@@ -31,41 +28,41 @@ export function DonutChart({
   legendValueClassName = "text-xs font-medium text-[#71717A]",
   className = "",
 }: DonutChartProps) {
-  let cumulativeOffset = 0;
-  const arcs = segments.map((seg) => {
-    const arcLength = (seg.percentage / 100) * DONUT_CIRCUMFERENCE;
-    const gapLength = DONUT_CIRCUMFERENCE - arcLength;
-    const offset = -cumulativeOffset;
-    cumulativeOffset += arcLength;
-    return { ...seg, arcLength, gapLength, offset };
-  });
+  const centerBgClassName = bgFill === "#FFFFFF" ? "bg-white" : "bg-[#F4F4F5]";
+  const hasPositivePercentages = segments.some((segment) => segment.percentage > 0);
+  const normalizedSegments = hasPositivePercentages
+    ? segments.filter((segment) => segment.percentage > 0)
+    : segments.map((segment) => ({
+      ...segment,
+      percentage: segments.length > 0 ? Math.round(100 / segments.length) : 0,
+    }));
 
   return (
     <div className={`flex items-center gap-5 w-full ${className}`}>
       <div className={`relative ${size} shrink-0`}>
-        <svg
-          viewBox="0 0 100 100"
-          className="w-full h-full"
-          role="img"
-          aria-label="Distribución de gastos"
-        >
-          {arcs.map((arc) => (
-            <circle
-              key={arc.name}
-              cx="50"
-              cy="50"
-              r={DONUT_RADIUS}
-              fill="none"
-              stroke={arc.color}
-              strokeWidth="20"
-              strokeDasharray={`${arc.arcLength} ${arc.gapLength}`}
-              strokeDashoffset={arc.offset}
-            />
-          ))}
-          <circle cx="50" cy="50" r="30" fill={bgFill} />
-        </svg>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={normalizedSegments}
+              dataKey="percentage"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius="58%"
+              outerRadius="100%"
+              paddingAngle={2}
+              stroke={bgFill}
+              strokeWidth={2}
+              isAnimationActive={false}
+            >
+              {normalizedSegments.map((segment) => (
+                <Cell key={segment.name} fill={segment.color} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
         {(centerValue || centerLabel) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className={`absolute inset-0 flex flex-col items-center justify-center rounded-full ${centerBgClassName}`}>
             {centerValue && <span className={centerValueClassName}>{centerValue}</span>}
             {centerLabel && <span className={centerLabelClassName}>{centerLabel}</span>}
           </div>
@@ -74,13 +71,15 @@ export function DonutChart({
 
       {showLegend && (
         <div className="flex flex-col gap-2 flex-1">
-          {segments.map((seg) => (
-            <div key={seg.name} className="flex items-center justify-between">
+          {segments.map((segment) => (
+            <div key={segment.name} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Dot color={`bg-[${seg.color}]`} size="w-2.5 h-2.5" />
-                <span className={legendNameClassName}>{seg.name}</span>
+                <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" aria-hidden="true">
+                  <circle cx="5" cy="5" r="5" fill={segment.color} />
+                </svg>
+                <span className={legendNameClassName}>{segment.name}</span>
               </div>
-              <span className={legendValueClassName}>{seg.value}</span>
+              <span className={legendValueClassName}>{segment.value}</span>
             </div>
           ))}
         </div>

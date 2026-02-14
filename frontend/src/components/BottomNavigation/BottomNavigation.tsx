@@ -1,5 +1,5 @@
 import type { NavItem } from "@/types";
-import { PhosphorIcon } from "@/components";
+import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
 export interface BottomNavigationProps {
   items: NavItem[];

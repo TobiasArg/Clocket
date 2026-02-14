@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import {
   Accounts,
   BudgetDetail,
@@ -11,7 +11,6 @@ import {
   More,
   Plans,
   Settings,
-  Statistics,
   Transactions,
 } from "@/pages";
 
@@ -78,6 +77,11 @@ const resolvePathFromLocation = (): AppPath => {
 
   return DEFAULT_PATH;
 };
+
+const StatisticsLazy = lazy(async () => {
+  const module = await import("./pages/Statistics/Statistics");
+  return { default: module.Statistics };
+});
 
 export function App() {
   const [currentPath, setCurrentPath] = useState<AppPath>(() =>
@@ -156,7 +160,19 @@ export function App() {
       case "/settings":
         return <Settings onBackClick={() => navigateTo("/more")} />;
       case "/statistics":
-        return <Statistics />;
+        return (
+          <Suspense
+            fallback={(
+              <div className="flex h-full w-full items-center justify-center bg-white px-5">
+                <span className="text-sm font-medium text-[#71717A]">
+                  Cargando estadísticas...
+                </span>
+              </div>
+            )}
+          >
+            <StatisticsLazy />
+          </Suspense>
+        );
       case "/more":
         return <More onCloseClick={() => navigateTo("/home")} />;
       case "/home-desktop":

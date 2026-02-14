@@ -1,0 +1,236 @@
+import { useMemo } from "react";
+import type {
+  CategoryBreakdown,
+  DonutSegment,
+} from "@/types";
+import { useCategories } from "./useCategories";
+import { useTransactions } from "./useTransactions";
+import {
+  formatCurrency,
+  getCurrentMonthWindow,
+  getMonthlyBalance,
+  getTransactionDateForMonthBalance,
+} from "@/utils";
+
+export interface StatisticsTrendPoint {
+  label: string;
+  value: number;
+}
+
+export interface UseStatisticsPageModelOptions {
+  categories?: CategoryBreakdown[];
+  categoryTotal?: string;
+  savingsBadge?: string;
+  savingsGoalValue?: string;
+  savingsValue?: string;
+  totalExpenseValue?: string;
+  totalIncomeValue?: string;
+}
+
+export interface UseStatisticsPageModelResult {
+  categoryRows: CategoryBreakdown[];
+  donutSegments: DonutSegment[];
+  isLoading: boolean;
+  hasError: boolean;
+  monthlyBalance: ReturnType<typeof getMonthlyBalance>;
+  monthlyGoal: number;
+  monthlyTransactionsCount: number;
+  resolvedCategoryTotal: string;
+  resolvedSavingsBadge: string;
+  resolvedSavingsGoalValue: string;
+  resolvedSavingsValue: string;
+  resolvedTotalExpenseValue: string;
+  resolvedTotalIncomeValue: string;
+  trendPoints: StatisticsTrendPoint[];
+}
+
+const DONUT_COLORS = ["#DC2626", "#2563EB", "#EA580C", "#71717A"] as const;
+
+const parseSignedAmount = (value: string): number => {
+  const normalized = value.replace(/[^0-9+.-]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const clampPercent = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(value)));
+};
+
+const parsePercentFromLabel = (value: string): number => {
+  const match = value.match(/\((\d+)%\)/);
+  if (!match) {
+    return 0;
+  }
+
+  return Number(match[1]);
+};
+
+const buildMonthKey = (date: Date): string => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const buildMonthLabel = (date: Date): string => {
+  return new Intl.DateTimeFormat("es-ES", { month: "short" })
+    .format(date)
+    .replace(".", "")
+    .toUpperCase();
+};
+
+export const useStatisticsPageModel = (
+  options: UseStatisticsPageModelOptions = {},
+): UseStatisticsPageModelResult => {
+  const {
+    categories,
+    categoryTotal,
+    savingsBadge,
+    savingsGoalValue,
+    savingsValue,
+    totalExpenseValue,
+    totalIncomeValue,
+  } = options;
+
+  const { items: transactions, isLoading, error } = useTransactions();
+  const { items: categoriesData } = useCategories();
+
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    categoriesData.forEach((category) => {
+      map.set(category.id, category.name);
+    });
+    return map;
+  }, [categoriesData]);
+
+  const monthWindow = useMemo(() => getCurrentMonthWindow(), []);
+
+  const monthlyTransactions = useMemo(
+    () => transactions.filter((transaction) => {
+      const transactionDate = getTransactionDateForMonthBalance(transaction);
+      if (!transactionDate) {
+        return false;
+      }
+
+      return transactionDate >= monthWindow.start && transactionDate < monthWindow.end;
+    }),
+    [monthWindow.end, monthWindow.start, transactions],
+  );
+
+  const monthlyBalance = useMemo(
+    () => getMonthlyBalance(transactions),
+    [transactions],
+  );
+
+  const computedCategoryRows = useMemo<CategoryBreakdown[]>(() => {
+    const grouped = new Map<string, number>();
+
+    monthlyTransactions.forEach((transaction) => {
+      const amount = parseSignedAmount(transaction.amount);
+      if (amount >= 0) {
+        return;
+      }
+
+      const categoryName = transaction.categoryId
+        ? (categoryNameById.get(transaction.categoryId) ?? "Uncategorized")
+        : (transaction.category || "Uncategorized");
+      grouped.set(categoryName, (grouped.get(categoryName) ?? 0) + Math.abs(amount));
+    });
+
+    const total = Array.from(grouped.values()).reduce((sum, value) => sum + value, 0);
+    if (total <= 0) {
+      return [];
+    }
+
+    return Array.from(grouped.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 4)
+      .map(([name, value], index) => {
+        const percent = clampPercent((value / total) * 100);
+        return {
+          dotColor: `bg-[${DONUT_COLORS[index % DONUT_COLORS.length]}]`,
+          name,
+          value: `${formatCurrency(value)} (${percent}%)`,
+        };
+      });
+  }, [categoryNameById, monthlyTransactions]);
+
+  const categoryRows = categories ?? computedCategoryRows;
+
+  const donutSegments = useMemo<DonutSegment[]>(() => {
+    return categoryRows.map((category, index) => ({
+      color: DONUT_COLORS[index % DONUT_COLORS.length],
+      name: category.name,
+      value: category.value,
+      percentage: parsePercentFromLabel(category.value),
+    }));
+  }, [categoryRows]);
+
+  const trendPoints = useMemo<StatisticsTrendPoint[]>(() => {
+    const now = new Date();
+    const months = Array.from({ length: 6 }).map((_, index) => {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+      return {
+        key: buildMonthKey(monthDate),
+        label: buildMonthLabel(monthDate),
+        income: 0,
+        expense: 0,
+      };
+    });
+
+    const monthByKey = new Map(months.map((month) => [month.key, month]));
+
+    transactions.forEach((transaction) => {
+      const transactionDate = getTransactionDateForMonthBalance(transaction);
+      if (!transactionDate) {
+        return;
+      }
+
+      const key = buildMonthKey(transactionDate);
+      const month = monthByKey.get(key);
+      if (!month) {
+        return;
+      }
+
+      const amount = parseSignedAmount(transaction.amount);
+      if (amount > 0) {
+        month.income += amount;
+      } else if (amount < 0) {
+        month.expense += Math.abs(amount);
+      }
+    });
+
+    return months.map((month) => ({
+      label: month.label,
+      value: month.income - month.expense,
+    }));
+  }, [transactions]);
+
+  const net = monthlyBalance.net;
+  const monthlyGoal = Math.max(0, monthlyBalance.income * 0.6);
+  const savingsPercent = monthlyGoal > 0
+    ? clampPercent((net / monthlyGoal) * 100)
+    : 0;
+
+  return {
+    categoryRows,
+    donutSegments,
+    isLoading,
+    hasError: Boolean(error),
+    monthlyBalance,
+    monthlyGoal,
+    monthlyTransactionsCount: monthlyTransactions.length,
+    resolvedCategoryTotal: categoryTotal ?? formatCurrency(monthlyBalance.expense),
+    resolvedSavingsBadge:
+      savingsBadge ?? `${net >= 0 ? "+" : ""}${savingsPercent}%`,
+    resolvedSavingsGoalValue:
+      savingsGoalValue ?? formatCurrency(monthlyGoal),
+    resolvedSavingsValue: savingsValue ?? formatCurrency(net),
+    resolvedTotalExpenseValue:
+      totalExpenseValue ?? formatCurrency(monthlyBalance.expense),
+    resolvedTotalIncomeValue:
+      totalIncomeValue ?? formatCurrency(monthlyBalance.income),
+    trendPoints,
+  };
+};

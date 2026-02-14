@@ -58,8 +58,12 @@ export type {
 } from "./plans";
 export { Settings } from "./settings";
 export type { SettingsProps } from "./settings";
-export { Statistics } from "./statistics";
-export type { StatisticsProps } from "./statistics";
+export { useStatisticsPageModel } from "./statistics";
+export type {
+  StatisticsTrendPoint,
+  UseStatisticsPageModelOptions,
+  UseStatisticsPageModelResult,
+} from "./statistics";
 export { useTransactionsPageModel } from "./transactions";
 export type {
   AmountSign,

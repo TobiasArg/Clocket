@@ -102,3 +102,9 @@ export type {
   UseGoalsPageModelOptions,
   UseGoalsPageModelResult,
 } from "./useGoalsPageModel";
+export { useStatisticsPageModel } from "./useStatisticsPageModel";
+export type {
+  StatisticsTrendPoint,
+  UseStatisticsPageModelOptions,
+  UseStatisticsPageModelResult,
+} from "./useStatisticsPageModel";
