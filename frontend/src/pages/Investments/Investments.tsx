@@ -1,8 +1,179 @@
-import { Investments as InvestmentsView } from "@/modules/investments";
-import type { InvestmentsProps } from "@/modules/investments";
+import type { NavItem } from "@/modules/investments";
+import {
+  Avatar,
+  BottomNavigation,
+  IconBadge,
+  InvestmentListWidget,
+  InvestmentQuickAddWidget,
+  InvestmentSummaryWidget,
+  useInvestmentsPageModel,
+} from "@/modules/investments";
 
-export type { InvestmentsProps } from "@/modules/investments";
+export interface InvestmentsProps {
+  avatarInitials?: string;
+  avatarBg?: string;
+  headerTitle?: string;
+  addButtonBg?: string;
+  summaryTitle?: string;
+  totalLabel?: string;
+  gainLabel?: string;
+  listTitle?: string;
+  quickAddTitle?: string;
+  quickAddTickerLabel?: string;
+  quickAddNameLabel?: string;
+  quickAddSharesLabel?: string;
+  quickAddCostBasisLabel?: string;
+  quickAddCurrentPriceLabel?: string;
+  quickAddSubmitLabel?: string;
+  loadingLabel?: string;
+  emptyTitle?: string;
+  emptyHint?: string;
+  errorLabel?: string;
+  deleteActionLabel?: string;
+  navItems?: NavItem[];
+  onAddClick?: () => void;
+  onStockClick?: (index: number) => void;
+  onNavItemClick?: (index: number) => void;
+}
 
-export function Investments(props: InvestmentsProps) {
-  return <InvestmentsView {...props} />;
+export function Investments({
+  avatarInitials = "JS",
+  avatarBg = "bg-[#10B981]",
+  headerTitle = "Inversiones",
+  addButtonBg = "bg-[#10B981]",
+  summaryTitle = "Resumen del Portfolio",
+  totalLabel = "Valor Total",
+  gainLabel = "Ganancia/Pérdida",
+  listTitle = "Mis Acciones",
+  quickAddTitle = "Nueva inversión",
+  quickAddTickerLabel = "Ticker",
+  quickAddNameLabel = "Nombre",
+  quickAddSharesLabel = "Cantidad",
+  quickAddCostBasisLabel = "Costo promedio",
+  quickAddCurrentPriceLabel = "Precio actual",
+  quickAddSubmitLabel = "Guardar inversión",
+  loadingLabel = "Cargando inversiones...",
+  emptyTitle = "No hay inversiones",
+  emptyHint = "Agrega tu primera posición para seguir tu portfolio.",
+  errorLabel = "No pudimos cargar inversiones. Intenta nuevamente.",
+  deleteActionLabel = "Delete",
+  navItems = [
+    { icon: "house", label: "Home", to: "/home" },
+    { icon: "wallet", label: "Budgets", to: "/budgets" },
+    { icon: "chart-pie-slice", label: "Statistics", to: "/statistics" },
+    { icon: "trend-up", label: "Inversiones", active: true, to: "/investments" },
+    { icon: "dots-three-outline", label: "Más", to: "/more" },
+  ],
+  onAddClick,
+  onStockClick,
+  onNavItemClick,
+}: InvestmentsProps) {
+  const {
+    cardItems,
+    currentPriceInput,
+    costBasisInput,
+    error,
+    handleCreate,
+    handleHeaderAction,
+    handleRemove,
+    isEditorOpen,
+    isFormValid,
+    isLoading,
+    nameInput,
+    setCostBasisInput,
+    setCurrentPriceInput,
+    setNameInput,
+    setSharesInput,
+    setTickerInput,
+    sharesInput,
+    showValidation,
+    summary,
+    summaryChange,
+    tickerInput,
+  } = useInvestmentsPageModel({ onAddClick });
+
+  return (
+    <div className="flex flex-col h-full w-full bg-[#F5F5F5]">
+      <div className="flex items-center justify-between px-5 py-4 bg-white">
+        <div className="flex items-center gap-3">
+          <Avatar
+            initials={avatarInitials}
+            bg={avatarBg}
+            size="w-[40px] h-[40px]"
+            textSize="text-sm"
+            className="rounded-[20px]"
+          />
+          <span className="text-xl font-semibold text-[#18181B] font-['Outfit']">{headerTitle}</span>
+        </div>
+        <button type="button" onClick={handleHeaderAction} aria-label="Agregar inversión">
+          <IconBadge
+            icon={isEditorOpen ? "x" : "plus"}
+            bg={addButtonBg}
+            size="w-[40px] h-[40px]"
+            rounded="rounded-[20px]"
+          />
+        </button>
+      </div>
+
+      <InvestmentQuickAddWidget
+        isOpen={isEditorOpen}
+        quickAddTitle={quickAddTitle}
+        quickAddTickerLabel={quickAddTickerLabel}
+        quickAddNameLabel={quickAddNameLabel}
+        quickAddSharesLabel={quickAddSharesLabel}
+        quickAddCostBasisLabel={quickAddCostBasisLabel}
+        quickAddCurrentPriceLabel={quickAddCurrentPriceLabel}
+        quickAddSubmitLabel={quickAddSubmitLabel}
+        tickerInput={tickerInput}
+        nameInput={nameInput}
+        sharesInput={sharesInput}
+        costBasisInput={costBasisInput}
+        currentPriceInput={currentPriceInput}
+        showValidation={showValidation}
+        isFormValid={isFormValid}
+        isLoading={isLoading}
+        onTickerChange={setTickerInput}
+        onNameChange={setNameInput}
+        onSharesChange={setSharesInput}
+        onCostBasisChange={setCostBasisInput}
+        onCurrentPriceChange={setCurrentPriceInput}
+        onSubmit={() => {
+          void handleCreate();
+        }}
+      />
+
+      <InvestmentSummaryWidget
+        summaryTitle={summaryTitle}
+        totalLabel={totalLabel}
+        totalValue={summary.current}
+        gainLabel={gainLabel}
+        gainAmount={summary.gainAmount}
+        summaryChange={summaryChange}
+      />
+
+      <div className="flex-1 overflow-auto px-5 py-4">
+        <InvestmentListWidget
+          listTitle={listTitle}
+          loadingLabel={loadingLabel}
+          errorLabel={errorLabel}
+          emptyTitle={emptyTitle}
+          emptyHint={emptyHint}
+          isLoading={isLoading}
+          errorMessage={error}
+          deleteActionLabel={deleteActionLabel}
+          items={cardItems}
+          onStockClick={onStockClick}
+          onDelete={(id) => {
+            void handleRemove(id);
+          }}
+        />
+      </div>
+
+      <BottomNavigation
+        items={navItems}
+        activeColor="text-[#10B981]"
+        onItemClick={onNavItemClick}
+      />
+    </div>
+  );
 }
