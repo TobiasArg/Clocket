@@ -38,3 +38,18 @@ export type {
   UseTransactionsOptions,
   UseTransactionsResult,
 } from "./useTransactions";
+export { useHomePageModel } from "./useHomePageModel";
+export type {
+  HomeBalanceSlide,
+  HomeTransactionRow,
+  UseHomePageModelOptions,
+  UseHomePageModelResult,
+} from "./useHomePageModel";
+export { useBudgetsPageModel } from "./useBudgetsPageModel";
+export type {
+  BudgetCategoryMeta,
+  BudgetCategoryOption,
+  BudgetsSummary,
+  UseBudgetsPageModelOptions,
+  UseBudgetsPageModelResult,
+} from "./useBudgetsPageModel";

@@ -6,12 +6,21 @@ export { Avatar } from "./Avatar/Avatar";
 export type { AvatarProps } from "./Avatar/Avatar";
 export { BottomNavigation } from "./BottomNavigation/BottomNavigation";
 export type { BottomNavigationProps } from "./BottomNavigation/BottomNavigation";
+export { BalanceWidget } from "./BalanceWidget/BalanceWidget";
+export type {
+  BalanceWidgetProps,
+  BalanceWidgetSlide,
+} from "./BalanceWidget/BalanceWidget";
+export { BudgetListWidget } from "./BudgetListWidget/BudgetListWidget";
+export type { BudgetListWidgetProps } from "./BudgetListWidget/BudgetListWidget";
+export { BudgetQuickAddWidget } from "./BudgetQuickAddWidget/BudgetQuickAddWidget";
+export type { BudgetQuickAddWidgetProps } from "./BudgetQuickAddWidget/BudgetQuickAddWidget";
+export { BudgetSummaryWidget } from "./BudgetSummaryWidget/BudgetSummaryWidget";
+export type { BudgetSummaryWidgetProps } from "./BudgetSummaryWidget/BudgetSummaryWidget";
 export { BudgetDetail } from "./BudgetDetail/BudgetDetail";
 export type { BudgetDetailProps } from "./BudgetDetail/BudgetDetail";
 export { BudgetHero } from "./BudgetHero/BudgetHero";
 export type { BudgetHeroProps } from "./BudgetHero/BudgetHero";
-export { Budgets } from "./Budgets/Budgets";
-export type { BudgetsProps } from "./Budgets/Budgets";
 export { CardSection } from "./CardSection/CardSection";
 export type { CardSectionProps } from "./CardSection/CardSection";
 export { Categories } from "./Categories/Categories";
@@ -28,14 +37,16 @@ export { ExpandableListItem } from "./ExpandableListItem/ExpandableListItem";
 export type { ExpandableListItemProps } from "./ExpandableListItem/ExpandableListItem";
 export { Goals } from "./Goals/Goals";
 export type { GoalsProps } from "./Goals/Goals";
+export { GoalsWidget } from "./GoalsWidget/GoalsWidget";
+export type { GoalsWidgetProps } from "./GoalsWidget/GoalsWidget";
 export { HeroBalance } from "./HeroBalance/HeroBalance";
 export type { HeroBalanceProps } from "./HeroBalance/HeroBalance";
-export { Home } from "./Home/Home";
-export type { HomeProps } from "./Home/Home";
 export { HomeDesktop } from "./HomeDesktop/HomeDesktop";
 export type { HomeDesktopProps } from "./HomeDesktop/HomeDesktop";
 export { IconBadge } from "./IconBadge/IconBadge";
 export type { IconBadgeProps } from "./IconBadge/IconBadge";
+export { InstallmentPlansWidget } from "./InstallmentPlansWidget/InstallmentPlansWidget";
+export type { InstallmentPlansWidgetProps } from "./InstallmentPlansWidget/InstallmentPlansWidget";
 export { Investments } from "./Investments/Investments";
 export type { InvestmentsProps } from "./Investments/Investments";
 export { ListItemRow } from "./ListItemRow/ListItemRow";
@@ -58,6 +69,11 @@ export { ProgressCard } from "./ProgressCard/ProgressCard";
 export type { ProgressCardProps } from "./ProgressCard/ProgressCard";
 export { ProgressSection } from "./ProgressSection/ProgressSection";
 export type { ProgressSectionProps } from "./ProgressSection/ProgressSection";
+export { RecentTransactionsWidget } from "./RecentTransactionsWidget/RecentTransactionsWidget";
+export type {
+  RecentTransactionsWidgetProps,
+  RecentTransactionRow,
+} from "./RecentTransactionsWidget/RecentTransactionsWidget";
 export { Settings } from "./Settings/Settings";
 export type { SettingsProps } from "./Settings/Settings";
 export { SettingsGroup } from "./SettingsGroup/SettingsGroup";
@@ -66,6 +82,8 @@ export { SidebarNav } from "./SidebarNav/SidebarNav";
 export type { SidebarNavProps } from "./SidebarNav/SidebarNav";
 export { SpendingBar } from "./SpendingBar/SpendingBar";
 export type { SpendingBarProps } from "./SpendingBar/SpendingBar";
+export { SpendingInfoWidget } from "./SpendingInfoWidget/SpendingInfoWidget";
+export type { SpendingInfoWidgetProps } from "./SpendingInfoWidget/SpendingInfoWidget";
 export { StatDisplay } from "./StatDisplay/StatDisplay";
 export type { StatDisplayProps } from "./StatDisplay/StatDisplay";
 export { Statistics } from "./Statistics/Statistics";
