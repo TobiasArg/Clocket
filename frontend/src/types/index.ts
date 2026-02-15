@@ -231,6 +231,7 @@ export interface CuotaPlan {
   startMonth: string;
   paidInstallmentsCount: number;
   categoryId?: string;
+  subcategoryName?: string;
   createdAt: string;
   updatedAt: string;
 }

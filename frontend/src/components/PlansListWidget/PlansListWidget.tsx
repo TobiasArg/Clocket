@@ -3,6 +3,12 @@ import { formatCurrency, type CuotaPlanItem } from "@/utils";
 
 export interface PlansListWidgetProps {
   cuotaLabel?: string;
+  deleteActionLabel?: string;
+  deleteCancelLabel?: string;
+  deleteConfirmHint?: string;
+  deleteConfirmLabel?: string;
+  deleteConfirmPlanId?: string | null;
+  deleteConfirmTitle?: string;
   emptyHint?: string;
   emptyTitle?: string;
   errorLabel?: string;
@@ -11,6 +17,8 @@ export interface PlansListWidgetProps {
   items?: CuotaPlanItem[];
   loadingLabel?: string;
   markInstallmentAriaLabel?: string;
+  onDeleteConfirmPlanIdChange?: (value: string | null) => void;
+  onDeletePlan?: (id: string) => void;
   onMarkInstallmentPaid?: (id: string) => void;
   onPlanClick?: (index: number) => void;
   paidFeedbackPlanId?: string | null;
@@ -20,6 +28,12 @@ export interface PlansListWidgetProps {
 
 export function PlansListWidget({
   cuotaLabel = "Cuota mensual",
+  deleteActionLabel = "Delete",
+  deleteCancelLabel = "Cancel",
+  deleteConfirmHint = "This can’t be undone.",
+  deleteConfirmLabel = "Delete",
+  deleteConfirmPlanId = null,
+  deleteConfirmTitle = "Delete this plan?",
   emptyHint = "Agrega una cuota para ver el pendiente mensual.",
   emptyTitle = "No hay cuotas activas",
   errorLabel = "No pudimos cargar las cuotas. Intenta nuevamente.",
@@ -28,6 +42,8 @@ export function PlansListWidget({
   items = [],
   loadingLabel = "Cargando cuotas...",
   markInstallmentAriaLabel = "Marcar cuota como pagada",
+  onDeleteConfirmPlanIdChange,
+  onDeletePlan,
   onMarkInstallmentPaid,
   onPlanClick,
   paidFeedbackPlanId = null,
@@ -64,6 +80,7 @@ export function PlansListWidget({
               : "bg-black text-white hover:bg-[#27272A] active:scale-[0.98]";
         const isMarkInstallmentEnabled = !isPending && !isFinished;
         const isCardClickable = Boolean(onPlanClick);
+        const isDeleteConfirmOpen = deleteConfirmPlanId === cuota.id;
 
         return (
           <div
@@ -129,6 +146,47 @@ export function PlansListWidget({
                 gap="gap-0.5"
                 align="end"
               />
+            </div>
+
+            <div className="flex justify-end">
+              {!isDeleteConfirmOpen ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDeleteConfirmPlanIdChange?.(cuota.id);
+                  }}
+                  className="text-xs font-medium text-[#71717A]"
+                >
+                  {deleteActionLabel}
+                </button>
+              ) : (
+                <div
+                  className="rounded-xl bg-white px-3 py-3 flex flex-col gap-2 max-w-[280px]"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                >
+                  <span className="text-xs font-semibold text-black">{deleteConfirmTitle}</span>
+                  <span className="text-xs font-medium text-[#71717A]">{deleteConfirmHint}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onDeleteConfirmPlanIdChange?.(null)}
+                      className="px-3 py-1.5 rounded-lg bg-[#F4F4F5] text-xs font-medium text-[#52525B]"
+                    >
+                      {deleteCancelLabel}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDeletePlan?.(cuota.id)}
+                      className="px-3 py-1.5 rounded-lg bg-[#E4E4E7] text-xs font-medium text-[#18181B]"
+                    >
+                      {deleteConfirmLabel}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );

@@ -1,5 +1,13 @@
 import { ActionButton } from "@/components";
 
+const getCurrentDateInputValue = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export interface PlansQuickAddWidgetProps {
   creationDateErrorLabel?: string;
   creationDateInput?: string;
@@ -32,7 +40,7 @@ export interface PlansQuickAddWidgetProps {
 }
 
 export function PlansQuickAddWidget({
-  creationDateErrorLabel = "Usa formato YYYY-MM-DD.",
+  creationDateErrorLabel = "Usa una fecha válida que no sea futura.",
   creationDateInput = "",
   creationDateLabel = "Fecha de creación",
   installmentsCountInput = "",
@@ -128,6 +136,7 @@ export function PlansQuickAddWidget({
         </span>
         <input
           type="date"
+          max={getCurrentDateInputValue()}
           value={creationDateInput}
           onChange={(event) => onCreationDateChange?.(event.target.value)}
           className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"

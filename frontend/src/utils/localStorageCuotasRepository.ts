@@ -3,12 +3,32 @@ import type {
   CuotaPlanItem,
   CuotasRepository,
   UpdateCuotaPatch,
-} from "@/utils";
+} from "./cuotasRepository";
+import type { AccountItem } from "./accountsRepository";
+import type { CategoryItem } from "./categoriesRepository";
+import type { CreateTransactionInput, TransactionItem } from "./transactionsRepository";
+import { accountsRepository } from "./localStorageAccountsRepository";
+import { categoriesRepository } from "./localStorageCategoriesRepository";
+import { transactionsRepository } from "./localStorageTransactionsRepository";
 
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.cuotas";
 const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
-const YEAR_MONTH_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const YEAR_MONTH_DAY_CAPTURE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+const CREDIT_CARD_CATEGORY_NAME = "Tarjeta de Credito";
+const CREDIT_CARD_CATEGORY_ICON = "credit-card";
+const CREDIT_CARD_CATEGORY_ICON_BG = "bg-[#18181B]";
+const CREDIT_CARD_ACCOUNT_NAME = "Tarjeta de Credito";
+const CREDIT_CARD_TRANSACTION_ICON = "credit-card";
+const CREDIT_CARD_TRANSACTION_ICON_BG = "bg-[#18181B]";
+const CREDIT_CARD_TRANSACTION_AMOUNT_COLOR = "text-[#DC2626]";
+
+interface DateParts {
+  year: number;
+  month: number;
+  day: number;
+}
 
 interface CuotasStorageV1 {
   version: typeof STORAGE_VERSION;
@@ -24,6 +44,68 @@ const toYearMonth = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   return `${year}-${month}`;
+};
+
+const toLocalIsoDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getTodayDateParts = (): DateParts => {
+  const now = new Date();
+  return {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+  };
+};
+
+const compareDateParts = (left: DateParts, right: DateParts): number => {
+  if (left.year !== right.year) {
+    return left.year - right.year;
+  }
+
+  if (left.month !== right.month) {
+    return left.month - right.month;
+  }
+
+  return left.day - right.day;
+};
+
+const parseDatePartsFromIsoDateInput = (value: string): DateParts | null => {
+  const match = YEAR_MONTH_DAY_CAPTURE_PATTERN.exec(value.trim());
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (month < 1 || month > 12) {
+    return null;
+  }
+
+  const maxDay = new Date(year, month, 0).getDate();
+  if (day < 1 || day > maxDay) {
+    return null;
+  }
+
+  return { year, month, day };
+};
+
+const toDateParts = (date: Date): DateParts => {
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+  };
+};
+
+const getDaysInMonth = (year: number, monthIndex: number): number => {
+  return new Date(year, monthIndex + 1, 0).getDate();
 };
 
 const toCurrencyNumber = (value: number): number => {
@@ -43,6 +125,11 @@ const normalizeDescription = (value?: string): string | undefined => {
 const normalizeCategoryId = (value?: string): string | undefined => {
   const categoryId = value?.trim();
   return categoryId && categoryId.length > 0 ? categoryId : undefined;
+};
+
+const normalizeSubcategoryName = (value?: string): string | undefined => {
+  const subcategoryName = value?.trim();
+  return subcategoryName && subcategoryName.length > 0 ? subcategoryName : undefined;
 };
 
 const normalizeInstallmentsCount = (value: number): number => {
@@ -105,25 +192,26 @@ const normalizeStartMonth = (value?: string): string => {
   return raw;
 };
 
+const assertNotFutureDateParts = (parts: DateParts): void => {
+  if (compareDateParts(parts, getTodayDateParts()) > 0) {
+    throw new Error("Created date cannot be in the future.");
+  }
+};
+
 const normalizeCreatedAt = (value?: string): string => {
   const raw = value?.trim();
   if (!raw) {
     return new Date().toISOString();
   }
 
-  const yearMonthDayMatch = YEAR_MONTH_DAY_PATTERN.exec(raw);
-  if (yearMonthDayMatch) {
-    const year = Number(yearMonthDayMatch[0].slice(0, 4));
-    const month = Number(yearMonthDayMatch[0].slice(5, 7));
-    const day = Number(yearMonthDayMatch[0].slice(8, 10));
-    const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
-    const isValidLocalDate = localDate.getFullYear() === year &&
-      localDate.getMonth() + 1 === month &&
-      localDate.getDate() === day;
-    if (!isValidLocalDate) {
-      throw new Error("Created date must be a valid date.");
-    }
+  const dateParts = parseDatePartsFromIsoDateInput(raw);
+  if (dateParts) {
+    assertNotFutureDateParts(dateParts);
 
+    const year = dateParts.year;
+    const month = dateParts.month;
+    const day = dateParts.day;
+    const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
     return localDate.toISOString();
   }
 
@@ -131,6 +219,7 @@ const normalizeCreatedAt = (value?: string): string => {
   if (Number.isNaN(dateCandidate.getTime())) {
     throw new Error("Created date must be a valid date.");
   }
+  assertNotFutureDateParts(toDateParts(dateCandidate));
 
   return dateCandidate.toISOString();
 };
@@ -150,6 +239,238 @@ const createCuotaId = (): string => {
   return `cuota_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
 };
 
+const normalizeSubcategoryList = (values: string[] | undefined): string[] => {
+  if (!values) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      values
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+};
+
+const isFinishedPlan = (plan: CuotaPlanItem): boolean => {
+  return plan.paidInstallmentsCount >= plan.installmentsCount;
+};
+
+const getInstallmentDate = (plan: CuotaPlanItem, installmentIndex: number): string => {
+  const createdAtDate = new Date(plan.createdAt);
+  if (Number.isNaN(createdAtDate.getTime())) {
+    return toLocalIsoDate(new Date());
+  }
+
+  const dueDate = new Date(
+    createdAtDate.getFullYear(),
+    createdAtDate.getMonth() + installmentIndex,
+    1,
+    12,
+    0,
+    0,
+    0,
+  );
+  const dueDay = Math.min(
+    createdAtDate.getDate(),
+    getDaysInMonth(dueDate.getFullYear(), dueDate.getMonth()),
+  );
+  dueDate.setDate(dueDay);
+
+  return toLocalIsoDate(dueDate);
+};
+
+const formatInstallmentAmount = (value: number): string => {
+  return value.toFixed(2);
+};
+
+const buildInstallmentTransactionInput = (
+  plan: CuotaPlanItem,
+  accountId: string,
+  installmentIndex: number,
+): CreateTransactionInput => {
+  const date = getInstallmentDate(plan, installmentIndex);
+
+  return {
+    icon: CREDIT_CARD_TRANSACTION_ICON,
+    iconBg: CREDIT_CARD_TRANSACTION_ICON_BG,
+    name: plan.title,
+    accountId,
+    category: CREDIT_CARD_CATEGORY_NAME,
+    categoryId: plan.categoryId,
+    subcategoryName: plan.subcategoryName,
+    cuotaPlanId: plan.id,
+    cuotaInstallmentIndex: installmentIndex,
+    cuotaInstallmentsCount: plan.installmentsCount,
+    date,
+    createdAt: new Date(`${date}T12:00:00`).toISOString(),
+    amount: `-$${formatInstallmentAmount(plan.installmentAmount)}`,
+    amountColor: CREDIT_CARD_TRANSACTION_AMOUNT_COLOR,
+    meta: `Cuota ${installmentIndex}/${plan.installmentsCount}`,
+  };
+};
+
+const findCreditCardCategory = (categories: CategoryItem[]): CategoryItem | null => {
+  return categories.find((category) => (
+    category.name.trim().toLocaleLowerCase("es-ES") ===
+      CREDIT_CARD_CATEGORY_NAME.toLocaleLowerCase("es-ES")
+  )) ?? null;
+};
+
+const ensureCreditCardCategory = async (): Promise<CategoryItem> => {
+  const categories = await categoriesRepository.list();
+  const existing = findCreditCardCategory(categories);
+  if (existing) {
+    return existing;
+  }
+
+  const created = await categoriesRepository.create({
+    name: CREDIT_CARD_CATEGORY_NAME,
+    icon: CREDIT_CARD_CATEGORY_ICON,
+    iconBg: CREDIT_CARD_CATEGORY_ICON_BG,
+  });
+
+  return created;
+};
+
+const findCreditCardAccount = (accounts: AccountItem[]): AccountItem | null => {
+  return accounts.find((account) => (
+    account.name.trim().toLocaleLowerCase("es-ES") ===
+      CREDIT_CARD_ACCOUNT_NAME.toLocaleLowerCase("es-ES")
+  )) ?? null;
+};
+
+const ensureCreditCardAccount = async (): Promise<AccountItem> => {
+  const accounts = await accountsRepository.list();
+  const existing = findCreditCardAccount(accounts);
+  if (existing) {
+    return existing;
+  }
+
+  const created = await accountsRepository.create({
+    name: CREDIT_CARD_ACCOUNT_NAME,
+    balance: 0,
+  });
+
+  return created;
+};
+
+const ensurePlanSubcategory = async (
+  categoryId: string | undefined,
+  subcategoryName: string | undefined,
+): Promise<void> => {
+  if (!categoryId || !subcategoryName) {
+    return;
+  }
+
+  const category = await categoriesRepository.getById(categoryId);
+  if (!category) {
+    return;
+  }
+
+  const currentSubcategories = normalizeSubcategoryList(category.subcategories);
+  if (currentSubcategories.includes(subcategoryName)) {
+    return;
+  }
+
+  const nextSubcategories = [...currentSubcategories, subcategoryName];
+  await categoriesRepository.update(category.id, {
+    subcategories: nextSubcategories,
+    subcategoryCount: nextSubcategories.length,
+  });
+};
+
+const removePlanSubcategoryIfUnused = async (
+  categoryId: string | undefined,
+  subcategoryName: string | undefined,
+  allPlans: CuotaPlanItem[],
+  targetPlanId: string,
+): Promise<void> => {
+  if (!categoryId || !subcategoryName) {
+    return;
+  }
+
+  const hasAnotherActivePlanWithSameSubcategory = allPlans.some((plan) => (
+    plan.id !== targetPlanId &&
+    plan.categoryId === categoryId &&
+    plan.subcategoryName === subcategoryName &&
+    !isFinishedPlan(plan)
+  ));
+
+  if (hasAnotherActivePlanWithSameSubcategory) {
+    return;
+  }
+
+  const category = await categoriesRepository.getById(categoryId);
+  if (!category) {
+    return;
+  }
+
+  const currentSubcategories = normalizeSubcategoryList(category.subcategories);
+  if (!currentSubcategories.includes(subcategoryName)) {
+    return;
+  }
+
+  const nextSubcategories = currentSubcategories.filter((value) => value !== subcategoryName);
+  await categoriesRepository.update(category.id, {
+    subcategories: nextSubcategories,
+    subcategoryCount: nextSubcategories.length,
+  });
+};
+
+const ensureInstallmentTransactions = async (plan: CuotaPlanItem): Promise<void> => {
+  const targetInstallments = Math.min(plan.paidInstallmentsCount, plan.installmentsCount);
+  if (targetInstallments <= 0) {
+    return;
+  }
+
+  const creditCardAccount = await ensureCreditCardAccount();
+  const transactions = await transactionsRepository.list();
+  const existingInstallmentsByIndex = new Map<number, TransactionItem>();
+
+  transactions.forEach((transaction: TransactionItem) => {
+    if (
+      transaction.cuotaPlanId === plan.id &&
+      Number.isFinite(transaction.cuotaInstallmentIndex)
+    ) {
+      existingInstallmentsByIndex.set(
+        transaction.cuotaInstallmentIndex as number,
+        transaction,
+      );
+    }
+  });
+
+  for (let installmentIndex = 1; installmentIndex <= targetInstallments; installmentIndex += 1) {
+    const existingInstallmentTransaction = existingInstallmentsByIndex.get(installmentIndex);
+    if (existingInstallmentTransaction) {
+      if (existingInstallmentTransaction.accountId !== creditCardAccount.id) {
+        await transactionsRepository.update(existingInstallmentTransaction.id, {
+          accountId: creditCardAccount.id,
+        });
+      }
+      continue;
+    }
+
+    await transactionsRepository.create(
+      buildInstallmentTransactionInput(plan, creditCardAccount.id, installmentIndex),
+    );
+  }
+};
+
+const removeInstallmentTransactionsByPlanId = async (planId: string): Promise<void> => {
+  if (!planId) {
+    return;
+  }
+
+  const transactions = await transactionsRepository.list();
+  const planTransactions = transactions.filter((transaction) => transaction.cuotaPlanId === planId);
+
+  for (const transaction of planTransactions) {
+    await transactionsRepository.remove(transaction.id);
+  }
+};
+
 const normalizeForCreate = (input: CreateCuotaInput): CuotaPlanItem => {
   const totalAmount = normalizeTotalAmount(input.totalAmount);
   const installmentsCount = normalizeInstallmentsCount(input.installmentsCount);
@@ -158,10 +479,11 @@ const normalizeForCreate = (input: CreateCuotaInput): CuotaPlanItem => {
     installmentsCount,
   );
   const createdAt = normalizeCreatedAt(input.createdAt);
+  const title = normalizeTitle(input.title);
 
   return {
     id: createCuotaId(),
-    title: normalizeTitle(input.title),
+    title,
     description: normalizeDescription(input.description),
     totalAmount,
     installmentsCount,
@@ -169,6 +491,7 @@ const normalizeForCreate = (input: CreateCuotaInput): CuotaPlanItem => {
     startMonth: normalizeStartMonth(input.startMonth),
     paidInstallmentsCount,
     categoryId: normalizeCategoryId(input.categoryId),
+    subcategoryName: normalizeSubcategoryName(input.subcategoryName) ?? title,
     createdAt,
     updatedAt: createdAt,
   };
@@ -199,6 +522,9 @@ const normalizeForUpdate = (
       : {}),
     ...(patch.categoryId !== undefined
       ? { categoryId: normalizeCategoryId(patch.categoryId) }
+      : {}),
+    ...(patch.subcategoryName !== undefined
+      ? { subcategoryName: normalizeSubcategoryName(patch.subcategoryName) }
       : {}),
     ...(patch.startMonth !== undefined
       ? { startMonth: normalizeStartMonth(patch.startMonth) }
@@ -235,6 +561,7 @@ const isCuotaPlanItem = (value: unknown): value is CuotaPlanItem => {
     typeof item.paidInstallmentsCount === "number" &&
     Number.isFinite(item.paidInstallmentsCount) &&
     (item.categoryId === undefined || typeof item.categoryId === "string") &&
+    (item.subcategoryName === undefined || typeof item.subcategoryName === "string") &&
     typeof item.createdAt === "string" &&
     typeof item.updatedAt === "string"
   );
@@ -275,11 +602,33 @@ export class LocalStorageCuotasRepository implements CuotasRepository {
   public async create(input: CreateCuotaInput): Promise<CuotaPlanItem> {
     const state = this.readState();
     const created = normalizeForCreate(input);
+    const creditCardCategory = await ensureCreditCardCategory();
 
-    state.items.push(created);
+    const nextPlan: CuotaPlanItem = {
+      ...created,
+      categoryId: creditCardCategory.id,
+      subcategoryName: created.subcategoryName ?? created.title,
+    };
+
+    state.items.push(nextPlan);
     this.writeState(state);
 
-    return cloneCuota(created);
+    if (!isFinishedPlan(nextPlan)) {
+      await ensurePlanSubcategory(nextPlan.categoryId, nextPlan.subcategoryName);
+    }
+
+    await ensureInstallmentTransactions(nextPlan);
+
+    if (isFinishedPlan(nextPlan)) {
+      await removePlanSubcategoryIfUnused(
+        nextPlan.categoryId,
+        nextPlan.subcategoryName,
+        state.items,
+        nextPlan.id,
+      );
+    }
+
+    return cloneCuota(nextPlan);
   }
 
   public async update(id: string, patch: UpdateCuotaPatch): Promise<CuotaPlanItem | null> {
@@ -290,28 +639,67 @@ export class LocalStorageCuotasRepository implements CuotasRepository {
       return null;
     }
 
-    const updated = normalizeForUpdate(state.items[index], patch);
+    const current = state.items[index];
+    const updatedBase = normalizeForUpdate(current, patch);
+    const creditCardCategory = await ensureCreditCardCategory();
+
+    const updated: CuotaPlanItem = {
+      ...updatedBase,
+      categoryId: creditCardCategory.id,
+      subcategoryName: updatedBase.subcategoryName ?? updatedBase.title,
+    };
+
     state.items[index] = updated;
     this.writeState(state);
+
+    if (!isFinishedPlan(updated)) {
+      await ensurePlanSubcategory(updated.categoryId, updated.subcategoryName);
+    }
+
+    await ensureInstallmentTransactions(updated);
+
+    if (isFinishedPlan(updated)) {
+      await removePlanSubcategoryIfUnused(
+        updated.categoryId,
+        updated.subcategoryName,
+        state.items,
+        updated.id,
+      );
+    }
 
     return cloneCuota(updated);
   }
 
   public async remove(id: string): Promise<boolean> {
     const state = this.readState();
+    const removedPlan = state.items.find((item) => item.id === id);
     const filtered = state.items.filter((item) => item.id !== id);
 
     if (filtered.length === state.items.length) {
       return false;
     }
 
+    await removeInstallmentTransactionsByPlanId(id);
+
     state.items = filtered;
     this.writeState(state);
+
+    await removePlanSubcategoryIfUnused(
+      removedPlan?.categoryId,
+      removedPlan?.subcategoryName,
+      state.items,
+      removedPlan?.id ?? id,
+    );
 
     return true;
   }
 
   public async clearAll(): Promise<void> {
+    const currentItems = this.readState().items;
+    for (const item of currentItems) {
+      await removeInstallmentTransactionsByPlanId(item.id);
+    }
+
     this.writeState(buildInitialState());
   }
 

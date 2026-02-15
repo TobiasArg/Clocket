@@ -4,6 +4,10 @@ export interface TransactionItem extends TransactionDetailed {
   id: string;
   accountId: string;
   categoryId?: string;
+  subcategoryName?: string;
+  cuotaPlanId?: string;
+  cuotaInstallmentIndex?: number;
+  cuotaInstallmentsCount?: number;
   date: string;
   createdAt?: string;
 }

@@ -7,6 +7,7 @@ import type {
 
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.categories";
+const PROTECTED_CATEGORY_NAMES = new Set(["tarjeta de credito"]);
 
 interface CategoriesStorageV1 {
   version: typeof STORAGE_VERSION;
@@ -57,6 +58,26 @@ const normalizeCategoryName = (name: string): string => {
   }
 
   return normalized;
+};
+
+const normalizeSubcategories = (subcategories: string[] | undefined): string[] | undefined => {
+  if (!subcategories || subcategories.length === 0) {
+    return undefined;
+  }
+
+  const unique = Array.from(
+    new Set(
+      subcategories
+        .map((subcategory) => subcategory.trim())
+        .filter((subcategory) => subcategory.length > 0),
+    ),
+  );
+
+  return unique.length > 0 ? unique : undefined;
+};
+
+const isProtectedCategory = (category: CategoryItem): boolean => {
+  return PROTECTED_CATEGORY_NAMES.has(category.name.trim().toLocaleLowerCase("es-ES"));
 };
 
 const isCategoryItem = (value: unknown): value is CategoryItem => {
@@ -147,11 +168,22 @@ export class LocalStorageCategoriesRepository implements CategoriesRepository {
       return null;
     }
 
+    const normalizedSubcategories = patch.subcategories === undefined
+      ? state.items[index].subcategories
+      : normalizeSubcategories(patch.subcategories);
+    const normalizedSubcategoryCount = patch.subcategoryCount === undefined
+      ? (patch.subcategories === undefined
+        ? state.items[index].subcategoryCount
+        : (normalizedSubcategories?.length ?? 0))
+      : Math.max(0, Math.floor(patch.subcategoryCount));
+
     const updated: CategoryItem = {
       ...state.items[index],
       ...(patch.name ? { name: normalizeCategoryName(patch.name) } : {}),
       ...(patch.icon ? { icon: patch.icon } : {}),
       ...(patch.iconBg ? { iconBg: patch.iconBg } : {}),
+      subcategoryCount: normalizedSubcategoryCount,
+      subcategories: normalizedSubcategories,
     };
 
     state.items[index] = updated;
@@ -162,11 +194,12 @@ export class LocalStorageCategoriesRepository implements CategoriesRepository {
 
   public async remove(id: string): Promise<boolean> {
     const state = this.readState();
-    const filtered = state.items.filter((item) => item.id !== id);
-
-    if (filtered.length === state.items.length) {
+    const target = state.items.find((item) => item.id === id);
+    if (!target || isProtectedCategory(target)) {
       return false;
     }
+
+    const filtered = state.items.filter((item) => item.id !== id);
 
     state.items = filtered;
     this.writeState(state);

@@ -139,6 +139,14 @@ const isLegacyTransactionItem = (value: unknown): value is LegacyTransactionItem
     typeof item.category === "string" &&
     (item.accountId === undefined || typeof item.accountId === "string") &&
     (item.categoryId === undefined || typeof item.categoryId === "string") &&
+    (item.subcategoryName === undefined || typeof item.subcategoryName === "string") &&
+    (item.cuotaPlanId === undefined || typeof item.cuotaPlanId === "string") &&
+    (item.cuotaInstallmentIndex === undefined ||
+      (typeof item.cuotaInstallmentIndex === "number" &&
+        Number.isFinite(item.cuotaInstallmentIndex))) &&
+    (item.cuotaInstallmentsCount === undefined ||
+      (typeof item.cuotaInstallmentsCount === "number" &&
+        Number.isFinite(item.cuotaInstallmentsCount))) &&
     (item.date === undefined || typeof item.date === "string") &&
     (item.createdAt === undefined || typeof item.createdAt === "string") &&
     typeof item.amount === "string" &&

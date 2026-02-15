@@ -14,6 +14,8 @@ export interface UpdateCategoryPatch {
   name?: string;
   icon?: string;
   iconBg?: string;
+  subcategoryCount?: number;
+  subcategories?: string[];
 }
 
 export interface CategoriesRepository {

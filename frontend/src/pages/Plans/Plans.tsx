@@ -33,6 +33,11 @@ export interface PlansProps {
   totalAmountErrorLabel?: string;
   installmentsErrorLabel?: string;
   creationDateErrorLabel?: string;
+  deleteActionLabel?: string;
+  deleteCancelLabel?: string;
+  deleteConfirmHint?: string;
+  deleteConfirmLabel?: string;
+  deleteConfirmTitle?: string;
   markInstallmentAriaLabel?: string;
   onBackClick?: () => void;
   onAddClick?: () => void;
@@ -65,7 +70,12 @@ export function Plans({
   errorLabel = "No pudimos cargar las cuotas. Intenta nuevamente.",
   totalAmountErrorLabel = "Ingresa un monto mayor a 0.",
   installmentsErrorLabel = "Usa al menos 1 cuota.",
-  creationDateErrorLabel = "Usa formato YYYY-MM-DD.",
+  creationDateErrorLabel = "Usa una fecha válida que no sea futura.",
+  deleteActionLabel = "Eliminar",
+  deleteCancelLabel = "Cancelar",
+  deleteConfirmHint = "Se eliminará el plan y todas sus transacciones.",
+  deleteConfirmLabel = "Eliminar",
+  deleteConfirmTitle = "¿Eliminar este plan?",
   markInstallmentAriaLabel = "Marcar cuota como pagada",
   onBackClick,
   onAddClick,
@@ -74,6 +84,7 @@ export function Plans({
   const {
     activeCount,
     creationDateInput,
+    deleteConfirmPlanId,
     filteredPlans,
     finishedCount,
     installmentsCountInput,
@@ -87,6 +98,7 @@ export function Plans({
     paidFeedbackPlanId,
     pendingPaidPlanId,
     setCreationDateInput,
+    setDeleteConfirmPlanId,
     setInstallmentsCountInput,
     setNameInput,
     setStatusFilter,
@@ -97,6 +109,7 @@ export function Plans({
     totalAmountInput,
     error,
     handleCreate,
+    handleDeletePlan,
     handleHeaderAction,
     handleMarkInstallmentPaid,
   } = usePlansPageModel({ onAddClick });
@@ -192,6 +205,16 @@ export function Plans({
             markInstallmentAriaLabel={markInstallmentAriaLabel}
             pendingPaidPlanId={pendingPaidPlanId}
             paidFeedbackPlanId={paidFeedbackPlanId}
+            deleteActionLabel={deleteActionLabel}
+            deleteConfirmPlanId={deleteConfirmPlanId}
+            deleteConfirmTitle={deleteConfirmTitle}
+            deleteConfirmHint={deleteConfirmHint}
+            deleteCancelLabel={deleteCancelLabel}
+            deleteConfirmLabel={deleteConfirmLabel}
+            onDeleteConfirmPlanIdChange={setDeleteConfirmPlanId}
+            onDeletePlan={(id) => {
+              void handleDeletePlan(id);
+            }}
             onMarkInstallmentPaid={(id) => {
               void handleMarkInstallmentPaid(id);
             }}

@@ -250,7 +250,8 @@ export const useTransactionsPageModel = (
     if (transaction.categoryId) {
       const categoryName = categoriesById.get(transaction.categoryId);
       if (categoryName) {
-        return categoryName;
+        const subcategoryName = transaction.subcategoryName?.trim();
+        return subcategoryName ? `${categoryName} · ${subcategoryName}` : categoryName;
       }
     }
 

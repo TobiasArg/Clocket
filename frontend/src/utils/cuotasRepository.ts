@@ -11,6 +11,7 @@ export interface CreateCuotaInput {
   createdAt?: string;
   paidInstallmentsCount?: number;
   categoryId?: string;
+  subcategoryName?: string;
 }
 
 export interface UpdateCuotaPatch {
@@ -21,6 +22,7 @@ export interface UpdateCuotaPatch {
   startMonth?: string;
   paidInstallmentsCount?: number;
   categoryId?: string;
+  subcategoryName?: string;
 }
 
 export interface CuotasRepository {
