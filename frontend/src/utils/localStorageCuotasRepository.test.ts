@@ -111,7 +111,9 @@ describe("LocalStorageCuotasRepository date validation", () => {
       createdAt: "2026-04-20",
     });
 
-    await repository.update(created.id, { paidInstallmentsCount: 1 });
+    const updated = await repository.update(created.id, { paidInstallmentsCount: 1 });
+    expect(updated).not.toBeNull();
+    expect(updated?.paidInstallmentsCount).toBe(0);
     const planTransactions = await getPlanInstallmentTransactions(created.id);
     expect(planTransactions).toHaveLength(0);
   });
@@ -144,12 +146,33 @@ describe("LocalStorageCuotasRepository date validation", () => {
       createdAt: "2026-03-20",
     });
 
-    await repository.update(created.id, { paidInstallmentsCount: 2 });
+    const updated = await repository.update(created.id, { paidInstallmentsCount: 2 });
+    expect(updated).not.toBeNull();
+    expect(updated?.paidInstallmentsCount).toBe(1);
 
     const planTransactions = await getPlanInstallmentTransactions(created.id);
     expect(planTransactions).toHaveLength(1);
     expect(planTransactions[0].cuotaInstallmentIndex).toBe(1);
     expect(planTransactions[0].date).toBe("2026-04-20");
+  });
+
+  it("clamps direct paidInstallmentsCount updates to fulfilled installments by current date", async () => {
+    const repository = buildRepository();
+
+    const created = await repository.create({
+      title: "Plan clamp",
+      totalAmount: 1200,
+      installmentsCount: 12,
+      createdAt: "2026-03-20",
+    });
+
+    const updated = await repository.update(created.id, { paidInstallmentsCount: 12 });
+    expect(updated).not.toBeNull();
+    expect(updated?.paidInstallmentsCount).toBe(1);
+
+    const planTransactions = await getPlanInstallmentTransactions(created.id);
+    expect(planTransactions).toHaveLength(1);
+    expect(planTransactions[0].cuotaInstallmentIndex).toBe(1);
   });
 
   it("rejects creation for future plan date", async () => {

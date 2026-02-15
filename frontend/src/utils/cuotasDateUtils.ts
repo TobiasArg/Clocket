@@ -118,3 +118,32 @@ export const getInstallmentDateString = (
 
   return formatDateParts(parts);
 };
+
+export const getFulfilledInstallmentsByDate = (
+  createdAt: string,
+  todayDateParts: DateParts = getTodayDatePartsLocal(),
+): number => {
+  const createdDateParts = getCreatedAtDateParts(createdAt);
+  if (!createdDateParts) {
+    return 0;
+  }
+
+  if (compareDateParts(todayDateParts, createdDateParts) <= 0) {
+    return 0;
+  }
+
+  const monthsDifference = (todayDateParts.year - createdDateParts.year) * 12 +
+    (todayDateParts.month - createdDateParts.month);
+  if (monthsDifference <= 0) {
+    return 0;
+  }
+
+  const dueDayOfCurrentMonth = Math.min(
+    createdDateParts.day,
+    getDaysInMonth(todayDateParts.year, todayDateParts.month),
+  );
+
+  const fulfilledInstallments = monthsDifference -
+    (todayDateParts.day < dueDayOfCurrentMonth ? 1 : 0);
+  return Math.max(0, fulfilledInstallments);
+};

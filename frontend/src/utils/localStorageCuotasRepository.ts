@@ -5,6 +5,7 @@ import type {
   UpdateCuotaPatch,
 } from "./cuotasRepository";
 import {
+  getFulfilledInstallmentsByDate,
   getInstallmentDateParts,
   getInstallmentDateString,
   getTodayDatePartsLocal,
@@ -110,6 +111,15 @@ const normalizePaidInstallmentsCount = (
 
   const normalized = Math.max(0, Math.floor(value));
   return Math.min(normalized, installmentsCount);
+};
+
+const clampPaidInstallmentsCountToCurrentDate = (
+  paidInstallmentsCount: number,
+  installmentsCount: number,
+  createdAt: string,
+): number => {
+  const fulfilledInstallments = getFulfilledInstallmentsByDate(createdAt);
+  return Math.min(paidInstallmentsCount, installmentsCount, fulfilledInstallments);
 };
 
 const normalizeStartMonth = (value?: string): string => {
@@ -400,11 +410,16 @@ const removeInstallmentTransactionsByPlanId = async (planId: string): Promise<vo
 const normalizeForCreate = (input: CreateCuotaInput): CuotaPlanItem => {
   const totalAmount = normalizeTotalAmount(input.totalAmount);
   const installmentsCount = normalizeInstallmentsCount(input.installmentsCount);
-  const paidInstallmentsCount = normalizePaidInstallmentsCount(
+  const normalizedPaidInstallmentsCount = normalizePaidInstallmentsCount(
     input.paidInstallmentsCount,
     installmentsCount,
   );
   const createdAt = normalizeCreatedAt(input.createdAt);
+  const paidInstallmentsCount = clampPaidInstallmentsCountToCurrentDate(
+    normalizedPaidInstallmentsCount,
+    installmentsCount,
+    createdAt,
+  );
   const title = normalizeTitle(input.title);
 
   return {
@@ -435,10 +450,15 @@ const normalizeForUpdate = (
     patch.installmentsCount === undefined
       ? current.installmentsCount
       : normalizeInstallmentsCount(patch.installmentsCount);
-  const paidInstallmentsCount =
+  const normalizedPaidInstallmentsCount =
     patch.paidInstallmentsCount === undefined
       ? Math.min(current.paidInstallmentsCount, installmentsCount)
       : normalizePaidInstallmentsCount(patch.paidInstallmentsCount, installmentsCount);
+  const paidInstallmentsCount = clampPaidInstallmentsCountToCurrentDate(
+    normalizedPaidInstallmentsCount,
+    installmentsCount,
+    current.createdAt,
+  );
 
   return {
     ...current,

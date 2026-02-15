@@ -3,6 +3,7 @@ import { useCuotas } from "./useCuotas";
 import type { CuotaPlanStatus, CuotaPlanWithStatus } from "@/types";
 import {
   compareDateParts,
+  getFulfilledInstallmentsByDate,
   getInstallmentDateParts,
   getTodayDatePartsLocal,
   isFutureDateParts,
@@ -66,40 +67,6 @@ const isValidDateInput = (value: string): boolean => {
   return !isFutureDateParts(inputDate, getTodayDatePartsLocal());
 };
 
-const getDaysInMonth = (year: number, monthIndex: number): number => {
-  return new Date(year, monthIndex + 1, 0).getDate();
-};
-
-const getFulfilledInstallmentsByCreatedAt = (
-  createdAt: string,
-  now: Date = new Date(),
-): number => {
-  const createdAtDate = new Date(createdAt);
-  if (Number.isNaN(createdAtDate.getTime())) {
-    return 0;
-  }
-
-  const createdDate = new Date(
-    createdAtDate.getFullYear(),
-    createdAtDate.getMonth(),
-    createdAtDate.getDate(),
-  );
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (today < createdDate) {
-    return 0;
-  }
-
-  const monthsDifference = (today.getFullYear() - createdDate.getFullYear()) * 12 +
-    (today.getMonth() - createdDate.getMonth());
-  const dueDayOfCurrentMonth = Math.min(
-    createdDate.getDate(),
-    getDaysInMonth(today.getFullYear(), today.getMonth()),
-  );
-
-  const fulfilledInstallments = monthsDifference - (today.getDate() < dueDayOfCurrentMonth ? 1 : 0);
-  return Math.max(0, fulfilledInstallments);
-};
-
 const getPlanStatus = (paidInstallmentsCount: number, installmentsCount: number): CuotaPlanStatus => {
   return paidInstallmentsCount >= installmentsCount ? "finished" : "active";
 };
@@ -138,7 +105,7 @@ export const usePlansPageModel = (
 
   const plansWithStatus = useMemo<CuotaPlanWithStatus[]>(
     () => items.map((item) => {
-      const fulfilledByDate = getFulfilledInstallmentsByCreatedAt(item.createdAt);
+      const fulfilledByDate = getFulfilledInstallmentsByDate(item.createdAt);
       const effectivePaidInstallments = Math.min(
         item.installmentsCount,
         Math.max(item.paidInstallmentsCount, fulfilledByDate),
@@ -162,7 +129,7 @@ export const usePlansPageModel = (
       .map((item) => {
         const fulfilledByDate = Math.min(
           item.installmentsCount,
-          getFulfilledInstallmentsByCreatedAt(item.createdAt),
+          getFulfilledInstallmentsByDate(item.createdAt),
         );
         const hasCategoryMetadata = Boolean(item.categoryId) && Boolean(item.subcategoryName);
         const nextPaidInstallmentsCount = Math.max(item.paidInstallmentsCount, fulfilledByDate);
@@ -263,7 +230,7 @@ export const usePlansPageModel = (
       createdAt: normalizedCreationDate,
       paidInstallmentsCount: Math.min(
         installmentsCountValue,
-        getFulfilledInstallmentsByCreatedAt(`${normalizedCreationDate}T12:00:00`),
+        getFulfilledInstallmentsByDate(`${normalizedCreationDate}T12:00:00`),
       ),
     });
 

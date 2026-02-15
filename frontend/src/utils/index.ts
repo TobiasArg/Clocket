@@ -13,6 +13,7 @@ export {
 export {
   compareDateParts,
   formatDateParts,
+  getFulfilledInstallmentsByDate,
   getInstallmentDateParts,
   getInstallmentDateString,
   getTodayDatePartsLocal,
