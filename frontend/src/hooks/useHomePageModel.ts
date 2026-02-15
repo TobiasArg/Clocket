@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CuotaItem, SpendingCategory, Transaction } from "@/types";
+import type { CuotaItem, GoalCardSimple, SpendingCategory, Transaction } from "@/types";
 import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
 import { useCuotas } from "./useCuotas";
+import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
 import {
   formatCurrency,
@@ -46,6 +47,7 @@ export interface UseHomePageModelOptions {
 export interface UseHomePageModelResult {
   activeBalanceSlide: number;
   balanceSlides: HomeBalanceSlide[];
+  dashboardGoals: GoalCardSimple[];
   displayedExpenseValue: string;
   displayedIncomeValue: string;
   displayedSpendingCategories: SpendingCategory[];
@@ -109,6 +111,7 @@ export const useHomePageModel = (
   } = options;
 
   const { items: accounts } = useAccounts();
+  const { items: goalItems } = useGoals();
   const {
     items: transactionItems,
     isLoading: isTransactionsLoading,
@@ -215,6 +218,45 @@ export const useHomePageModel = (
         amountColor: getAmountColor(transaction.amount, transaction.amountColor),
       }));
   }, [transactionItems, transactions]);
+
+  const savedAmountByGoalId = useMemo(() => {
+    const map = new Map<string, number>();
+
+    transactionItems.forEach((transaction) => {
+      if (transaction.transactionType !== "saving" || !transaction.goalId) {
+        return;
+      }
+
+      const amount = parseSignedAmount(transaction.amount);
+      if (amount >= 0) {
+        return;
+      }
+
+      map.set(transaction.goalId, (map.get(transaction.goalId) ?? 0) + Math.abs(amount));
+    });
+
+    return map;
+  }, [transactionItems]);
+
+  const dashboardGoals = useMemo<GoalCardSimple[]>(() => {
+    return goalItems
+      .map((goal) => {
+        const savedAmount = savedAmountByGoalId.get(goal.id) ?? 0;
+        const progressPercent = goal.targetAmount > 0
+          ? Math.max(0, Math.min(100, Math.round((savedAmount / goal.targetAmount) * 100)))
+          : 0;
+
+        return {
+          id: goal.id,
+          icon: goal.icon,
+          name: goal.title,
+          progressPercent,
+          colorKey: goal.colorKey,
+        };
+      })
+      .sort((left, right) => right.progressPercent - left.progressPercent)
+      .slice(0, 8);
+  }, [goalItems, savedAmountByGoalId]);
 
   const computedSpendingCategories = useMemo<SpendingCategory[]>(() => {
     const monthWindow = getCurrentMonthWindow();
@@ -340,6 +382,7 @@ export const useHomePageModel = (
   return {
     activeBalanceSlide,
     balanceSlides,
+    dashboardGoals,
     displayedExpenseValue,
     displayedIncomeValue,
     displayedSpendingCategories,

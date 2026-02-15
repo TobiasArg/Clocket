@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useGoals } from "./useGoals";
-import { formatCurrency } from "@/utils";
+import { useTransactions } from "./useTransactions";
+import { formatCurrency, GOAL_COLOR_OPTIONS, GOAL_ICON_OPTIONS, getGoalColorOption } from "@/utils";
+import type { GoalColorKey } from "@/types";
 
 export interface GoalsSummary {
   percent: number;
@@ -10,14 +12,15 @@ export interface GoalsSummary {
 
 export interface GoalListPresentation {
   barColor: string;
-  id: string;
+  deadlineLabel: string;
   icon: string;
+  iconBgClass: string;
+  id: string;
   percent: number;
   percentBg: string;
   percentColor: string;
   savedAmountLabel: string;
   targetAmountLabel: string;
-  targetMonthLabel: string;
   title: string;
 }
 
@@ -26,44 +29,58 @@ export interface UseGoalsPageModelOptions {
 }
 
 export interface UseGoalsPageModelResult {
+  colorOptions: Array<{ key: GoalColorKey; label: string; swatchClass: string }>;
+  deadlineDateInput: string;
   error: string | null;
   goalRows: GoalListPresentation[];
   handleCreate: () => Promise<void>;
   handleHeaderAction: () => void;
-  handleRemove: (id: string) => Promise<void>;
+  iconOptions: string[];
+  isDeadlineValid: boolean;
+  isDescriptionValid: boolean;
   isEditorOpen: boolean;
   isFormValid: boolean;
+  isIconValid: boolean;
   isLoading: boolean;
-  isSavedValid: boolean;
   isTargetValid: boolean;
   isTitleValid: boolean;
-  savedAmountInput: string;
-  setSavedAmountInput: (value: string) => void;
+  selectedColorKey: GoalColorKey;
+  selectedIcon: string;
+  setDeadlineDateInput: (value: string) => void;
+  setDescriptionInput: (value: string) => void;
+  setSelectedColorKey: (value: GoalColorKey) => void;
+  setSelectedIcon: (value: string) => void;
   setTargetAmountInput: (value: string) => void;
-  setTargetMonthInput: (value: string) => void;
   setTitleInput: (value: string) => void;
   showValidation: boolean;
   summary: GoalsSummary;
   targetAmountInput: string;
-  targetMonthInput: string;
   titleInput: string;
+  descriptionInput: string;
 }
 
-const GOAL_ICONS = ["airplane-tilt", "device-mobile", "target", "piggy-bank"] as const;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-const getCurrentYearMonth = (): string => {
+const getTodayIsoDate = (): string => {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
-const formatMonthLabel = (yearMonth: string): string => {
-  const [year, month] = yearMonth.split("-");
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  const formatter = new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" });
-  const formatted = formatter.format(date);
-  return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
+const formatDateLabel = (dateIso: string): string => {
+  if (!ISO_DATE_PATTERN.test(dateIso)) {
+    return dateIso;
+  }
+
+  const [year, month, day] = dateIso.split("-");
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
 };
 
 const clampPercent = (value: number): number => {
@@ -74,54 +91,59 @@ const clampPercent = (value: number): number => {
   return Math.max(0, Math.min(100, Math.round(value)));
 };
 
-const getProgressStyles = (percent: number) => {
-  if (percent >= 70) {
-    return {
-      percentColor: "text-[#10B981]",
-      percentBg: "bg-[#D1FAE5]",
-      barColor: "bg-[#10B981]",
-    };
-  }
-
-  if (percent >= 40) {
-    return {
-      percentColor: "text-[#D97706]",
-      percentBg: "bg-[#FEF3C7]",
-      barColor: "bg-[#D97706]",
-    };
-  }
-
-  return {
-    percentColor: "text-[#DC2626]",
-    percentBg: "bg-[#FEE2E2]",
-    barColor: "bg-[#DC2626]",
-  };
-};
-
 export const useGoalsPageModel = (
   options: UseGoalsPageModelOptions = {},
 ): UseGoalsPageModelResult => {
   const { onAddClick } = options;
-  const { items, isLoading, error, create, remove } = useGoals();
+  const { items, isLoading, error, create } = useGoals();
+  const { items: transactions } = useTransactions();
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [titleInput, setTitleInput] = useState<string>("");
+  const [descriptionInput, setDescriptionInput] = useState<string>("");
   const [targetAmountInput, setTargetAmountInput] = useState<string>("");
-  const [savedAmountInput, setSavedAmountInput] = useState<string>("");
-  const [targetMonthInput, setTargetMonthInput] = useState<string>(getCurrentYearMonth);
+  const [deadlineDateInput, setDeadlineDateInput] = useState<string>(getTodayIsoDate);
+  const [selectedIcon, setSelectedIcon] = useState<string>(GOAL_ICON_OPTIONS[0] ?? "target");
+  const [selectedColorKey, setSelectedColorKey] = useState<GoalColorKey>("emerald");
   const [showValidation, setShowValidation] = useState<boolean>(false);
 
   const targetAmountValue = Number(targetAmountInput);
-  const savedAmountValue = Number(savedAmountInput || "0");
   const normalizedTitle = titleInput.trim();
+  const normalizedDescription = descriptionInput.trim();
 
   const isTitleValid = normalizedTitle.length > 0;
+  const isDescriptionValid = normalizedDescription.length > 0;
   const isTargetValid = Number.isFinite(targetAmountValue) && targetAmountValue > 0;
-  const isSavedValid = Number.isFinite(savedAmountValue) && savedAmountValue >= 0;
-  const isFormValid = isTitleValid && isTargetValid && isSavedValid;
+  const isDeadlineValid = ISO_DATE_PATTERN.test(deadlineDateInput);
+  const isIconValid = selectedIcon.trim().length > 0;
+  const isFormValid = (
+    isTitleValid &&
+    isDescriptionValid &&
+    isTargetValid &&
+    isDeadlineValid &&
+    isIconValid
+  );
+
+  const savedByGoalId = useMemo(() => {
+    const map = new Map<string, number>();
+    transactions.forEach((transaction) => {
+      if (transaction.transactionType !== "saving" || !transaction.goalId) {
+        return;
+      }
+
+      const amount = Number(transaction.amount.replace(/[^0-9+.-]/g, ""));
+      if (!Number.isFinite(amount) || amount >= 0) {
+        return;
+      }
+
+      map.set(transaction.goalId, (map.get(transaction.goalId) ?? 0) + Math.abs(amount));
+    });
+
+    return map;
+  }, [transactions]);
 
   const summary = useMemo<GoalsSummary>(() => {
-    const totalSaved = items.reduce((sum, goal) => sum + goal.savedAmount, 0);
+    const totalSaved = items.reduce((sum, goal) => sum + (savedByGoalId.get(goal.id) ?? 0), 0);
     const totalTarget = items.reduce((sum, goal) => sum + goal.targetAmount, 0);
     const percent = totalTarget > 0 ? clampPercent((totalSaved / totalTarget) * 100) : 0;
 
@@ -130,36 +152,40 @@ export const useGoalsPageModel = (
       totalTarget,
       percent,
     };
-  }, [items]);
+  }, [items, savedByGoalId]);
 
   const goalRows = useMemo<GoalListPresentation[]>(() => {
-    return items.map((goal, index) => {
+    return items.map((goal) => {
+      const savedAmount = savedByGoalId.get(goal.id) ?? 0;
       const percent = goal.targetAmount > 0
-        ? clampPercent((goal.savedAmount / goal.targetAmount) * 100)
+        ? clampPercent((savedAmount / goal.targetAmount) * 100)
         : 0;
-      const styles = getProgressStyles(percent);
+      const color = getGoalColorOption(goal.colorKey);
 
       return {
         id: goal.id,
-        icon: GOAL_ICONS[index % GOAL_ICONS.length],
+        icon: goal.icon,
+        iconBgClass: color.iconBgClass,
         title: goal.title,
-        targetMonthLabel: formatMonthLabel(goal.targetMonth),
+        deadlineLabel: formatDateLabel(goal.deadlineDate),
         percent,
-        percentBg: styles.percentBg,
-        percentColor: styles.percentColor,
-        barColor: styles.barColor,
-        savedAmountLabel: formatCurrency(goal.savedAmount),
+        percentBg: color.softBgClass,
+        percentColor: color.textClass,
+        barColor: color.barClass,
+        savedAmountLabel: formatCurrency(savedAmount),
         targetAmountLabel: formatCurrency(goal.targetAmount),
       };
     });
-  }, [items]);
+  }, [items, savedByGoalId]);
 
   const resetEditor = () => {
     setIsEditorOpen(false);
     setTitleInput("");
+    setDescriptionInput("");
     setTargetAmountInput("");
-    setSavedAmountInput("");
-    setTargetMonthInput(getCurrentYearMonth());
+    setDeadlineDateInput(getTodayIsoDate());
+    setSelectedIcon(GOAL_ICON_OPTIONS[0] ?? "target");
+    setSelectedColorKey("emerald");
     setShowValidation(false);
   };
 
@@ -182,9 +208,11 @@ export const useGoalsPageModel = (
 
     const created = await create({
       title: normalizedTitle,
+      description: normalizedDescription,
       targetAmount: targetAmountValue,
-      savedAmount: savedAmountValue,
-      targetMonth: targetMonthInput,
+      deadlineDate: deadlineDateInput,
+      icon: selectedIcon,
+      colorKey: selectedColorKey,
     });
 
     if (!created) {
@@ -194,31 +222,38 @@ export const useGoalsPageModel = (
     resetEditor();
   };
 
-  const handleRemove = async (id: string): Promise<void> => {
-    await remove(id);
-  };
-
   return {
+    colorOptions: GOAL_COLOR_OPTIONS.map((option) => ({
+      key: option.key,
+      label: option.label,
+      swatchClass: option.iconBgClass,
+    })),
+    deadlineDateInput,
+    descriptionInput,
     error,
     goalRows,
     handleCreate,
     handleHeaderAction,
-    handleRemove,
+    iconOptions: GOAL_ICON_OPTIONS,
+    isDeadlineValid,
+    isDescriptionValid,
     isEditorOpen,
     isFormValid,
+    isIconValid,
     isLoading,
-    isSavedValid,
     isTargetValid,
     isTitleValid,
-    savedAmountInput,
-    setSavedAmountInput,
+    selectedColorKey,
+    selectedIcon,
+    setDeadlineDateInput,
+    setDescriptionInput,
+    setSelectedColorKey,
+    setSelectedIcon,
     setTargetAmountInput,
-    setTargetMonthInput,
     setTitleInput,
     showValidation,
     summary,
     targetAmountInput,
-    targetMonthInput,
     titleInput,
   };
 };

@@ -1,6 +1,13 @@
 export { formatCurrency } from "./formatCurrency";
 export { getPercentWidthClass } from "./percentWidthClass";
 export {
+  DEFAULT_GOAL_COLOR_KEY,
+  getGoalCategoryName,
+  getGoalColorOption,
+  GOAL_COLOR_OPTIONS,
+  GOAL_ICON_OPTIONS,
+} from "./goalAppearance";
+export {
   getCurrentMonthWindow,
   getMonthlyBalance,
   getTransactionDateForMonthBalance,
@@ -106,3 +113,4 @@ export type {
   TransactionsRepository,
   UpdateTransactionPatch,
 } from "./transactionsRepository";
+export type { GoalColorOption } from "./goalAppearance";

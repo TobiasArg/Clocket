@@ -3,28 +3,41 @@ import type {
   GoalPlanItem,
   GoalsRepository,
   UpdateGoalPatch,
-} from "@/utils";
+} from "./goalsRepository";
+import {
+  DEFAULT_GOAL_COLOR_KEY,
+  getGoalCategoryName,
+  getGoalColorOption,
+} from "./goalAppearance";
+import { categoriesRepository } from "./localStorageCategoriesRepository";
 
-const STORAGE_VERSION = 1 as const;
+const STORAGE_VERSION = 2 as const;
+const LEGACY_STORAGE_VERSION_1 = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.goals";
-const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 interface GoalsStorageV1 {
+  version: typeof LEGACY_STORAGE_VERSION_1;
+  items: Array<{
+    id: string;
+    title: string;
+    targetAmount: number;
+    savedAmount: number;
+    targetMonth: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
+interface GoalsStorageV2 {
   version: typeof STORAGE_VERSION;
   items: GoalPlanItem[];
 }
 
-const buildInitialState = (): GoalsStorageV1 => ({
+const buildInitialState = (): GoalsStorageV2 => ({
   version: STORAGE_VERSION,
   items: [],
 });
-
-const getCurrentYearMonth = (): string => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-};
 
 const cloneGoal = (item: GoalPlanItem): GoalPlanItem => ({ ...item });
 const cloneGoals = (items: GoalPlanItem[]): GoalPlanItem[] => items.map(cloneGoal);
@@ -38,12 +51,13 @@ const normalizeTitle = (value: string): string => {
   return normalized;
 };
 
-const normalizeAmount = (value: number, field: string): number => {
-  if (!Number.isFinite(value) || value < 0) {
-    throw new Error(`${field} must be a valid amount.`);
+const normalizeDescription = (value: string): string => {
+  const normalized = value.trim();
+  if (!normalized) {
+    throw new Error("Goal description is required.");
   }
 
-  return Math.round(value * 100) / 100;
+  return normalized;
 };
 
 const normalizeTargetAmount = (value: number): number => {
@@ -54,13 +68,26 @@ const normalizeTargetAmount = (value: number): number => {
   return Math.round(value * 100) / 100;
 };
 
-const normalizeTargetMonth = (value?: string): string => {
-  const month = value?.trim() || getCurrentYearMonth();
-  if (!YEAR_MONTH_PATTERN.test(month)) {
-    throw new Error("Target month must use YYYY-MM format.");
+const normalizeDeadlineDate = (value: string): string => {
+  const normalized = value.trim();
+  if (!ISO_DATE_PATTERN.test(normalized)) {
+    throw new Error("Deadline date must use YYYY-MM-DD format.");
   }
 
-  return month;
+  return normalized;
+};
+
+const normalizeIcon = (value: string): string => {
+  const normalized = value.trim();
+  if (!normalized) {
+    throw new Error("Goal icon is required.");
+  }
+
+  return normalized;
+};
+
+const normalizeColorKey = (value: CreateGoalInput["colorKey"]): CreateGoalInput["colorKey"] => {
+  return value ?? DEFAULT_GOAL_COLOR_KEY;
 };
 
 const createGoalId = (): string => {
@@ -71,7 +98,25 @@ const createGoalId = (): string => {
   return `goal_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
 };
 
-const isGoalItem = (value: unknown): value is GoalPlanItem => {
+const normalizeForTitleComparison = (value: string): string => value.trim().toLocaleLowerCase("es-ES");
+
+const ensureUniqueGoalTitle = (
+  title: string,
+  items: GoalPlanItem[],
+  excludedId?: string,
+): void => {
+  const normalizedTitle = normalizeForTitleComparison(title);
+  const hasDuplicate = items.some((goal) => (
+    goal.id !== excludedId &&
+    normalizeForTitleComparison(goal.title) === normalizedTitle
+  ));
+
+  if (hasDuplicate) {
+    throw new Error("Goal title must be unique.");
+  }
+};
+
+const isGoalItemV2 = (value: unknown): value is GoalPlanItem => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -80,41 +125,81 @@ const isGoalItem = (value: unknown): value is GoalPlanItem => {
   return (
     typeof item.id === "string" &&
     typeof item.title === "string" &&
+    typeof item.description === "string" &&
     typeof item.targetAmount === "number" &&
     Number.isFinite(item.targetAmount) &&
-    typeof item.savedAmount === "number" &&
-    Number.isFinite(item.savedAmount) &&
-    typeof item.targetMonth === "string" &&
-    YEAR_MONTH_PATTERN.test(item.targetMonth) &&
+    item.targetAmount > 0 &&
+    typeof item.deadlineDate === "string" &&
+    ISO_DATE_PATTERN.test(item.deadlineDate) &&
+    typeof item.icon === "string" &&
+    typeof item.colorKey === "string" &&
+    typeof item.categoryId === "string" &&
+    item.categoryId.trim().length > 0 &&
     typeof item.createdAt === "string" &&
     typeof item.updatedAt === "string"
   );
 };
 
-const isStorageShape = (value: unknown): value is GoalsStorageV1 => {
+const isLegacyGoalItemV1 = (value: unknown): value is GoalsStorageV1["items"][number] => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const item = value as Partial<GoalsStorageV1["items"][number]>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.title === "string" &&
+    typeof item.targetAmount === "number" &&
+    Number.isFinite(item.targetAmount) &&
+    typeof item.savedAmount === "number" &&
+    Number.isFinite(item.savedAmount) &&
+    typeof item.targetMonth === "string" &&
+    typeof item.createdAt === "string" &&
+    typeof item.updatedAt === "string"
+  );
+};
+
+const isStorageShapeV2 = (value: unknown): value is GoalsStorageV2 => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const state = value as Partial<GoalsStorageV2>;
+  return (
+    state.version === STORAGE_VERSION &&
+    Array.isArray(state.items) &&
+    state.items.every(isGoalItemV2)
+  );
+};
+
+const isStorageShapeV1 = (value: unknown): value is GoalsStorageV1 => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const state = value as Partial<GoalsStorageV1>;
   return (
-    state.version === STORAGE_VERSION &&
+    state.version === LEGACY_STORAGE_VERSION_1 &&
     Array.isArray(state.items) &&
-    state.items.every(isGoalItem)
+    state.items.every(isLegacyGoalItemV1)
   );
 };
 
-const buildCreatedGoal = (input: CreateGoalInput): GoalPlanItem => {
+const buildCreatedGoal = (
+  input: CreateGoalInput,
+  categoryId: string,
+): GoalPlanItem => {
   const nowIso = new Date().toISOString();
-  const targetAmount = normalizeTargetAmount(input.targetAmount);
-  const savedAmount = normalizeAmount(input.savedAmount ?? 0, "Saved amount");
 
   return {
     id: createGoalId(),
     title: normalizeTitle(input.title),
-    targetAmount,
-    savedAmount: Math.min(savedAmount, targetAmount),
-    targetMonth: normalizeTargetMonth(input.targetMonth),
+    description: normalizeDescription(input.description),
+    targetAmount: normalizeTargetAmount(input.targetAmount),
+    deadlineDate: normalizeDeadlineDate(input.deadlineDate),
+    icon: normalizeIcon(input.icon),
+    colorKey: normalizeColorKey(input.colorKey),
+    categoryId,
     createdAt: nowIso,
     updatedAt: nowIso,
   };
@@ -124,24 +209,23 @@ const buildUpdatedGoal = (
   current: GoalPlanItem,
   patch: UpdateGoalPatch,
 ): GoalPlanItem => {
-  const targetAmount =
-    patch.targetAmount === undefined
-      ? current.targetAmount
-      : normalizeTargetAmount(patch.targetAmount);
-
-  const savedAmount =
-    patch.savedAmount === undefined
-      ? current.savedAmount
-      : normalizeAmount(patch.savedAmount, "Saved amount");
-
   return {
     ...current,
     ...(patch.title !== undefined ? { title: normalizeTitle(patch.title) } : {}),
-    ...(patch.targetMonth !== undefined
-      ? { targetMonth: normalizeTargetMonth(patch.targetMonth) }
+    ...(patch.description !== undefined
+      ? { description: normalizeDescription(patch.description) }
       : {}),
-    targetAmount,
-    savedAmount: Math.min(savedAmount, targetAmount),
+    ...(patch.targetAmount !== undefined
+      ? { targetAmount: normalizeTargetAmount(patch.targetAmount) }
+      : {}),
+    ...(patch.deadlineDate !== undefined
+      ? { deadlineDate: normalizeDeadlineDate(patch.deadlineDate) }
+      : {}),
+    ...(patch.icon !== undefined ? { icon: normalizeIcon(patch.icon) } : {}),
+    ...(patch.colorKey !== undefined ? { colorKey: normalizeColorKey(patch.colorKey) } : {}),
+    ...(patch.categoryId !== undefined && patch.categoryId.trim().length > 0
+      ? { categoryId: patch.categoryId.trim() }
+      : {}),
     updatedAt: new Date().toISOString(),
   };
 };
@@ -149,7 +233,7 @@ const buildUpdatedGoal = (
 export class LocalStorageGoalsRepository implements GoalsRepository {
   private readonly storageKey: string;
 
-  private memoryState: GoalsStorageV1;
+  private memoryState: GoalsStorageV2;
 
   public constructor(storageKey: string = DEFAULT_STORAGE_KEY) {
     this.storageKey = storageKey;
@@ -167,8 +251,25 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
 
   public async create(input: CreateGoalInput): Promise<GoalPlanItem> {
     const state = this.readState();
-    const created = buildCreatedGoal(input);
+    const normalizedTitle = normalizeTitle(input.title);
+    ensureUniqueGoalTitle(normalizedTitle, state.items);
 
+    const colorKey = normalizeColorKey(input.colorKey);
+    const color = getGoalColorOption(colorKey);
+    const createdCategory = await categoriesRepository.create({
+      name: getGoalCategoryName(normalizedTitle),
+      icon: "target",
+      iconBg: color.iconBgClass,
+    });
+
+    const created = buildCreatedGoal(
+      {
+        ...input,
+        colorKey,
+        title: normalizedTitle,
+      },
+      createdCategory.id,
+    );
     state.items.push(created);
     this.writeState(state);
 
@@ -184,6 +285,24 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
     }
 
     const updated = buildUpdatedGoal(state.items[index], patch);
+    ensureUniqueGoalTitle(updated.title, state.items, updated.id);
+    const color = getGoalColorOption(updated.colorKey);
+
+    const updatedCategory = await categoriesRepository.update(updated.categoryId, {
+      name: getGoalCategoryName(updated.title),
+      icon: "target",
+      iconBg: color.iconBgClass,
+    });
+
+    if (!updatedCategory) {
+      const createdCategory = await categoriesRepository.create({
+        name: getGoalCategoryName(updated.title),
+        icon: "target",
+        iconBg: color.iconBgClass,
+      });
+      updated.categoryId = createdCategory.id;
+    }
+
     state.items[index] = updated;
     this.writeState(state);
 
@@ -192,14 +311,14 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
 
   public async remove(id: string): Promise<boolean> {
     const state = this.readState();
-    const filtered = state.items.filter((item) => item.id !== id);
-
-    if (filtered.length === state.items.length) {
+    const target = state.items.find((item) => item.id === id);
+    if (!target) {
       return false;
     }
 
-    state.items = filtered;
+    state.items = state.items.filter((item) => item.id !== id);
     this.writeState(state);
+    await categoriesRepository.remove(target.categoryId);
 
     return true;
   }
@@ -216,7 +335,7 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
     return window.localStorage;
   }
 
-  private readState(): GoalsStorageV1 {
+  private readState(): GoalsStorageV2 {
     const storage = this.getStorage();
 
     if (!storage) {
@@ -235,11 +354,17 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
 
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (isStorageShape(parsed)) {
+      if (isStorageShapeV2(parsed)) {
         return {
           version: parsed.version,
           items: cloneGoals(parsed.items),
         };
+      }
+
+      if (isStorageShapeV1(parsed)) {
+        const resetState = buildInitialState();
+        this.writeState(resetState);
+        return resetState;
       }
     } catch {
       // Invalid storage payload is reset to keep behavior predictable.
@@ -250,8 +375,8 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
     return reset;
   }
 
-  private writeState(state: GoalsStorageV1): void {
-    const next: GoalsStorageV1 = {
+  private writeState(state: GoalsStorageV2): void {
+    const next: GoalsStorageV2 = {
       version: state.version,
       items: cloneGoals(state.items),
     };

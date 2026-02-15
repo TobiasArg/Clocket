@@ -5,6 +5,7 @@ export { Budgets } from "./Budgets/Budgets";
 export { BudgetDetail } from "./BudgetDetail/BudgetDetail";
 export { Categories } from "./Categories/Categories";
 export { Goals } from "./Goals/Goals";
+export { GoalDetail } from "./Goals/GoalDetail";
 export { Investments } from "./Investments/Investments";
 export { More } from "./More/More";
 export { Plans } from "./Plans/Plans";

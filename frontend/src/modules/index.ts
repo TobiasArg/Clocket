@@ -24,8 +24,12 @@ export type {
 } from "./categories";
 export { useGoalsPageModel } from "./goals";
 export type {
+  GoalDeleteResolution,
+  GoalEntryPresentation,
   GoalListPresentation,
   GoalsSummary,
+  UseGoalDetailPageModelOptions,
+  UseGoalDetailPageModelResult,
   UseGoalsPageModelOptions,
   UseGoalsPageModelResult,
 } from "./goals";

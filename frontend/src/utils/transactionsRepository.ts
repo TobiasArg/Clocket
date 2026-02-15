@@ -1,8 +1,10 @@
-import type { TransactionDetailed } from "@/types";
+import type { TransactionDetailed, TransactionType } from "@/types";
 
 export interface TransactionItem extends TransactionDetailed {
   id: string;
   accountId: string;
+  transactionType: TransactionType;
+  goalId?: string;
   categoryId?: string;
   subcategoryName?: string;
   cuotaPlanId?: string;
@@ -12,7 +14,9 @@ export interface TransactionItem extends TransactionDetailed {
   createdAt?: string;
 }
 
-export type CreateTransactionInput = Omit<TransactionItem, "id">;
+export type CreateTransactionInput = Omit<TransactionItem, "id" | "transactionType"> & {
+  transactionType?: TransactionType;
+};
 export type UpdateTransactionPatch = Partial<CreateTransactionInput>;
 
 export interface TransactionsRepository {

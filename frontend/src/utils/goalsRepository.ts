@@ -1,19 +1,24 @@
-import type { GoalPlan } from "@/types";
+import type { GoalColorKey, GoalPlan } from "@/types";
 
 export type GoalPlanItem = GoalPlan;
 
 export interface CreateGoalInput {
+  colorKey: GoalColorKey;
+  deadlineDate: string;
+  description: string;
+  icon: string;
   title: string;
   targetAmount: number;
-  savedAmount?: number;
-  targetMonth?: string;
 }
 
 export interface UpdateGoalPatch {
+  colorKey?: GoalColorKey;
+  deadlineDate?: string;
+  description?: string;
+  icon?: string;
   title?: string;
   targetAmount?: number;
-  savedAmount?: number;
-  targetMonth?: string;
+  categoryId?: string;
 }
 
 export interface GoalsRepository {

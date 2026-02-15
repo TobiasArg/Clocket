@@ -35,6 +35,8 @@ export interface TransactionDetailed {
   meta: string;
 }
 
+export type TransactionType = "regular" | "saving";
+
 // === Presupuestos ===
 
 export interface BudgetListItem {
@@ -74,10 +76,11 @@ export interface BudgetPlan {
 // === Metas ===
 
 export interface GoalCardSimple {
+  id: string;
   icon: string;
   name: string;
-  progress: string;
-  highlighted?: boolean;
+  progressPercent: number;
+  colorKey: GoalColorKey;
 }
 
 export interface GoalCardDetailed {
@@ -105,12 +108,25 @@ export interface GoalListItem {
 export interface GoalPlan {
   id: string;
   title: string;
+  description: string;
   targetAmount: number;
-  savedAmount: number;
-  targetMonth: string;
+  deadlineDate: string;
+  icon: string;
+  colorKey: GoalColorKey;
+  categoryId: string;
   createdAt: string;
   updatedAt: string;
 }
+
+export type GoalColorKey =
+  | "emerald"
+  | "sky"
+  | "indigo"
+  | "violet"
+  | "rose"
+  | "amber"
+  | "cyan"
+  | "lime";
 
 // === Planes ===
 

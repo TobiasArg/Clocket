@@ -6,14 +6,21 @@ import type {
 } from "@/utils";
 import { DEFAULT_ACCOUNT_ID } from "./accountsRepository";
 
-const STORAGE_VERSION = 3 as const;
 const LEGACY_STORAGE_VERSION_1 = 1 as const;
 const LEGACY_STORAGE_VERSION_2 = 2 as const;
+const LEGACY_STORAGE_VERSION_3 = 3 as const;
 const DEFAULT_STORAGE_KEY = "clocket.transactions";
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const TRANSACTION_TYPE_REGULAR = "regular" as const;
+const TRANSACTION_TYPE_SAVING = "saving" as const;
+const TRANSACTION_TYPES = new Set([TRANSACTION_TYPE_REGULAR, TRANSACTION_TYPE_SAVING]);
 
-interface LegacyTransactionItem extends Omit<TransactionItem, "date" | "accountId"> {
+const STORAGE_VERSION_V4 = 4 as const;
+
+interface LegacyTransactionItem extends Omit<TransactionItem, "date" | "accountId" | "transactionType" | "goalId"> {
   accountId?: string;
+  transactionType?: string;
+  goalId?: string;
   date?: string;
 }
 
@@ -28,15 +35,20 @@ interface TransactionsStorageV2 {
 }
 
 interface TransactionsStorageV3 {
-  version: typeof STORAGE_VERSION;
+  version: typeof LEGACY_STORAGE_VERSION_3;
+  items: LegacyTransactionItem[];
+}
+
+interface TransactionsStorageV4 {
+  version: typeof STORAGE_VERSION_V4;
   items: TransactionItem[];
 }
 
 const cloneItem = (item: TransactionItem): TransactionItem => ({ ...item });
 const cloneItems = (items: TransactionItem[]): TransactionItem[] => items.map(cloneItem);
 
-const buildInitialState = (): TransactionsStorageV3 => ({
-  version: STORAGE_VERSION,
+const buildInitialState = (): TransactionsStorageV4 => ({
+  version: STORAGE_VERSION_V4,
   items: [],
 });
 
@@ -99,6 +111,28 @@ const normalizeAccountId = (value?: string): string => {
   return DEFAULT_ACCOUNT_ID;
 };
 
+const normalizeTransactionType = (value?: string): TransactionItem["transactionType"] => {
+  return value && TRANSACTION_TYPES.has(value as TransactionItem["transactionType"])
+    ? value as TransactionItem["transactionType"]
+    : TRANSACTION_TYPE_REGULAR;
+};
+
+const normalizeGoalId = (
+  value: string | undefined,
+  transactionType: TransactionItem["transactionType"],
+): string | undefined => {
+  if (transactionType !== TRANSACTION_TYPE_SAVING) {
+    return undefined;
+  }
+
+  const normalized = value?.trim();
+  if (!normalized || normalized.length === 0) {
+    throw new Error("Saving transactions require a goalId.");
+  }
+
+  return normalized;
+};
+
 const getNormalizedDate = (item: { date?: string; createdAt?: string; meta: string }): string => {
   return (
     (item.date ? parseDateCandidate(item.date) : null) ??
@@ -111,14 +145,19 @@ const getNormalizedDate = (item: { date?: string; createdAt?: string; meta: stri
 const normalizeTransactionItem = (
   item: Omit<TransactionItem, "date" | "meta" | "accountId"> & {
     accountId?: string;
+    transactionType?: string;
+    goalId?: string;
     date?: string;
     meta: string;
   },
 ): TransactionItem => {
   const date = getNormalizedDate(item);
+  const transactionType = normalizeTransactionType(item.transactionType);
   return {
     ...item,
     accountId: normalizeAccountId(item.accountId),
+    transactionType,
+    goalId: normalizeGoalId(item.goalId, transactionType),
     date,
     // `meta` always stores a date prefix to keep transaction metadata predictable.
     meta: normalizeMetaWithDate(item.meta, date),
@@ -138,6 +177,8 @@ const isLegacyTransactionItem = (value: unknown): value is LegacyTransactionItem
     typeof item.name === "string" &&
     typeof item.category === "string" &&
     (item.accountId === undefined || typeof item.accountId === "string") &&
+    (item.transactionType === undefined || typeof item.transactionType === "string") &&
+    (item.goalId === undefined || typeof item.goalId === "string") &&
     (item.categoryId === undefined || typeof item.categoryId === "string") &&
     (item.subcategoryName === undefined || typeof item.subcategoryName === "string") &&
     (item.cuotaPlanId === undefined || typeof item.cuotaPlanId === "string") &&
@@ -164,7 +205,11 @@ const isTransactionItem = (value: unknown): value is TransactionItem => {
     typeof value.date === "string" &&
     ISO_DATE_PATTERN.test(value.date) &&
     typeof value.accountId === "string" &&
-    value.accountId.trim().length > 0
+    value.accountId.trim().length > 0 &&
+    typeof value.transactionType === "string" &&
+    TRANSACTION_TYPES.has(value.transactionType as TransactionItem["transactionType"]) &&
+    (value.transactionType !== TRANSACTION_TYPE_SAVING ||
+      (typeof value.goalId === "string" && value.goalId.trim().length > 0))
   );
 };
 
@@ -201,22 +246,42 @@ const isStorageShapeV3 = (value: unknown): value is TransactionsStorageV3 => {
 
   const state = value as Partial<TransactionsStorageV3>;
   return (
-    state.version === STORAGE_VERSION &&
+    state.version === LEGACY_STORAGE_VERSION_3 &&
+    Array.isArray(state.items) &&
+    state.items.every(isLegacyTransactionItem)
+  );
+};
+
+const isStorageShapeV4 = (value: unknown): value is TransactionsStorageV4 => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const state = value as Partial<TransactionsStorageV4>;
+  return (
+    state.version === STORAGE_VERSION_V4 &&
     Array.isArray(state.items) &&
     state.items.every(isTransactionItem)
   );
 };
 
-const migrateStorageV1 = (state: TransactionsStorageV1): TransactionsStorageV3 => {
+const migrateStorageV1 = (state: TransactionsStorageV1): TransactionsStorageV4 => {
   return {
-    version: STORAGE_VERSION,
+    version: STORAGE_VERSION_V4,
     items: state.items.map((item) => normalizeTransactionItem(item)),
   };
 };
 
-const migrateStorageV2 = (state: TransactionsStorageV2): TransactionsStorageV3 => {
+const migrateStorageV2 = (state: TransactionsStorageV2): TransactionsStorageV4 => {
   return {
-    version: STORAGE_VERSION,
+    version: STORAGE_VERSION_V4,
+    items: state.items.map((item) => normalizeTransactionItem(item)),
+  };
+};
+
+const migrateStorageV3 = (state: TransactionsStorageV3): TransactionsStorageV4 => {
+  return {
+    version: STORAGE_VERSION_V4,
     items: state.items.map((item) => normalizeTransactionItem(item)),
   };
 };
@@ -232,7 +297,7 @@ const createTransactionId = (): string => {
 export class LocalStorageTransactionsRepository implements TransactionsRepository {
   private readonly storageKey: string;
 
-  private memoryState: TransactionsStorageV3;
+  private memoryState: TransactionsStorageV4;
 
   public constructor(storageKey: string = DEFAULT_STORAGE_KEY) {
     this.storageKey = storageKey;
@@ -307,7 +372,7 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
     return window.localStorage;
   }
 
-  private readState(): TransactionsStorageV3 {
+  private readState(): TransactionsStorageV4 {
     const storage = this.getStorage();
 
     if (!storage) {
@@ -326,7 +391,7 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
 
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (isStorageShapeV3(parsed)) {
+      if (isStorageShapeV4(parsed)) {
         return {
           version: parsed.version,
           items: cloneItems(parsed.items),
@@ -344,6 +409,12 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
         this.writeState(migrated);
         return migrated;
       }
+
+      if (isStorageShapeV3(parsed)) {
+        const migrated = migrateStorageV3(parsed);
+        this.writeState(migrated);
+        return migrated;
+      }
     } catch {
       // Invalid storage payload is reset to keep behavior predictable.
     }
@@ -353,8 +424,8 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
     return reset;
   }
 
-  private writeState(state: TransactionsStorageV3): void {
-    const next: TransactionsStorageV3 = {
+  private writeState(state: TransactionsStorageV4): void {
+    const next: TransactionsStorageV4 = {
       version: state.version,
       items: cloneItems(state.items),
     };

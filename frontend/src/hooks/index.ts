@@ -103,6 +103,13 @@ export type {
   UseGoalsPageModelOptions,
   UseGoalsPageModelResult,
 } from "./useGoalsPageModel";
+export { useGoalDetailPageModel } from "./useGoalDetailPageModel";
+export type {
+  GoalDeleteResolution,
+  GoalEntryPresentation,
+  UseGoalDetailPageModelOptions,
+  UseGoalDetailPageModelResult,
+} from "./useGoalDetailPageModel";
 export { useStatisticsPageModel } from "./useStatisticsPageModel";
 export type {
   StatisticsTrendPoint,

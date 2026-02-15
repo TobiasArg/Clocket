@@ -49,6 +49,7 @@ export interface HomeProps {
   onMenuClick?: () => void;
   onSeeAllTransactions?: () => void;
   onSeeAllCuotas?: () => void;
+  onGoalClick?: (goalId: string) => void;
 }
 
 export function Home({
@@ -69,11 +70,7 @@ export function Home({
   spendingCategories,
   spendingPendingLabel = "Pending installments",
   goalsTitle = "Goals",
-  goals = [
-    { icon: "airplane", name: "Vacation", progress: "48%", highlighted: true },
-    { icon: "car", name: "New Car", progress: "34%" },
-    { icon: "shield", name: "Emergency", progress: "92%" },
-  ],
+  goals,
   cuotasTitle = "Planes de Cuotas",
   cuotasViewAll = "Ver todos",
   cuotas,
@@ -93,10 +90,12 @@ export function Home({
   onMenuClick,
   onSeeAllTransactions,
   onSeeAllCuotas,
+  onGoalClick,
 }: HomeProps) {
   const {
     activeBalanceSlide,
     balanceSlides,
+    dashboardGoals,
     displayedSpendingCategories,
     displayedSpendingTotal,
     hasCuotasError,
@@ -189,7 +188,8 @@ export function Home({
 
           <GoalsWidget
             title={goalsTitle}
-            goals={goals}
+            goals={goals ?? dashboardGoals}
+            onGoalClick={onGoalClick}
           />
 
           <InstallmentPlansWidget

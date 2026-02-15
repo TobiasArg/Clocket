@@ -2,7 +2,6 @@ import { CardSection, IconBadge, ProgressSection, TextBadge } from "@/components
 import type { GoalListPresentation } from "@/hooks";
 
 export interface GoalsListWidgetProps {
-  deleteActionLabel?: string;
   emptyHint?: string;
   emptyTitle?: string;
   errorLabel?: string;
@@ -10,12 +9,11 @@ export interface GoalsListWidgetProps {
   isLoading?: boolean;
   items?: GoalListPresentation[];
   loadingLabel?: string;
-  onDelete?: (id: string) => void;
+  onOpenGoal?: (id: string) => void;
   sectionTitle?: string;
 }
 
 export function GoalsListWidget({
-  deleteActionLabel = "Delete",
   emptyHint = "Agrega una meta para empezar a ahorrar con foco.",
   emptyTitle = "No hay metas",
   errorLabel = "No pudimos cargar las metas. Intenta nuevamente.",
@@ -23,7 +21,7 @@ export function GoalsListWidget({
   isLoading = false,
   items = [],
   loadingLabel = "Cargando metas...",
-  onDelete,
+  onOpenGoal,
   sectionTitle = "Mis Goals",
 }: GoalsListWidgetProps) {
   return (
@@ -48,19 +46,27 @@ export function GoalsListWidget({
       )}
 
       {items.map((goal) => (
-        <div key={goal.id} className="flex flex-col gap-4 bg-[#F4F4F5] rounded-[20px] p-5">
+        <button
+          key={goal.id}
+          type="button"
+          onClick={() => onOpenGoal?.(goal.id)}
+          className="w-full text-left flex flex-col gap-4 bg-[#F4F4F5] rounded-[20px] p-5"
+        >
           <div className="flex min-w-0 items-center justify-between w-full gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <IconBadge
                 icon={goal.icon}
+                bg={goal.iconBgClass}
                 size="w-[48px] h-[48px]"
                 rounded="rounded-[14px]"
                 iconSize="text-2xl"
               />
               <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="block truncate text-base font-semibold text-black font-['Outfit']">{goal.title}</span>
+                <span className="block truncate text-base font-semibold text-black font-['Outfit']">
+                  {goal.title}
+                </span>
                 <span className="block truncate text-xs font-normal text-[#71717A]">
-                  Meta: {goal.targetMonthLabel}
+                  Límite: {goal.deadlineLabel}
                 </span>
               </div>
             </div>
@@ -82,14 +88,7 @@ export function GoalsListWidget({
             leftLabelClassName="text-sm font-semibold text-black font-['Outfit']"
             rightLabelClassName="text-sm font-normal text-[#71717A]"
           />
-          <button
-            type="button"
-            onClick={() => onDelete?.(goal.id)}
-            className="w-fit text-xs font-medium text-[#71717A]"
-          >
-            {deleteActionLabel}
-          </button>
-        </div>
+        </button>
       ))}
     </CardSection>
   );

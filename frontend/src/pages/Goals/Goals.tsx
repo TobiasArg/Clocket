@@ -1,4 +1,4 @@
-import type { NavItem } from "@/modules/goals";
+import type { GoalColorKey, NavItem } from "@/modules/goals";
 import {
   BottomNavigation,
   GoalsListWidget,
@@ -19,18 +19,22 @@ export interface GoalsProps {
   quickAddTitle?: string;
   quickAddNameLabel?: string;
   quickAddTargetAmountLabel?: string;
-  quickAddSavedAmountLabel?: string;
-  quickAddTargetMonthLabel?: string;
+  quickAddDescriptionLabel?: string;
+  quickAddDeadlineLabel?: string;
+  quickAddIconLabel?: string;
+  quickAddColorLabel?: string;
   quickAddSubmitLabel?: string;
   quickAddNameErrorLabel?: string;
   quickAddTargetErrorLabel?: string;
+  quickAddDescriptionErrorLabel?: string;
+  quickAddDeadlineErrorLabel?: string;
   loadingLabel?: string;
   emptyTitle?: string;
   emptyHint?: string;
   errorLabel?: string;
-  deleteActionLabel?: string;
   navItems?: NavItem[];
   onAddClick?: () => void;
+  onGoalClick?: (goalId: string) => void;
   onNavItemClick?: (index: number) => void;
 }
 
@@ -44,17 +48,20 @@ export function Goals({
   sectionTitle = "Mis Goals",
   quickAddTitle = "Nueva meta",
   quickAddNameLabel = "Nombre",
+  quickAddDescriptionLabel = "Descripción",
   quickAddTargetAmountLabel = "Meta",
-  quickAddSavedAmountLabel = "Ahorrado",
-  quickAddTargetMonthLabel = "Mes objetivo",
+  quickAddDeadlineLabel = "Fecha límite",
+  quickAddIconLabel = "Ícono",
+  quickAddColorLabel = "Color",
   quickAddSubmitLabel = "Guardar meta",
   quickAddNameErrorLabel = "Agrega un nombre corto.",
   quickAddTargetErrorLabel = "La meta debe ser mayor a 0.",
+  quickAddDescriptionErrorLabel = "Agrega una descripción breve.",
+  quickAddDeadlineErrorLabel = "Selecciona una fecha límite válida.",
   loadingLabel = "Cargando metas...",
   emptyTitle = "No hay metas",
   emptyHint = "Agrega una meta para empezar a ahorrar con foco.",
   errorLabel = "No pudimos cargar las metas. Intenta nuevamente.",
-  deleteActionLabel = "Delete",
   navItems = [
     { icon: "house", label: "Home", to: "/home" },
     { icon: "wallet", label: "Budgets", to: "/budgets" },
@@ -63,28 +70,37 @@ export function Goals({
     { icon: "dots-three-outline", label: "Más", active: true, to: "/more" },
   ],
   onAddClick,
+  onGoalClick,
   onNavItemClick,
 }: GoalsProps) {
   const {
+    colorOptions,
+    deadlineDateInput,
+    descriptionInput,
     error,
     goalRows,
     handleCreate,
     handleHeaderAction,
-    handleRemove,
+    iconOptions,
+    isDeadlineValid,
+    isDescriptionValid,
     isEditorOpen,
     isFormValid,
+    isIconValid,
     isLoading,
     isTargetValid,
     isTitleValid,
-    savedAmountInput,
-    setSavedAmountInput,
+    selectedColorKey,
+    selectedIcon,
+    setDeadlineDateInput,
+    setDescriptionInput,
+    setSelectedColorKey,
+    setSelectedIcon,
     setTargetAmountInput,
-    setTargetMonthInput,
     setTitleInput,
     showValidation,
     summary,
     targetAmountInput,
-    targetMonthInput,
     titleInput,
   } = useGoalsPageModel({ onAddClick });
 
@@ -98,28 +114,41 @@ export function Goals({
       />
       <div className="flex-1 overflow-auto">
         <GoalsQuickAddWidget
+          colorOptions={colorOptions}
           isOpen={isEditorOpen}
           title={quickAddTitle}
           quickAddNameLabel={quickAddNameLabel}
+          quickAddDescriptionLabel={quickAddDescriptionLabel}
           quickAddTargetAmountLabel={quickAddTargetAmountLabel}
-          quickAddSavedAmountLabel={quickAddSavedAmountLabel}
-          quickAddTargetMonthLabel={quickAddTargetMonthLabel}
+          quickAddDeadlineLabel={quickAddDeadlineLabel}
+          quickAddIconLabel={quickAddIconLabel}
+          quickAddColorLabel={quickAddColorLabel}
           quickAddSubmitLabel={quickAddSubmitLabel}
           quickAddNameErrorLabel={quickAddNameErrorLabel}
           quickAddTargetErrorLabel={quickAddTargetErrorLabel}
+          quickAddDescriptionErrorLabel={quickAddDescriptionErrorLabel}
+          quickAddDeadlineErrorLabel={quickAddDeadlineErrorLabel}
+          iconOptions={iconOptions}
           titleInput={titleInput}
+          descriptionInput={descriptionInput}
           targetAmountInput={targetAmountInput}
-          savedAmountInput={savedAmountInput}
-          targetMonthInput={targetMonthInput}
+          deadlineDateInput={deadlineDateInput}
+          selectedIcon={selectedIcon}
+          selectedColorKey={selectedColorKey}
           showValidation={showValidation}
           isTitleValid={isTitleValid}
+          isDescriptionValid={isDescriptionValid}
           isTargetValid={isTargetValid}
+          isDeadlineValid={isDeadlineValid}
+          isIconValid={isIconValid}
           isFormValid={isFormValid}
           isLoading={isLoading}
           onTitleChange={setTitleInput}
+          onDescriptionChange={setDescriptionInput}
           onTargetAmountChange={setTargetAmountInput}
-          onSavedAmountChange={setSavedAmountInput}
-          onTargetMonthChange={setTargetMonthInput}
+          onDeadlineDateChange={setDeadlineDateInput}
+          onIconChange={setSelectedIcon}
+          onColorKeyChange={(value) => setSelectedColorKey(value as GoalColorKey)}
           onSubmit={() => {
             void handleCreate();
           }}
@@ -143,10 +172,9 @@ export function Goals({
           errorLabel={errorLabel}
           emptyTitle={emptyTitle}
           emptyHint={emptyHint}
-          deleteActionLabel={deleteActionLabel}
           items={goalRows}
-          onDelete={(id) => {
-            void handleRemove(id);
+          onOpenGoal={(id) => {
+            onGoalClick?.(id);
           }}
         />
       </div>
