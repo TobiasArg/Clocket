@@ -5,12 +5,14 @@ export type {
   UseAccountsPageModelResult,
 } from "@/hooks";
 export {
+  AccountDeleteConfirmDialog,
   AccountsListWidget,
   AccountsQuickAddWidget,
   AccountsSummaryWidget,
   PageHeader,
 } from "@/components";
 export type {
+  AccountDeleteConfirmDialogProps,
   AccountsListWidgetProps,
   AccountsQuickAddWidgetProps,
   AccountsSummaryWidgetProps,

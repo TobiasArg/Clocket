@@ -1,5 +1,7 @@
 export { ActionButton } from "./ActionButton/ActionButton";
 export type { ActionButtonProps } from "./ActionButton/ActionButton";
+export { AccountDeleteConfirmDialog } from "./AccountDeleteConfirmDialog/AccountDeleteConfirmDialog";
+export type { AccountDeleteConfirmDialogProps } from "./AccountDeleteConfirmDialog/AccountDeleteConfirmDialog";
 export { AccountsListWidget } from "./AccountsListWidget/AccountsListWidget";
 export type { AccountsListWidgetProps } from "./AccountsListWidget/AccountsListWidget";
 export { AccountsQuickAddWidget } from "./AccountsQuickAddWidget/AccountsQuickAddWidget";

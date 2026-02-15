@@ -139,23 +139,10 @@ export const useHomePageModel = (
     [cuotaItems],
   );
 
-  const monthlyBalanceByAccountId = useMemo(() => {
+  const transactionFlowByAccountId = useMemo(() => {
     const map = new Map<string, { income: number; expense: number; net: number }>();
-    const monthWindow = getCurrentMonthWindow();
 
     transactionItems.forEach((transaction) => {
-      const transactionDate = getTransactionDateForMonthBalance(transaction);
-      if (!transactionDate) {
-        return;
-      }
-
-      if (
-        transactionDate < monthWindow.start ||
-        transactionDate >= monthWindow.end
-      ) {
-        return;
-      }
-
       const amount = parseSignedAmount(transaction.amount);
       const current = map.get(transaction.accountId) ?? {
         income: 0,
@@ -176,10 +163,25 @@ export const useHomePageModel = (
     return map;
   }, [transactionItems]);
 
-  const totalAccountsBalance = useMemo(
-    () => accounts.reduce((sum, account) => sum + account.balance, 0),
-    [accounts],
-  );
+  const overallTransactionFlow = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+
+    transactionItems.forEach((transaction) => {
+      const amount = parseSignedAmount(transaction.amount);
+      if (amount > 0) {
+        income += amount;
+      } else if (amount < 0) {
+        expense += Math.abs(amount);
+      }
+    });
+
+    return {
+      income,
+      expense,
+      net: income - expense,
+    };
+  }, [transactionItems]);
 
   const recentTransactions = useMemo<HomeTransactionRow[]>(() => {
     if (transactions) {
@@ -273,9 +275,9 @@ export const useHomePageModel = (
       }));
   }, [cuotaItems, cuotas]);
 
-  const displayedTotalBalance = totalBalance ?? formatCurrency(totalAccountsBalance);
-  const displayedIncomeValue = incomeValue ?? formatCurrency(monthlyBalance.income);
-  const displayedExpenseValue = expenseValue ?? formatCurrency(monthlyBalance.expense);
+  const displayedTotalBalance = totalBalance ?? formatCurrency(overallTransactionFlow.net);
+  const displayedIncomeValue = incomeValue ?? formatCurrency(overallTransactionFlow.income);
+  const displayedExpenseValue = expenseValue ?? formatCurrency(overallTransactionFlow.expense);
   const displayedSpendingTotal = spendingTotal ?? formatCurrency(monthlyBalance.expense);
   const displayedSpendingCategories = spendingCategories ?? computedSpendingCategories;
   const pendingInstallmentsLabel = isCuotasLoading && !cuotas && cuotaItems.length === 0
@@ -294,13 +296,13 @@ export const useHomePageModel = (
     ];
 
     accounts.forEach((account) => {
-      const accountBalance = monthlyBalanceByAccountId.get(account.id);
+      const accountFlow = transactionFlowByAccountId.get(account.id);
       slides.push({
         id: account.id,
         label: account.name,
-        balance: formatCurrency(account.balance),
-        incomeValue: formatCurrency(accountBalance?.income ?? 0),
-        expenseValue: formatCurrency(accountBalance?.expense ?? 0),
+        balance: formatCurrency(accountFlow?.net ?? 0),
+        incomeValue: formatCurrency(accountFlow?.income ?? 0),
+        expenseValue: formatCurrency(accountFlow?.expense ?? 0),
       });
     });
 
@@ -310,7 +312,7 @@ export const useHomePageModel = (
     displayedExpenseValue,
     displayedIncomeValue,
     displayedTotalBalance,
-    monthlyBalanceByAccountId,
+    transactionFlowByAccountId,
   ]);
 
   const [activeBalanceSlide, setActiveBalanceSlide] = useState<number>(activeDot);

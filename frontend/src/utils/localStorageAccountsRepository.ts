@@ -14,6 +14,11 @@ interface AccountsStorageV1 {
   items: AccountItem[];
 }
 
+interface TransactionsStorageShape {
+  version: number;
+  items: Array<{ accountId?: string }>;
+}
+
 const buildInitialState = (): AccountsStorageV1 => ({
   version: STORAGE_VERSION,
   items: [
@@ -164,6 +169,7 @@ export class LocalStorageAccountsRepository implements AccountsRepository {
 
     state.items = filtered;
     this.writeState(state);
+    this.removeTransactionsByAccountId(id);
 
     return true;
   }
@@ -178,6 +184,53 @@ export class LocalStorageAccountsRepository implements AccountsRepository {
     }
 
     return window.localStorage;
+  }
+
+  private removeTransactionsByAccountId(accountId: string): void {
+    const storage = this.getStorage();
+    if (!storage) {
+      return;
+    }
+
+    const transactionsKey = "clocket.transactions";
+    const raw = storage.getItem(transactionsKey);
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        !("items" in parsed) ||
+        !("version" in parsed)
+      ) {
+        return;
+      }
+
+      const storageShape = parsed as TransactionsStorageShape;
+      if (!Array.isArray(storageShape.items)) {
+        return;
+      }
+
+      const filteredItems = storageShape.items.filter(
+        (item) => item.accountId !== accountId,
+      );
+      if (filteredItems.length === storageShape.items.length) {
+        return;
+      }
+
+      storage.setItem(
+        transactionsKey,
+        JSON.stringify({
+          version: storageShape.version,
+          items: filteredItems,
+        }),
+      );
+    } catch {
+      // Ignore malformed transactions payload and keep account delete behavior stable.
+    }
   }
 
   private readState(): AccountsStorageV1 {

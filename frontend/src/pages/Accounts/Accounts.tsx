@@ -1,4 +1,5 @@
 import {
+  AccountDeleteConfirmDialog,
   AccountsListWidget,
   AccountsQuickAddWidget,
   AccountsSummaryWidget,
@@ -21,6 +22,7 @@ export interface AccountsProps {
   emptyTitle?: string;
   emptyHint?: string;
   errorLabel?: string;
+  deleteActionLabel?: string;
   updatedPrefix?: string;
   incomeLabel?: string;
   expenseLabel?: string;
@@ -43,6 +45,7 @@ export function Accounts({
   emptyTitle = "No hay cuentas",
   emptyHint = "Crea tu primera cuenta para organizar tu balance.",
   errorLabel = "No pudimos cargar las cuentas. Intenta nuevamente.",
+  deleteActionLabel = "Eliminar",
   updatedPrefix = "Actualizado",
   incomeLabel = "In",
   expenseLabel = "Out",
@@ -52,15 +55,22 @@ export function Accounts({
   const {
     accountFlowsById,
     balanceInput,
+    cancelDeleteAccount,
+    confirmDeleteAccount,
+    deleteConfirmAccountName,
+    deleteConfirmTransactionsCount,
     error,
     handleCreate,
     handleHeaderAction,
     isBalanceValid,
+    isDeleteConfirmOpen,
     isEditorOpen,
     isFormValid,
     isLoading,
     isNameValid,
     nameInput,
+    pendingDeleteAccountId,
+    requestDeleteAccount,
     setBalanceInput,
     setNameInput,
     showValidation,
@@ -117,12 +127,30 @@ export function Accounts({
             errorLabel={errorLabel}
             emptyTitle={emptyTitle}
             emptyHint={emptyHint}
+            deleteActionLabel={deleteActionLabel}
             updatedPrefix={updatedPrefix}
             incomeLabel={incomeLabel}
             expenseLabel={expenseLabel}
+            pendingDeleteAccountId={pendingDeleteAccountId}
+            onDeleteAccount={(accountId) => {
+              requestDeleteAccount(accountId);
+            }}
           />
         </div>
       </div>
+
+      <AccountDeleteConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        isLoading={pendingDeleteAccountId !== null}
+        accountName={deleteConfirmAccountName}
+        countLabel={deleteConfirmTransactionsCount === 1
+          ? "Se eliminará 1 transacción asociada."
+          : `Se eliminarán ${deleteConfirmTransactionsCount} transacciones asociadas.`}
+        onCancel={cancelDeleteAccount}
+        onConfirm={() => {
+          void confirmDeleteAccount();
+        }}
+      />
     </div>
   );
 }

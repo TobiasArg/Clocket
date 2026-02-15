@@ -1,10 +1,11 @@
-import { CardSection, IconBadge, ListItemRow } from "@/components";
+import { CardSection } from "@/components";
+import { AccountSwipeDeleteRow } from "./AccountSwipeDeleteRow";
 import type { AccountFlow } from "@/hooks";
-import { formatCurrency } from "@/utils";
 
 export interface AccountsListWidgetProps {
   accountFlowsById?: Map<string, AccountFlow>;
   accounts?: Array<{ id: string; name: string; balance: number; updatedAt: string }>;
+  deleteActionLabel?: string;
   emptyHint?: string;
   emptyTitle?: string;
   errorLabel?: string;
@@ -13,18 +14,15 @@ export interface AccountsListWidgetProps {
   expenseLabel?: string;
   isLoading?: boolean;
   loadingLabel?: string;
+  onDeleteAccount?: (accountId: string) => void;
+  pendingDeleteAccountId?: string | null;
   updatedPrefix?: string;
 }
-
-const UPDATED_FORMATTER = new Intl.DateTimeFormat("es-ES", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
 
 export function AccountsListWidget({
   accountFlowsById = new Map<string, AccountFlow>(),
   accounts = [],
+  deleteActionLabel = "Eliminar",
   emptyHint = "Crea tu primera cuenta para organizar tu balance.",
   emptyTitle = "No hay cuentas",
   errorLabel = "No pudimos cargar las cuentas. Intenta nuevamente.",
@@ -33,6 +31,8 @@ export function AccountsListWidget({
   expenseLabel = "Out",
   isLoading = false,
   loadingLabel = "Cargando cuentas...",
+  onDeleteAccount,
+  pendingDeleteAccountId = null,
   updatedPrefix = "Actualizado",
 }: AccountsListWidgetProps) {
   return (
@@ -61,40 +61,21 @@ export function AccountsListWidget({
 
       {accounts.map((account, index) => {
         const flow = accountFlowsById.get(account.id) ?? { income: 0, expense: 0 };
+        const isDeleting = pendingDeleteAccountId === account.id;
 
         return (
-          <ListItemRow
+          <AccountSwipeDeleteRow
             key={account.id}
-            left={(
-              <IconBadge
-                icon="wallet"
-                bg="bg-[#18181B]"
-                iconColor="text-white"
-                size="w-[40px] h-[40px]"
-                rounded="rounded-xl"
-              />
-            )}
-            title={account.name}
-            subtitle={`${updatedPrefix} ${UPDATED_FORMATTER.format(new Date(account.updatedAt))}`}
-            titleClassName="text-base font-semibold text-black font-['Outfit']"
-            subtitleClassName="text-xs font-medium text-[#71717A]"
-            right={(
-              <div className="flex flex-col items-end gap-0.5">
-                <span
-                  className={`text-base font-bold font-['Outfit'] ${
-                    account.balance >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
-                  }`}
-                >
-                  {formatCurrency(account.balance)}
-                </span>
-                <span className="text-[10px] font-medium text-[#71717A]">
-                  {incomeLabel} {formatCurrency(flow.income)} · {expenseLabel} {formatCurrency(flow.expense)}
-                </span>
-              </div>
-            )}
+            account={account}
+            flow={flow}
+            isDeleting={isDeleting}
+            isInteractionLocked={pendingDeleteAccountId !== null}
+            updatedPrefix={updatedPrefix}
+            incomeLabel={incomeLabel}
+            expenseLabel={expenseLabel}
+            deleteActionLabel={deleteActionLabel}
+            onDelete={onDeleteAccount}
             showBorder={index < accounts.length - 1}
-            borderColor="border-[#E4E4E7]"
-            padding="py-3.5"
           />
         );
       })}
