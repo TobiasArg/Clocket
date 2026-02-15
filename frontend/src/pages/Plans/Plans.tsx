@@ -38,6 +38,7 @@ export interface PlansProps {
   deleteConfirmHint?: string;
   deleteConfirmLabel?: string;
   deleteConfirmTitle?: string;
+  invalidDateErrorLabel?: string;
   markInstallmentAriaLabel?: string;
   onBackClick?: () => void;
   onAddClick?: () => void;
@@ -76,6 +77,7 @@ export function Plans({
   deleteConfirmHint = "Se eliminará el plan y todas sus transacciones.",
   deleteConfirmLabel = "Eliminar",
   deleteConfirmTitle = "¿Eliminar este plan?",
+  invalidDateErrorLabel = "Fecha inválida",
   markInstallmentAriaLabel = "Marcar cuota como pagada",
   onBackClick,
   onAddClick,
@@ -94,6 +96,7 @@ export function Plans({
     isInstallmentsCountValid,
     isLoading,
     isTotalAmountValid,
+    invalidDatePlanId,
     nameInput,
     paidFeedbackPlanId,
     pendingPaidPlanId,
@@ -205,6 +208,8 @@ export function Plans({
             markInstallmentAriaLabel={markInstallmentAriaLabel}
             pendingPaidPlanId={pendingPaidPlanId}
             paidFeedbackPlanId={paidFeedbackPlanId}
+            invalidDatePlanId={invalidDatePlanId}
+            invalidDateErrorLabel={invalidDateErrorLabel}
             deleteActionLabel={deleteActionLabel}
             deleteConfirmPlanId={deleteConfirmPlanId}
             deleteConfirmTitle={deleteConfirmTitle}

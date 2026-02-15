@@ -11,6 +11,15 @@ export {
   isCuotaActiveInMonth,
 } from "./monthlyCuotaImpact";
 export {
+  compareDateParts,
+  formatDateParts,
+  getInstallmentDateParts,
+  getInstallmentDateString,
+  getTodayDatePartsLocal,
+  isFutureDateParts,
+  parseDateParts,
+} from "./cuotasDateUtils";
+export {
   LocalStorageAccountsRepository,
   accountsRepository,
 } from "./localStorageAccountsRepository";
@@ -46,6 +55,9 @@ export type {
   MonthWindow,
   MonthlyBalance,
 } from "./monthlyBalance";
+export type {
+  DateParts,
+} from "./cuotasDateUtils";
 export type {
   AccountItem,
   AccountsRepository,

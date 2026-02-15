@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCuotas } from "./useCuotas";
 import type { CuotaPlanStatus, CuotaPlanWithStatus } from "@/types";
+import {
+  compareDateParts,
+  getInstallmentDateParts,
+  getTodayDatePartsLocal,
+  isFutureDateParts,
+  parseDateParts,
+} from "@/utils";
 
 export interface UsePlansPageModelOptions {
   onAddClick?: () => void;
@@ -21,6 +28,7 @@ export interface UsePlansPageModelResult {
   isInstallmentsCountValid: boolean;
   isLoading: boolean;
   isTotalAmountValid: boolean;
+  invalidDatePlanId: string | null;
   nameInput: string;
   paidFeedbackPlanId: string | null;
   pendingPaidPlanId: string | null;
@@ -41,14 +49,6 @@ export interface UsePlansPageModelResult {
   handleMarkInstallmentPaid: (id: string) => Promise<void>;
 }
 
-const YEAR_MONTH_DAY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-interface DateParts {
-  year: number;
-  month: number;
-  day: number;
-}
-
 const getCurrentDateInputValue = (): string => {
   const now = new Date();
   const year = now.getFullYear();
@@ -57,56 +57,13 @@ const getCurrentDateInputValue = (): string => {
   return `${year}-${month}-${day}`;
 };
 
-const parseDateParts = (value: string): DateParts | null => {
-  const match = YEAR_MONTH_DAY_PATTERN.exec(value);
-  if (!match) {
-    return null;
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-
-  if (month < 1 || month > 12) {
-    return null;
-  }
-
-  const maxDay = new Date(year, month, 0).getDate();
-  if (day < 1 || day > maxDay) {
-    return null;
-  }
-
-  return { year, month, day };
-};
-
-const compareDateParts = (left: DateParts, right: DateParts): number => {
-  if (left.year !== right.year) {
-    return left.year - right.year;
-  }
-
-  if (left.month !== right.month) {
-    return left.month - right.month;
-  }
-
-  return left.day - right.day;
-};
-
-const getTodayDateParts = (): DateParts => {
-  const now = new Date();
-  return {
-    year: now.getFullYear(),
-    month: now.getMonth() + 1,
-    day: now.getDate(),
-  };
-};
-
 const isValidDateInput = (value: string): boolean => {
   const inputDate = parseDateParts(value);
   if (!inputDate) {
     return false;
   }
 
-  return compareDateParts(inputDate, getTodayDateParts()) <= 0;
+  return !isFutureDateParts(inputDate, getTodayDatePartsLocal());
 };
 
 const getDaysInMonth = (year: number, monthIndex: number): number => {
@@ -163,13 +120,18 @@ export const usePlansPageModel = (
   const [deleteConfirmPlanId, setDeleteConfirmPlanId] = useState<string | null>(null);
   const [pendingPaidPlanId, setPendingPaidPlanId] = useState<string | null>(null);
   const [paidFeedbackPlanId, setPaidFeedbackPlanId] = useState<string | null>(null);
+  const [invalidDatePlanId, setInvalidDatePlanId] = useState<string | null>(null);
   const paidFeedbackTimeoutRef = useRef<number | null>(null);
+  const invalidDateTimeoutRef = useRef<number | null>(null);
   const paidInstallmentsAutoSyncRef = useRef<boolean>(false);
 
   useEffect(() => {
     return () => {
       if (paidFeedbackTimeoutRef.current !== null) {
         window.clearTimeout(paidFeedbackTimeoutRef.current);
+      }
+      if (invalidDateTimeoutRef.current !== null) {
+        window.clearTimeout(invalidDateTimeoutRef.current);
       }
     };
   }, []);
@@ -322,7 +284,27 @@ export const usePlansPageModel = (
       return;
     }
 
+    const nextInstallmentIndex = targetPlan.paidInstallmentsCount + 1;
+    const nextInstallmentDateParts = getInstallmentDateParts(
+      targetPlan.createdAt,
+      nextInstallmentIndex,
+    );
+    const isInvalidInstallmentDate = !nextInstallmentDateParts ||
+      compareDateParts(nextInstallmentDateParts, getTodayDatePartsLocal()) > 0;
+    if (isInvalidInstallmentDate) {
+      setInvalidDatePlanId(id);
+      if (invalidDateTimeoutRef.current !== null) {
+        window.clearTimeout(invalidDateTimeoutRef.current);
+      }
+      invalidDateTimeoutRef.current = window.setTimeout(() => {
+        setInvalidDatePlanId((current) => (current === id ? null : current));
+        invalidDateTimeoutRef.current = null;
+      }, 1800);
+      return;
+    }
+
     setPendingPaidPlanId(id);
+    setInvalidDatePlanId((current) => (current === id ? null : current));
 
     const updated = await update(id, {
       paidInstallmentsCount: Math.min(
@@ -360,6 +342,7 @@ export const usePlansPageModel = (
     setDeleteConfirmPlanId((current) => (current === id ? null : current));
     setPendingPaidPlanId((current) => (current === id ? null : current));
     setPaidFeedbackPlanId((current) => (current === id ? null : current));
+    setInvalidDatePlanId((current) => (current === id ? null : current));
   };
 
   return {
@@ -375,6 +358,7 @@ export const usePlansPageModel = (
     isInstallmentsCountValid,
     isLoading,
     isTotalAmountValid,
+    invalidDatePlanId,
     nameInput,
     paidFeedbackPlanId,
     pendingPaidPlanId,

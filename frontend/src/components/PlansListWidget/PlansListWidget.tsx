@@ -13,6 +13,8 @@ export interface PlansListWidgetProps {
   emptyTitle?: string;
   errorLabel?: string;
   hasError?: boolean;
+  invalidDateErrorLabel?: string;
+  invalidDatePlanId?: string | null;
   isLoading?: boolean;
   items?: CuotaPlanItem[];
   loadingLabel?: string;
@@ -38,6 +40,8 @@ export function PlansListWidget({
   emptyTitle = "No hay cuotas activas",
   errorLabel = "No pudimos cargar las cuotas. Intenta nuevamente.",
   hasError = false,
+  invalidDateErrorLabel = "Fecha inválida",
+  invalidDatePlanId = null,
   isLoading = false,
   items = [],
   loadingLabel = "Cargando cuotas...",
@@ -70,9 +74,12 @@ export function PlansListWidget({
         const isFinished = cuota.paidInstallmentsCount >= cuota.installmentsCount;
         const isPending = pendingPaidPlanId === cuota.id;
         const isPaidFeedbackVisible = paidFeedbackPlanId === cuota.id;
+        const isInvalidDate = invalidDatePlanId === cuota.id;
 
         const badgeClassName = isPending
           ? "bg-[#3F3F46] text-white animate-pulse cursor-wait"
+          : isInvalidDate
+            ? "bg-[#FEE2E2] text-[#B91C1C] ring-2 ring-[#FCA5A5]"
           : isPaidFeedbackVisible
             ? "bg-[#16A34A] text-white ring-2 ring-[#86EFAC]"
             : isFinished
@@ -110,18 +117,25 @@ export function PlansListWidget({
                 </span>
               </div>
 
-              <button
-                type="button"
-                aria-label={markInstallmentAriaLabel}
-                disabled={!isMarkInstallmentEnabled}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onMarkInstallmentPaid?.(cuota.id);
-                }}
-                className={`rounded-xl px-3 py-1.5 text-sm font-bold transition-all duration-1000 ease-out ${badgeClassName}`}
-              >
-                {cuota.paidInstallmentsCount}/{cuota.installmentsCount}
-              </button>
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  type="button"
+                  aria-label={markInstallmentAriaLabel}
+                  disabled={!isMarkInstallmentEnabled}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onMarkInstallmentPaid?.(cuota.id);
+                  }}
+                  className={`rounded-xl px-3 py-1.5 text-sm font-bold transition-all duration-1000 ease-out ${badgeClassName}`}
+                >
+                  {cuota.paidInstallmentsCount}/{cuota.installmentsCount}
+                </button>
+                {isInvalidDate && (
+                  <span className="text-[10px] font-medium text-[#B91C1C]">
+                    {invalidDateErrorLabel}
+                  </span>
+                )}
+              </div>
             </div>
 
             <ProgressSection

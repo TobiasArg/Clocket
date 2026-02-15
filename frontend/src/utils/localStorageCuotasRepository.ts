@@ -4,6 +4,14 @@ import type {
   CuotasRepository,
   UpdateCuotaPatch,
 } from "./cuotasRepository";
+import {
+  getInstallmentDateParts,
+  getInstallmentDateString,
+  getTodayDatePartsLocal,
+  isFutureDateParts,
+  parseDateParts,
+  type DateParts,
+} from "./cuotasDateUtils";
 import type { AccountItem } from "./accountsRepository";
 import type { CategoryItem } from "./categoriesRepository";
 import type { CreateTransactionInput, TransactionItem } from "./transactionsRepository";
@@ -14,7 +22,6 @@ import { transactionsRepository } from "./localStorageTransactionsRepository";
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.cuotas";
 const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
-const YEAR_MONTH_DAY_CAPTURE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const CREDIT_CARD_CATEGORY_NAME = "Tarjeta de Credito";
 const CREDIT_CARD_CATEGORY_ICON = "credit-card";
@@ -23,12 +30,6 @@ const CREDIT_CARD_ACCOUNT_NAME = "Tarjeta de Credito";
 const CREDIT_CARD_TRANSACTION_ICON = "credit-card";
 const CREDIT_CARD_TRANSACTION_ICON_BG = "bg-[#18181B]";
 const CREDIT_CARD_TRANSACTION_AMOUNT_COLOR = "text-[#DC2626]";
-
-interface DateParts {
-  year: number;
-  month: number;
-  day: number;
-}
 
 interface CuotasStorageV1 {
   version: typeof STORAGE_VERSION;
@@ -44,68 +45,6 @@ const toYearMonth = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   return `${year}-${month}`;
-};
-
-const toLocalIsoDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const getTodayDateParts = (): DateParts => {
-  const now = new Date();
-  return {
-    year: now.getFullYear(),
-    month: now.getMonth() + 1,
-    day: now.getDate(),
-  };
-};
-
-const compareDateParts = (left: DateParts, right: DateParts): number => {
-  if (left.year !== right.year) {
-    return left.year - right.year;
-  }
-
-  if (left.month !== right.month) {
-    return left.month - right.month;
-  }
-
-  return left.day - right.day;
-};
-
-const parseDatePartsFromIsoDateInput = (value: string): DateParts | null => {
-  const match = YEAR_MONTH_DAY_CAPTURE_PATTERN.exec(value.trim());
-  if (!match) {
-    return null;
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-
-  if (month < 1 || month > 12) {
-    return null;
-  }
-
-  const maxDay = new Date(year, month, 0).getDate();
-  if (day < 1 || day > maxDay) {
-    return null;
-  }
-
-  return { year, month, day };
-};
-
-const toDateParts = (date: Date): DateParts => {
-  return {
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-  };
-};
-
-const getDaysInMonth = (year: number, monthIndex: number): number => {
-  return new Date(year, monthIndex + 1, 0).getDate();
 };
 
 const toCurrencyNumber = (value: number): number => {
@@ -193,7 +132,7 @@ const normalizeStartMonth = (value?: string): string => {
 };
 
 const assertNotFutureDateParts = (parts: DateParts): void => {
-  if (compareDateParts(parts, getTodayDateParts()) > 0) {
+  if (isFutureDateParts(parts, getTodayDatePartsLocal())) {
     throw new Error("Created date cannot be in the future.");
   }
 };
@@ -204,7 +143,7 @@ const normalizeCreatedAt = (value?: string): string => {
     return new Date().toISOString();
   }
 
-  const dateParts = parseDatePartsFromIsoDateInput(raw);
+  const dateParts = parseDateParts(raw);
   if (dateParts) {
     assertNotFutureDateParts(dateParts);
 
@@ -219,7 +158,11 @@ const normalizeCreatedAt = (value?: string): string => {
   if (Number.isNaN(dateCandidate.getTime())) {
     throw new Error("Created date must be a valid date.");
   }
-  assertNotFutureDateParts(toDateParts(dateCandidate));
+  assertNotFutureDateParts({
+    year: dateCandidate.getFullYear(),
+    month: dateCandidate.getMonth() + 1,
+    day: dateCandidate.getDate(),
+  });
 
   return dateCandidate.toISOString();
 };
@@ -257,30 +200,6 @@ const isFinishedPlan = (plan: CuotaPlanItem): boolean => {
   return plan.paidInstallmentsCount >= plan.installmentsCount;
 };
 
-const getInstallmentDate = (plan: CuotaPlanItem, installmentIndex: number): string => {
-  const createdAtDate = new Date(plan.createdAt);
-  if (Number.isNaN(createdAtDate.getTime())) {
-    return toLocalIsoDate(new Date());
-  }
-
-  const dueDate = new Date(
-    createdAtDate.getFullYear(),
-    createdAtDate.getMonth() + installmentIndex,
-    1,
-    12,
-    0,
-    0,
-    0,
-  );
-  const dueDay = Math.min(
-    createdAtDate.getDate(),
-    getDaysInMonth(dueDate.getFullYear(), dueDate.getMonth()),
-  );
-  dueDate.setDate(dueDay);
-
-  return toLocalIsoDate(dueDate);
-};
-
 const formatInstallmentAmount = (value: number): string => {
   return value.toFixed(2);
 };
@@ -290,7 +209,8 @@ const buildInstallmentTransactionInput = (
   accountId: string,
   installmentIndex: number,
 ): CreateTransactionInput => {
-  const date = getInstallmentDate(plan, installmentIndex);
+  const date = getInstallmentDateString(plan.createdAt, installmentIndex) ??
+    new Date().toISOString().slice(0, 10);
 
   return {
     icon: CREDIT_CARD_TRANSACTION_ICON,
@@ -426,6 +346,7 @@ const ensureInstallmentTransactions = async (plan: CuotaPlanItem): Promise<void>
   }
 
   const creditCardAccount = await ensureCreditCardAccount();
+  const todayDateParts = getTodayDatePartsLocal();
   const transactions = await transactionsRepository.list();
   const existingInstallmentsByIndex = new Map<number, TransactionItem>();
 
@@ -442,6 +363,11 @@ const ensureInstallmentTransactions = async (plan: CuotaPlanItem): Promise<void>
   });
 
   for (let installmentIndex = 1; installmentIndex <= targetInstallments; installmentIndex += 1) {
+    const candidateDateParts = getInstallmentDateParts(plan.createdAt, installmentIndex);
+    if (!candidateDateParts || isFutureDateParts(candidateDateParts, todayDateParts)) {
+      continue;
+    }
+
     const existingInstallmentTransaction = existingInstallmentsByIndex.get(installmentIndex);
     if (existingInstallmentTransaction) {
       if (existingInstallmentTransaction.accountId !== creditCardAccount.id) {
