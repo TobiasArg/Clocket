@@ -1,6 +1,9 @@
 import { ActionButton } from "@/components";
 
 export interface PlansQuickAddWidgetProps {
+  creationDateErrorLabel?: string;
+  creationDateInput?: string;
+  creationDateLabel?: string;
   installmentsCountInput?: string;
   installmentsErrorLabel?: string;
   installmentsLabel?: string;
@@ -9,20 +12,17 @@ export interface PlansQuickAddWidgetProps {
   isInstallmentsCountValid?: boolean;
   isLoading?: boolean;
   isOpen?: boolean;
-  isStartMonthValid?: boolean;
+  isCreationDateValid?: boolean;
   isTotalAmountValid?: boolean;
   nameInput?: string;
   nameLabel?: string;
   namePlaceholder?: string;
+  onCreationDateChange?: (value: string) => void;
   onInstallmentsCountChange?: (value: string) => void;
   onNameChange?: (value: string) => void;
-  onStartMonthChange?: (value: string) => void;
   onSubmit?: () => void;
   onTotalAmountChange?: (value: string) => void;
   showValidation?: boolean;
-  startMonthErrorLabel?: string;
-  startMonthInput?: string;
-  startMonthLabel?: string;
   submitLabel?: string;
   title?: string;
   totalAmountErrorLabel?: string;
@@ -32,6 +32,9 @@ export interface PlansQuickAddWidgetProps {
 }
 
 export function PlansQuickAddWidget({
+  creationDateErrorLabel = "Usa formato YYYY-MM-DD.",
+  creationDateInput = "",
+  creationDateLabel = "Fecha de creación",
   installmentsCountInput = "",
   installmentsErrorLabel = "Usa al menos 1 cuota.",
   installmentsLabel = "Cantidad de cuotas",
@@ -40,20 +43,17 @@ export function PlansQuickAddWidget({
   isInstallmentsCountValid = false,
   isLoading = false,
   isOpen = false,
-  isStartMonthValid = false,
+  isCreationDateValid = false,
   isTotalAmountValid = false,
   nameInput = "",
   nameLabel = "Título",
   namePlaceholder = "Ej. Notebook",
+  onCreationDateChange,
   onInstallmentsCountChange,
   onNameChange,
-  onStartMonthChange,
   onSubmit,
   onTotalAmountChange,
   showValidation = false,
-  startMonthErrorLabel = "Usa formato YYYY-MM.",
-  startMonthInput = "",
-  startMonthLabel = "Mes de inicio",
   submitLabel = "Guardar cuota",
   title = "Nueva cuota",
   totalAmountErrorLabel = "Ingresa un monto mayor a 0.",
@@ -124,17 +124,17 @@ export function PlansQuickAddWidget({
 
       <label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-[#52525B]">
-          {startMonthLabel}
+          {creationDateLabel}
         </span>
         <input
-          type="month"
-          value={startMonthInput}
-          onChange={(event) => onStartMonthChange?.(event.target.value)}
+          type="date"
+          value={creationDateInput}
+          onChange={(event) => onCreationDateChange?.(event.target.value)}
           className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
         />
-        {showValidation && !isStartMonthValid && (
+        {showValidation && !isCreationDateValid && (
           <span className="text-[11px] font-medium text-[#71717A]">
-            {startMonthErrorLabel}
+            {creationDateErrorLabel}
           </span>
         )}
       </label>

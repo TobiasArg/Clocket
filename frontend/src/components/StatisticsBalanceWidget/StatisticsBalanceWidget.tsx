@@ -131,17 +131,6 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
                 </BarChart>
               </ResponsiveContainer>
             </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <span className="block h-2 w-2 rounded-full bg-[#16A34A]" />
-                <span className="text-[10px] font-medium text-[#71717A]">{popupIncomeLabel}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="block h-2 w-2 rounded-full bg-[#DC2626]" />
-                <span className="text-[10px] font-medium text-[#71717A]">{popupExpenseLabel}</span>
-              </div>
-            </div>
           </div>
         )}
       </CardSection>

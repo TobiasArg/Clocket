@@ -75,6 +75,8 @@ export { OptionGrid } from "./OptionGrid/OptionGrid";
 export type { OptionGridProps } from "./OptionGrid/OptionGrid";
 export { PageHeader } from "./PageHeader/PageHeader";
 export type { PageHeaderProps } from "./PageHeader/PageHeader";
+export { PlanStatusCounter } from "./PlanStatusCounter/PlanStatusCounter";
+export type { PlanStatusCounterProps } from "./PlanStatusCounter/PlanStatusCounter";
 export { PhosphorIcon } from "./PhosphorIcon/PhosphorIcon";
 export type { PhosphorIconProps } from "./PhosphorIcon/PhosphorIcon";
 export { PlansListWidget } from "./PlansListWidget/PlansListWidget";

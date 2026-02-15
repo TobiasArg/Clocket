@@ -8,6 +8,7 @@ import type {
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.cuotas";
 const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
+const YEAR_MONTH_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 interface CuotasStorageV1 {
   version: typeof STORAGE_VERSION;
@@ -104,6 +105,36 @@ const normalizeStartMonth = (value?: string): string => {
   return raw;
 };
 
+const normalizeCreatedAt = (value?: string): string => {
+  const raw = value?.trim();
+  if (!raw) {
+    return new Date().toISOString();
+  }
+
+  const yearMonthDayMatch = YEAR_MONTH_DAY_PATTERN.exec(raw);
+  if (yearMonthDayMatch) {
+    const year = Number(yearMonthDayMatch[0].slice(0, 4));
+    const month = Number(yearMonthDayMatch[0].slice(5, 7));
+    const day = Number(yearMonthDayMatch[0].slice(8, 10));
+    const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+    const isValidLocalDate = localDate.getFullYear() === year &&
+      localDate.getMonth() + 1 === month &&
+      localDate.getDate() === day;
+    if (!isValidLocalDate) {
+      throw new Error("Created date must be a valid date.");
+    }
+
+    return localDate.toISOString();
+  }
+
+  const dateCandidate = new Date(raw);
+  if (Number.isNaN(dateCandidate.getTime())) {
+    throw new Error("Created date must be a valid date.");
+  }
+
+  return dateCandidate.toISOString();
+};
+
 const calculateInstallmentAmount = (
   totalAmount: number,
   installmentsCount: number,
@@ -126,7 +157,7 @@ const normalizeForCreate = (input: CreateCuotaInput): CuotaPlanItem => {
     input.paidInstallmentsCount,
     installmentsCount,
   );
-  const now = new Date().toISOString();
+  const createdAt = normalizeCreatedAt(input.createdAt);
 
   return {
     id: createCuotaId(),
@@ -138,8 +169,8 @@ const normalizeForCreate = (input: CreateCuotaInput): CuotaPlanItem => {
     startMonth: normalizeStartMonth(input.startMonth),
     paidInstallmentsCount,
     categoryId: normalizeCategoryId(input.categoryId),
-    createdAt: now,
-    updatedAt: now,
+    createdAt,
+    updatedAt: createdAt,
   };
 };
 

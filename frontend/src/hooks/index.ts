@@ -92,6 +92,7 @@ export type {
 } from "./useAccountsPageModel";
 export { usePlansPageModel } from "./usePlansPageModel";
 export type {
+  UsePlansPageModelFilterStatus,
   UsePlansPageModelOptions,
   UsePlansPageModelResult,
 } from "./usePlansPageModel";

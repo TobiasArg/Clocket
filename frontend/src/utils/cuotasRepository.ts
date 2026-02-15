@@ -8,6 +8,7 @@ export interface CreateCuotaInput {
   totalAmount: number;
   installmentsCount: number;
   startMonth?: string;
+  createdAt?: string;
   paidInstallmentsCount?: number;
   categoryId?: string;
 }

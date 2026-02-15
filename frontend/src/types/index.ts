@@ -235,6 +235,12 @@ export interface CuotaPlan {
   updatedAt: string;
 }
 
+export type CuotaPlanStatus = "active" | "finished";
+
+export interface CuotaPlanWithStatus extends CuotaPlan {
+  status: CuotaPlanStatus;
+}
+
 // === Subcategorias ===
 
 export interface SubcategoryItem {

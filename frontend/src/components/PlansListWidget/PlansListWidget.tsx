@@ -1,4 +1,4 @@
-import { ProgressSection, StatDisplay, TextBadge } from "@/components";
+import { ProgressSection, StatDisplay } from "@/components";
 import { formatCurrency, type CuotaPlanItem } from "@/utils";
 
 export interface PlansListWidgetProps {
@@ -10,7 +10,11 @@ export interface PlansListWidgetProps {
   isLoading?: boolean;
   items?: CuotaPlanItem[];
   loadingLabel?: string;
+  markInstallmentAriaLabel?: string;
+  onMarkInstallmentPaid?: (id: string) => void;
   onPlanClick?: (index: number) => void;
+  paidFeedbackPlanId?: string | null;
+  pendingPaidPlanId?: string | null;
   totalLabel?: string;
 }
 
@@ -23,7 +27,11 @@ export function PlansListWidget({
   isLoading = false,
   items = [],
   loadingLabel = "Cargando cuotas...",
+  markInstallmentAriaLabel = "Marcar cuota como pagada",
+  onMarkInstallmentPaid,
   onPlanClick,
+  paidFeedbackPlanId = null,
+  pendingPaidPlanId = null,
   totalLabel = "Costo total",
 }: PlansListWidgetProps) {
   return (
@@ -43,13 +51,37 @@ export function PlansListWidget({
       {!hasError && items.map((cuota, index) => {
         const progressPercent =
           (cuota.paidInstallmentsCount / cuota.installmentsCount) * 100;
+        const isFinished = cuota.paidInstallmentsCount >= cuota.installmentsCount;
+        const isPending = pendingPaidPlanId === cuota.id;
+        const isPaidFeedbackVisible = paidFeedbackPlanId === cuota.id;
+
+        const badgeClassName = isPending
+          ? "bg-[#3F3F46] text-white animate-pulse cursor-wait"
+          : isPaidFeedbackVisible
+            ? "bg-[#16A34A] text-white ring-2 ring-[#86EFAC]"
+            : isFinished
+              ? "bg-[#18181B] text-white opacity-80"
+              : "bg-black text-white hover:bg-[#27272A] active:scale-[0.98]";
+        const isMarkInstallmentEnabled = !isPending && !isFinished;
+        const isCardClickable = Boolean(onPlanClick);
 
         return (
-          <button
+          <div
             key={cuota.id}
-            type="button"
+            role={isCardClickable ? "button" : undefined}
+            tabIndex={isCardClickable ? 0 : undefined}
             onClick={() => onPlanClick?.(index)}
-            className="flex flex-col gap-4 rounded-[20px] p-5 text-left bg-[#F4F4F5]"
+            onKeyDown={(event) => {
+              if (!isCardClickable) {
+                return;
+              }
+
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onPlanClick?.(index);
+              }
+            }}
+            className={`flex flex-col gap-4 rounded-[20px] p-5 text-left bg-[#F4F4F5] ${isCardClickable ? "cursor-pointer" : ""}`}
           >
             <div className="flex justify-between items-start w-full gap-3">
               <div className="flex flex-col gap-1 min-w-0">
@@ -61,15 +93,18 @@ export function PlansListWidget({
                 </span>
               </div>
 
-              <TextBadge
-                text={`${cuota.paidInstallmentsCount}/${cuota.installmentsCount}`}
-                bg="bg-black"
-                textColor="text-white"
-                rounded="rounded-xl"
-                padding="px-3 py-1.5"
-                fontSize="text-sm"
-                fontWeight="font-bold"
-              />
+              <button
+                type="button"
+                aria-label={markInstallmentAriaLabel}
+                disabled={!isMarkInstallmentEnabled}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onMarkInstallmentPaid?.(cuota.id);
+                }}
+                className={`rounded-xl px-3 py-1.5 text-sm font-bold transition-all duration-1000 ease-out ${badgeClassName}`}
+              >
+                {cuota.paidInstallmentsCount}/{cuota.installmentsCount}
+              </button>
             </div>
 
             <ProgressSection
@@ -95,7 +130,7 @@ export function PlansListWidget({
                 align="end"
               />
             </div>
-          </button>
+          </div>
         );
       })}
 

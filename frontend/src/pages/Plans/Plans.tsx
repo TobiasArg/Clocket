@@ -1,4 +1,5 @@
 import {
+  PlanStatusCounter,
   PageHeader,
   PlansListWidget,
   PlansQuickAddWidget,
@@ -6,75 +7,110 @@ import {
 } from "@/modules/plans";
 
 export interface PlansProps {
+  activeStatusLabel?: string;
   headerTitle?: string;
+  finishedStatusLabel?: string;
+  totalStatusLabel?: string;
   cuotaLabel?: string;
   totalLabel?: string;
   quickAddTitle?: string;
   quickAddNameLabel?: string;
   quickAddTotalAmountLabel?: string;
   quickAddInstallmentsLabel?: string;
-  quickAddStartMonthLabel?: string;
+  quickAddCreationDateLabel?: string;
   quickAddNamePlaceholder?: string;
   quickAddTotalAmountPlaceholder?: string;
   quickAddInstallmentsPlaceholder?: string;
   quickAddSubmitLabel?: string;
-  emptyTitle?: string;
-  emptyHint?: string;
+  emptyAllTitle?: string;
+  emptyAllHint?: string;
+  emptyActiveTitle?: string;
+  emptyActiveHint?: string;
+  emptyFinishedTitle?: string;
+  emptyFinishedHint?: string;
   loadingLabel?: string;
   errorLabel?: string;
   totalAmountErrorLabel?: string;
   installmentsErrorLabel?: string;
-  startMonthErrorLabel?: string;
+  creationDateErrorLabel?: string;
+  markInstallmentAriaLabel?: string;
   onBackClick?: () => void;
   onAddClick?: () => void;
   onPlanClick?: (index: number) => void;
 }
 
 export function Plans({
+  activeStatusLabel = "Activos",
   headerTitle = "Planes de Cuotas",
+  finishedStatusLabel = "Finalizados",
+  totalStatusLabel = "Totales",
   cuotaLabel = "Cuota mensual",
   totalLabel = "Costo total",
   quickAddTitle = "Nueva cuota",
   quickAddNameLabel = "Título",
   quickAddTotalAmountLabel = "Monto total",
   quickAddInstallmentsLabel = "Cantidad de cuotas",
-  quickAddStartMonthLabel = "Mes de inicio",
+  quickAddCreationDateLabel = "Fecha de creación",
   quickAddNamePlaceholder = "Ej. Notebook",
   quickAddTotalAmountPlaceholder = "0.00",
   quickAddInstallmentsPlaceholder = "12",
   quickAddSubmitLabel = "Guardar cuota",
-  emptyTitle = "No hay cuotas activas",
-  emptyHint = "Agrega una cuota para ver el pendiente mensual.",
+  emptyAllTitle = "No hay planes de cuotas",
+  emptyAllHint = "Agrega una cuota para comenzar a registrar tus planes.",
+  emptyActiveTitle = "No hay cuotas activas",
+  emptyActiveHint = "Agrega una cuota para ver el pendiente mensual.",
+  emptyFinishedTitle = "No hay cuotas finalizadas",
+  emptyFinishedHint = "Cuando completes todas las cuotas, aparecerán aquí.",
   loadingLabel = "Cargando cuotas...",
   errorLabel = "No pudimos cargar las cuotas. Intenta nuevamente.",
   totalAmountErrorLabel = "Ingresa un monto mayor a 0.",
   installmentsErrorLabel = "Usa al menos 1 cuota.",
-  startMonthErrorLabel = "Usa formato YYYY-MM.",
+  creationDateErrorLabel = "Usa formato YYYY-MM-DD.",
+  markInstallmentAriaLabel = "Marcar cuota como pagada",
   onBackClick,
   onAddClick,
   onPlanClick,
 }: PlansProps) {
   const {
-    activeCuotas,
+    activeCount,
+    creationDateInput,
+    filteredPlans,
+    finishedCount,
     installmentsCountInput,
     isEditorOpen,
+    isCreationDateValid,
     isFormValid,
     isInstallmentsCountValid,
     isLoading,
-    isStartMonthValid,
     isTotalAmountValid,
     nameInput,
+    paidFeedbackPlanId,
+    pendingPaidPlanId,
+    setCreationDateInput,
     setInstallmentsCountInput,
     setNameInput,
-    setStartMonthInput,
+    setStatusFilter,
     setTotalAmountInput,
     showValidation,
-    startMonthInput,
+    statusFilter,
+    totalCount,
     totalAmountInput,
     error,
     handleCreate,
     handleHeaderAction,
+    handleMarkInstallmentPaid,
   } = usePlansPageModel({ onAddClick });
+
+  const resolvedEmptyTitle = statusFilter === "all"
+    ? emptyAllTitle
+    : statusFilter === "active"
+      ? emptyActiveTitle
+      : emptyFinishedTitle;
+  const resolvedEmptyHint = statusFilter === "all"
+    ? emptyAllHint
+    : statusFilter === "active"
+      ? emptyActiveHint
+      : emptyFinishedHint;
 
   return (
     <div className="flex flex-col h-full w-full bg-white">
@@ -86,49 +122,79 @@ export function Plans({
       />
       <div className="flex-1 overflow-auto px-5 py-4">
         <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 gap-2">
+            <PlanStatusCounter
+              status="all"
+              label={totalStatusLabel}
+              count={totalCount}
+              isSelected={statusFilter === "all"}
+              onClick={() => setStatusFilter("all")}
+            />
+            <PlanStatusCounter
+              status="active"
+              label={activeStatusLabel}
+              count={activeCount}
+              isSelected={statusFilter === "active"}
+              onClick={() => setStatusFilter("active")}
+            />
+            <PlanStatusCounter
+              status="finished"
+              label={finishedStatusLabel}
+              count={finishedCount}
+              isSelected={statusFilter === "finished"}
+              onClick={() => setStatusFilter("finished")}
+            />
+          </div>
+
           <PlansQuickAddWidget
             isOpen={isEditorOpen}
             title={quickAddTitle}
             nameLabel={quickAddNameLabel}
             totalAmountLabel={quickAddTotalAmountLabel}
             installmentsLabel={quickAddInstallmentsLabel}
-            startMonthLabel={quickAddStartMonthLabel}
+            creationDateLabel={quickAddCreationDateLabel}
             namePlaceholder={quickAddNamePlaceholder}
             totalAmountPlaceholder={quickAddTotalAmountPlaceholder}
             installmentsPlaceholder={quickAddInstallmentsPlaceholder}
             submitLabel={quickAddSubmitLabel}
             totalAmountErrorLabel={totalAmountErrorLabel}
             installmentsErrorLabel={installmentsErrorLabel}
-            startMonthErrorLabel={startMonthErrorLabel}
+            creationDateErrorLabel={creationDateErrorLabel}
             nameInput={nameInput}
             totalAmountInput={totalAmountInput}
             installmentsCountInput={installmentsCountInput}
-            startMonthInput={startMonthInput}
+            creationDateInput={creationDateInput}
             showValidation={showValidation}
             isTotalAmountValid={isTotalAmountValid}
             isInstallmentsCountValid={isInstallmentsCountValid}
-            isStartMonthValid={isStartMonthValid}
+            isCreationDateValid={isCreationDateValid}
             isFormValid={isFormValid}
             isLoading={isLoading}
             onNameChange={setNameInput}
             onTotalAmountChange={setTotalAmountInput}
             onInstallmentsCountChange={setInstallmentsCountInput}
-            onStartMonthChange={setStartMonthInput}
+            onCreationDateChange={setCreationDateInput}
             onSubmit={() => {
               void handleCreate();
             }}
           />
 
           <PlansListWidget
-            items={activeCuotas}
+            items={filteredPlans}
             isLoading={isLoading}
             hasError={Boolean(error)}
             loadingLabel={loadingLabel}
             errorLabel={errorLabel}
-            emptyTitle={emptyTitle}
-            emptyHint={emptyHint}
+            emptyTitle={resolvedEmptyTitle}
+            emptyHint={resolvedEmptyHint}
             cuotaLabel={cuotaLabel}
             totalLabel={totalLabel}
+            markInstallmentAriaLabel={markInstallmentAriaLabel}
+            pendingPaidPlanId={pendingPaidPlanId}
+            paidFeedbackPlanId={paidFeedbackPlanId}
+            onMarkInstallmentPaid={(id) => {
+              void handleMarkInstallmentPaid(id);
+            }}
             onPlanClick={onPlanClick}
           />
         </div>
