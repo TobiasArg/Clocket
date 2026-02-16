@@ -3,13 +3,13 @@ import type {
   GoalPlanItem,
   GoalsRepository,
   UpdateGoalPatch,
-} from "./goalsRepository";
+} from "@/domain/goals/repository";
 import {
   DEFAULT_GOAL_COLOR_KEY,
   getGoalCategoryName,
   getGoalColorOption,
-} from "./goalAppearance";
-import { categoriesRepository } from "./localStorageCategoriesRepository";
+} from "@/domain/goals/goalAppearance";
+import { categoriesRepository } from "@/data/localStorage/categoriesRepository";
 
 const STORAGE_VERSION = 2 as const;
 const LEGACY_STORAGE_VERSION_1 = 1 as const;

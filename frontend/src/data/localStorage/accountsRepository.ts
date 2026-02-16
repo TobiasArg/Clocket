@@ -3,8 +3,11 @@ import type {
   AccountsRepository,
   CreateAccountInput,
   UpdateAccountPatch,
-} from "@/utils";
-import { DEFAULT_ACCOUNT_ID, DEFAULT_ACCOUNT_NAME } from "./accountsRepository";
+} from "@/domain/accounts/repository";
+import {
+  DEFAULT_ACCOUNT_ID,
+  DEFAULT_ACCOUNT_NAME,
+} from "@/domain/accounts/repository";
 
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.accounts";

@@ -1,6 +1,6 @@
 import type { StatisticsFlowDay } from "@/types";
-import type { TransactionItem } from "./transactionsRepository";
-import { getTransactionDateForMonthBalance } from "./monthlyBalance";
+import type { TransactionItem } from "@/domain/transactions/repository";
+import { getTransactionDateForMonthBalance } from "@/domain/transactions/monthlyBalance";
 
 const FLOW_EXPENSE_COLORS = [
   "#DC2626",

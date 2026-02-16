@@ -3,7 +3,7 @@ import type {
   CuotaPlanItem,
   CuotasRepository,
   UpdateCuotaPatch,
-} from "./cuotasRepository";
+} from "@/domain/cuotas/repository";
 import {
   getFulfilledInstallmentsByDate,
   getInstallmentDateParts,
@@ -12,13 +12,16 @@ import {
   isFutureDateParts,
   parseDateParts,
   type DateParts,
-} from "./cuotasDateUtils";
-import type { AccountItem } from "./accountsRepository";
-import type { CategoryItem } from "./categoriesRepository";
-import type { CreateTransactionInput, TransactionItem } from "./transactionsRepository";
-import { accountsRepository } from "./localStorageAccountsRepository";
-import { categoriesRepository } from "./localStorageCategoriesRepository";
-import { transactionsRepository } from "./localStorageTransactionsRepository";
+} from "@/domain/cuotas/cuotasDateUtils";
+import type { AccountItem } from "@/domain/accounts/repository";
+import type { CategoryItem } from "@/domain/categories/repository";
+import type {
+  CreateTransactionInput,
+  TransactionItem,
+} from "@/domain/transactions/repository";
+import { accountsRepository } from "@/data/localStorage/accountsRepository";
+import { categoriesRepository } from "@/data/localStorage/categoriesRepository";
+import { transactionsRepository } from "@/data/localStorage/transactionsRepository";
 
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.cuotas";

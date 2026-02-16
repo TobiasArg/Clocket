@@ -3,7 +3,7 @@ import type {
   CategoryItem,
   CreateCategoryInput,
   UpdateCategoryPatch,
-} from "@/utils";
+} from "@/domain/categories/repository";
 
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.categories";

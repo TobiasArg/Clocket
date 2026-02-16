@@ -3,7 +3,7 @@ import type {
   InvestmentPositionItem,
   InvestmentsRepository,
   UpdateInvestmentPatch,
-} from "@/utils";
+} from "@/domain/investments/repository";
 
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.investments";

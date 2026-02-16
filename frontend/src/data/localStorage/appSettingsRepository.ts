@@ -2,7 +2,7 @@ import type {
   AppSettingsItem,
   AppSettingsRepository,
   UpdateAppSettingsPatch,
-} from "@/utils";
+} from "@/domain/app-settings/repository";
 
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.settings";

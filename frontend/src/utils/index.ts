@@ -1,28 +1,34 @@
 export { formatCurrency } from "./formatCurrency";
+export { getPercentWidthClass } from "./percentWidthClass";
+
 export {
   DEFAULT_USD_RATE,
   getUsdRate,
   normalizeUsdRate,
   toArsTransactionAmount,
-} from "./transactionCurrency";
-export { getPercentWidthClass } from "./percentWidthClass";
+} from "@/domain/currency/transactionCurrency";
+
 export {
   DEFAULT_GOAL_COLOR_KEY,
   getGoalCategoryName,
   getGoalColorOption,
   GOAL_COLOR_OPTIONS,
   GOAL_ICON_OPTIONS,
-} from "./goalAppearance";
+} from "@/domain/goals/goalAppearance";
+
 export {
   getCurrentMonthWindow,
   getMonthlyBalance,
   getTransactionDateForMonthBalance,
-} from "./monthlyBalance";
-export { buildStatisticsDailyFlow } from "./statisticsFlow";
+} from "@/domain/transactions/monthlyBalance";
+
+export { buildStatisticsDailyFlow } from "@/domain/statistics/statisticsFlow";
+
 export {
   getPendingInstallmentsTotalForMonth,
   isCuotaActiveInMonth,
-} from "./monthlyCuotaImpact";
+} from "@/domain/cuotas/monthlyCuotaImpact";
+
 export {
   compareDateParts,
   formatDateParts,
@@ -32,93 +38,86 @@ export {
   getTodayDatePartsLocal,
   isFutureDateParts,
   parseDateParts,
-} from "./cuotasDateUtils";
+} from "@/domain/cuotas/cuotasDateUtils";
+
 export {
   LocalStorageAccountsRepository,
   accountsRepository,
-} from "./localStorageAccountsRepository";
-export {
   LocalStorageAppSettingsRepository,
   appSettingsRepository,
-} from "./localStorageAppSettingsRepository";
-export {
   LocalStorageBudgetsRepository,
   budgetsRepository,
-} from "./localStorageBudgetsRepository";
-export {
   LocalStorageCategoriesRepository,
   categoriesRepository,
-} from "./localStorageCategoriesRepository";
-export {
   LocalStorageCuotasRepository,
   cuotasRepository,
-} from "./localStorageCuotasRepository";
-export {
   LocalStorageGoalsRepository,
   goalsRepository,
-} from "./localStorageGoalsRepository";
-export {
   LocalStorageInvestmentsRepository,
   investmentsRepository,
-} from "./localStorageInvestmentsRepository";
-export {
   LocalStorageTransactionsRepository,
   transactionsRepository,
-} from "./localStorageTransactionsRepository";
-export type {
-  MonthWindow,
-  MonthlyBalance,
-} from "./monthlyBalance";
-export type {
-  DateParts,
-} from "./cuotasDateUtils";
+} from "@/data/localStorage";
+
+export { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
+
+export type { MonthWindow, MonthlyBalance } from "@/domain/transactions/monthlyBalance";
+export type { DateParts } from "@/domain/cuotas/cuotasDateUtils";
+
 export type {
   AccountItem,
   AccountsRepository,
   CreateAccountInput,
   UpdateAccountPatch,
-} from "./accountsRepository";
+} from "@/domain/accounts/repository";
+
 export type {
   AppSettingsItem,
   AppSettingsRepository,
   UpdateAppSettingsPatch,
-} from "./appSettingsRepository";
+} from "@/domain/app-settings/repository";
+
 export type {
   BudgetPlanItem,
   BudgetsRepository,
   CreateBudgetInput,
   UpdateBudgetPatch,
-} from "./budgetsRepository";
+} from "@/domain/budgets/repository";
+
 export type {
   CategoriesRepository,
   CategoryItem,
   CreateCategoryInput,
   UpdateCategoryPatch,
-} from "./categoriesRepository";
+} from "@/domain/categories/repository";
+
 export type {
   CreateCuotaInput,
   CuotaPlanItem,
   CuotasRepository,
   UpdateCuotaPatch,
-} from "./cuotasRepository";
+} from "@/domain/cuotas/repository";
+
 export type {
   CreateGoalInput,
   GoalPlanItem,
   GoalsRepository,
   UpdateGoalPatch,
-} from "./goalsRepository";
+} from "@/domain/goals/repository";
+
 export type {
   CreateInvestmentInput,
   InvestmentPositionItem,
   InvestmentsRepository,
   UpdateInvestmentPatch,
-} from "./investmentsRepository";
-export { TRANSACTIONS_CHANGED_EVENT } from "./transactionsRepository";
+} from "@/domain/investments/repository";
+
 export type {
   CreateTransactionInput,
   TransactionItem,
   TransactionsRepository,
   UpdateTransactionPatch,
-} from "./transactionsRepository";
-export type { GoalColorOption } from "./goalAppearance";
-export type { TransactionInputCurrency } from "./transactionCurrency";
+} from "@/domain/transactions/repository";
+
+export type { GoalColorOption } from "@/domain/goals/goalAppearance";
+export type { TransactionInputCurrency } from "@/domain/currency/transactionCurrency";

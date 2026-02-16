@@ -1,11 +1,11 @@
-import { TRANSACTIONS_CHANGED_EVENT } from "@/utils";
+import { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
 import type {
   CreateTransactionInput,
   TransactionItem,
   TransactionsRepository,
   UpdateTransactionPatch,
-} from "@/utils";
-import { DEFAULT_ACCOUNT_ID } from "./accountsRepository";
+} from "@/domain/transactions/repository";
+import { DEFAULT_ACCOUNT_ID } from "@/domain/accounts/repository";
 
 const LEGACY_STORAGE_VERSION_1 = 1 as const;
 const LEGACY_STORAGE_VERSION_2 = 2 as const;

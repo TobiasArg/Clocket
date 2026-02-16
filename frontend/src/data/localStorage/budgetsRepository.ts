@@ -3,7 +3,7 @@ import type {
   BudgetsRepository,
   CreateBudgetInput,
   UpdateBudgetPatch,
-} from "@/utils";
+} from "@/domain/budgets/repository";
 
 const STORAGE_VERSION = 1 as const;
 const DEFAULT_STORAGE_KEY = "clocket.budgets";

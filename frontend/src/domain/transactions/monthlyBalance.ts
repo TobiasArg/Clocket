@@ -1,4 +1,4 @@
-import type { TransactionItem } from "@/utils";
+import type { TransactionItem } from "@/domain/transactions/repository";
 
 export interface MonthWindow {
   start: Date;

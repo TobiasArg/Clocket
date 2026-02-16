@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LocalStorageCuotasRepository } from "./localStorageCuotasRepository";
-import { accountsRepository } from "./localStorageAccountsRepository";
-import { categoriesRepository } from "./localStorageCategoriesRepository";
-import { transactionsRepository } from "./localStorageTransactionsRepository";
+import { LocalStorageCuotasRepository } from "@/data/localStorage/cuotasRepository";
+import { accountsRepository } from "@/data/localStorage/accountsRepository";
+import { categoriesRepository } from "@/data/localStorage/categoriesRepository";
+import { transactionsRepository } from "@/data/localStorage/transactionsRepository";
 
 class InMemoryStorage implements Storage {
   private readonly store = new Map<string, string>();

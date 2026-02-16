@@ -1,5 +1,8 @@
-import { getCurrentMonthWindow, type MonthWindow } from "./monthlyBalance";
-import type { CuotaPlanItem } from "./cuotasRepository";
+import {
+  getCurrentMonthWindow,
+  type MonthWindow,
+} from "@/domain/transactions/monthlyBalance";
+import type { CuotaPlanItem } from "@/domain/cuotas/repository";
 
 const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
 

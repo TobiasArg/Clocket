@@ -5,7 +5,7 @@ import {
   getTodayDatePartsLocal,
   isFutureDateParts,
   parseDateParts,
-} from "./cuotasDateUtils";
+} from "@/domain/cuotas/cuotasDateUtils";
 
 describe("cuotasDateUtils", () => {
   it("parses valid date parts", () => {
