@@ -1,16 +1,20 @@
-import { CardSection, IconBadge, ListItemRow, PhosphorIcon } from "@/components";
+import { CardSection } from "@/components";
+import { TransactionSwipeDeleteRow } from "./TransactionSwipeDeleteRow";
 import type { TransactionsMonthGroup } from "@/hooks";
 import type { TransactionItem } from "@/utils";
 
 export interface TransactionsMonthListWidgetProps {
+  deleteActionLabel?: string;
   editActionLabel?: string;
   emptyHint?: string;
   emptyTitle?: string;
   errorLabel?: string;
   hasError?: boolean;
   isLoading?: boolean;
+  pendingDeleteTransactionId?: string | null;
   loadingLabel?: string;
   monthGroups?: TransactionsMonthGroup[];
+  onDeleteTransaction?: (transactionId: string) => void;
   onTransactionClick?: (
     transaction: TransactionItem,
     monthIndex: number,
@@ -20,19 +24,18 @@ export interface TransactionsMonthListWidgetProps {
   resolveCategoryLabel?: (transaction: TransactionItem) => string;
 }
 
-const parseAmountSign = (value: string): "+" | "-" => {
-  return value.trim().startsWith("+") ? "+" : "-";
-};
-
 export function TransactionsMonthListWidget({
+  deleteActionLabel = "Eliminar",
   editActionLabel = "Editar",
   emptyHint = "Agrega tu primera transacción para empezar.",
   emptyTitle = "No hay transacciones todavía",
   errorLabel = "No pudimos cargar las transacciones. Intenta nuevamente.",
   hasError = false,
   isLoading = false,
+  pendingDeleteTransactionId = null,
   loadingLabel = "Cargando transacciones...",
   monthGroups = [],
+  onDeleteTransaction,
   onTransactionClick,
   resolveAccountLabel,
   resolveCategoryLabel,
@@ -84,39 +87,24 @@ export function TransactionsMonthListWidget({
             )}
             gap="gap-3"
           >
-            {month.transactions.map((transaction, transactionIndex) => (
-              <ListItemRow
+            {month.transactions.map((transaction, transactionIndex) => {
+              const subtitle = `${resolveAccountLabel?.(transaction) ?? ""} · ${resolveCategoryLabel?.(transaction) ?? ""}`;
+
+              return (
+                <TransactionSwipeDeleteRow
                 key={transaction.id}
-                left={<IconBadge icon={transaction.icon} bg={transaction.iconBg} />}
-                title={transaction.name}
-                subtitle={`${resolveAccountLabel?.(transaction) ?? ""} · ${resolveCategoryLabel?.(transaction) ?? ""}`}
-                titleClassName="text-[15px] font-semibold text-black font-['Outfit']"
-                subtitleClassName="text-[11px] font-medium text-[#71717A] truncate"
-                right={(
-                  <div className="flex flex-col gap-0.5 items-end shrink-0">
-                    <span
-                      className={`text-[15px] font-bold font-['Outfit'] ${
-                        parseAmountSign(transaction.amount) === "+"
-                          ? "text-[#16A34A]"
-                          : "text-[#DC2626]"
-                      }`}
-                    >
-                      {transaction.amount}
-                    </span>
-                    <span className="block max-w-[132px] truncate text-[10px] font-medium text-[#A1A1AA]">
-                      {transaction.meta}
-                    </span>
-                    <div className="flex items-center gap-1 text-[10px] font-medium text-[#71717A]">
-                      <PhosphorIcon name="pencil-simple" size="text-[10px]" className="text-[#71717A]" />
-                      <span>{editActionLabel}</span>
-                    </div>
-                  </div>
-                )}
-                onClick={() => onTransactionClick?.(transaction, monthIndex, transactionIndex)}
+                transaction={transaction}
+                subtitle={subtitle}
+                editActionLabel={editActionLabel}
+                deleteActionLabel={deleteActionLabel}
+                isDeleting={pendingDeleteTransactionId === transaction.id}
+                isInteractionLocked={pendingDeleteTransactionId !== null}
+                onDelete={onDeleteTransaction}
+                onSelect={() => onTransactionClick?.(transaction, monthIndex, transactionIndex)}
                 showBorder={transactionIndex < month.transactions.length - 1}
-                padding="py-3.5"
               />
-            ))}
+              );
+            })}
           </CardSection>
         ))}
     </>

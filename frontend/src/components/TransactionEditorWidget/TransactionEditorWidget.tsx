@@ -1,15 +1,10 @@
 import { ActionButton } from "@/components";
 import type { AmountSign, TransactionsEditorMode } from "@/hooks";
-import type { TransactionInputCurrency, TransactionItem } from "@/utils";
+import type { TransactionInputCurrency } from "@/utils";
 
 export interface TransactionEditorWidgetProps {
   accountsError?: string | null;
   categoriesError?: string | null;
-  deleteActionLabel?: string;
-  deleteCancelLabel?: string;
-  deleteConfirmHint?: string;
-  deleteConfirmLabel?: string;
-  deleteConfirmTitle?: string;
   descriptionInput?: string;
   editorMode?: TransactionsEditorMode;
   editingAmountSign?: AmountSign;
@@ -22,18 +17,15 @@ export interface TransactionEditorWidgetProps {
   isFormValid?: boolean;
   isLoading?: boolean;
   isOpen?: boolean;
-  isSelectedTransactionAvailable?: boolean;
   isDescriptionValid?: boolean;
   noAccountsLabel?: string;
   onAmountChange?: (value: string) => void;
   onCurrencyChange?: (value: TransactionInputCurrency) => void;
-  onDelete?: () => void;
   onDescriptionChange?: (value: string) => void;
   onSelectedAccountIdChange?: (value: string) => void;
   onSelectedCategoryIdChange?: (value: string) => void;
   onSignChange?: (value: AmountSign) => void;
   onSubmit?: () => void;
-  onToggleDeleteConfirm?: (value: boolean) => void;
   quickAddAccountErrorLabel?: string;
   quickAddAccountLabel?: string;
   quickAddAmountErrorLabel?: string;
@@ -52,8 +44,6 @@ export interface TransactionEditorWidgetProps {
   selectedAccountId?: string;
   selectedCurrency?: TransactionInputCurrency;
   selectedCategoryId?: string;
-  selectedTransaction?: TransactionItem | null;
-  showDeleteConfirm?: boolean;
   showValidation?: boolean;
   sortedAccounts?: Array<{ id: string; name: string }>;
   sortedCategories?: Array<{ id: string; name: string }>;
@@ -66,11 +56,6 @@ export function TransactionEditorWidget({
   accountsError = null,
   amountInput = "",
   categoriesError = null,
-  deleteActionLabel = "Delete",
-  deleteCancelLabel = "Cancel",
-  deleteConfirmHint = "This can’t be undone.",
-  deleteConfirmLabel = "Delete",
-  deleteConfirmTitle = "Delete this transaction?",
   descriptionInput = "",
   editorMode = null,
   editingAmountSign = "-",
@@ -84,17 +69,14 @@ export function TransactionEditorWidget({
   isFormValid = false,
   isLoading = false,
   isOpen = false,
-  isSelectedTransactionAvailable = false,
   noAccountsLabel = "Crea una cuenta en Más > Cuentas para registrar transacciones.",
   onAmountChange,
   onCurrencyChange,
-  onDelete,
   onDescriptionChange,
   onSelectedAccountIdChange,
   onSelectedCategoryIdChange,
   onSignChange,
   onSubmit,
-  onToggleDeleteConfirm,
   quickAddAccountErrorLabel = "Selecciona una cuenta.",
   quickAddAccountLabel = "Cuenta",
   quickAddAmountErrorLabel = "Ingresa un monto mayor a 0.",
@@ -113,8 +95,6 @@ export function TransactionEditorWidget({
   selectedAccountId = "",
   selectedCurrency = "ARS",
   selectedCategoryId = "",
-  selectedTransaction = null,
-  showDeleteConfirm = false,
   showValidation = false,
   sortedAccounts = [],
   sortedCategories = [],
@@ -277,43 +257,6 @@ export function TransactionEditorWidget({
         className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
         onClick={onSubmit}
       />
-
-      {editorMode === "edit" && isSelectedTransactionAvailable && selectedTransaction && (
-        <div className="flex flex-col gap-2">
-          {!showDeleteConfirm && (
-            <button
-              type="button"
-              onClick={() => onToggleDeleteConfirm?.(true)}
-              className="w-fit text-xs font-medium text-[#71717A]"
-            >
-              {deleteActionLabel}
-            </button>
-          )}
-
-          {showDeleteConfirm && (
-            <div className="rounded-xl bg-white px-3 py-3 flex flex-col gap-2">
-              <span className="text-xs font-semibold text-black">{deleteConfirmTitle}</span>
-              <span className="text-xs font-medium text-[#71717A]">{deleteConfirmHint}</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onToggleDeleteConfirm?.(false)}
-                  className="px-3 py-1.5 rounded-lg bg-[#F4F4F5] text-xs font-medium text-[#52525B]"
-                >
-                  {deleteCancelLabel}
-                </button>
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  className="px-3 py-1.5 rounded-lg bg-[#E4E4E7] text-xs font-medium text-[#18181B]"
-                >
-                  {deleteConfirmLabel}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

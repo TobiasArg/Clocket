@@ -32,12 +32,14 @@ export interface UseTransactionsPageModelOptions {
 export interface UseTransactionsPageModelResult {
   accountsError: string | null;
   amountInput: string;
+  cancelDeleteTransaction: () => void;
   categoriesError: string | null;
+  confirmDeleteTransaction: () => Promise<void>;
+  deleteConfirmTransactionName: string;
   descriptionInput: string;
   editorMode: TransactionsEditorMode;
   editingAmountSign: AmountSign;
   error: string | null;
-  handleDelete: () => Promise<void>;
   handleHeaderAction: () => void;
   handleSubmit: () => Promise<void>;
   handleTransactionRowClick: (
@@ -51,6 +53,7 @@ export interface UseTransactionsPageModelResult {
   isAmountValid: boolean;
   isCategoriesLoading: boolean;
   isCuotasLoading: boolean;
+  isDeleteConfirmOpen: boolean;
   isDescriptionValid: boolean;
   isEditorOpen: boolean;
   isFormValid: boolean;
@@ -60,6 +63,8 @@ export interface UseTransactionsPageModelResult {
   cuotasCount: number;
   monthlyBalance: ReturnType<typeof getMonthlyBalance>;
   monthlyPendingInstallments: number;
+  pendingDeleteTransactionId: string | null;
+  requestDeleteTransaction: (id: string) => void;
   selectedAccountId: string;
   selectedCurrency: TransactionInputCurrency;
   selectedCategoryId: string;
@@ -70,8 +75,6 @@ export interface UseTransactionsPageModelResult {
   setSelectedAccountId: (value: string) => void;
   setSelectedCurrency: (value: TransactionInputCurrency) => void;
   setSelectedCategoryId: (value: string) => void;
-  setShowDeleteConfirm: (value: boolean) => void;
-  showDeleteConfirm: boolean;
   showSaved: boolean;
   showValidation: boolean;
   sortedAccounts: ReturnType<typeof useAccounts>["items"];
@@ -171,8 +174,9 @@ export const useTransactionsPageModel = (
   const [amountInput, setAmountInput] = useState<string>("");
   const [descriptionInput, setDescriptionInput] = useState<string>("");
   const [showValidation, setShowValidation] = useState<boolean>(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [showSaved, setShowSaved] = useState<boolean>(false);
+  const [pendingDeleteTransactionId, setPendingDeleteTransactionId] = useState<string | null>(null);
+  const [deleteConfirmTransactionId, setDeleteConfirmTransactionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!showSaved) {
@@ -195,6 +199,11 @@ export const useTransactionsPageModel = (
 
     return items.find((item) => item.id === selectedTransactionId) ?? null;
   }, [items, selectedTransactionId]);
+
+  const deleteConfirmTransaction = useMemo(
+    () => items.find((item) => item.id === deleteConfirmTransactionId) ?? null,
+    [deleteConfirmTransactionId, items],
+  );
 
   const normalizedDescription = descriptionInput.trim();
   const amountValue = Number(amountInput);
@@ -325,7 +334,6 @@ export const useTransactionsPageModel = (
     setAmountInput("");
     setDescriptionInput("");
     setShowValidation(false);
-    setShowDeleteConfirm(false);
   };
 
   const openCreateEditor = () => {
@@ -338,7 +346,6 @@ export const useTransactionsPageModel = (
     setAmountInput("");
     setDescriptionInput("");
     setShowValidation(false);
-    setShowDeleteConfirm(false);
   };
 
   const openEditEditor = (transaction: TransactionItem) => {
@@ -351,7 +358,6 @@ export const useTransactionsPageModel = (
     setAmountInput(getAbsoluteAmountFromValue(transaction.amount));
     setDescriptionInput(transaction.name);
     setShowValidation(false);
-    setShowDeleteConfirm(false);
   };
 
   const handleHeaderAction = () => {
@@ -434,28 +440,62 @@ export const useTransactionsPageModel = (
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedTransactionId) {
+  const requestDeleteTransaction = (id: string): void => {
+    if (!id || pendingDeleteTransactionId) {
       return;
     }
 
-    const removed = await remove(selectedTransactionId);
+    const exists = items.some((item) => item.id === id);
+    if (!exists) {
+      return;
+    }
+
+    setDeleteConfirmTransactionId(id);
+  };
+
+  const cancelDeleteTransaction = (): void => {
+    if (pendingDeleteTransactionId) {
+      return;
+    }
+
+    setDeleteConfirmTransactionId(null);
+  };
+
+  const confirmDeleteTransaction = async (): Promise<void> => {
+    if (!deleteConfirmTransactionId || pendingDeleteTransactionId === deleteConfirmTransactionId) {
+      return;
+    }
+
+    setPendingDeleteTransactionId(deleteConfirmTransactionId);
+    const removed = await remove(deleteConfirmTransactionId);
     if (!removed) {
+      setPendingDeleteTransactionId((current) => (
+        current === deleteConfirmTransactionId ? null : current
+      ));
       return;
     }
 
-    closeEditor();
+    if (selectedTransactionId === deleteConfirmTransactionId) {
+      closeEditor();
+    }
+
+    setDeleteConfirmTransactionId(null);
+    setPendingDeleteTransactionId((current) => (
+      current === deleteConfirmTransactionId ? null : current
+    ));
   };
 
   return {
     accountsError,
     amountInput,
+    cancelDeleteTransaction,
     categoriesError,
+    confirmDeleteTransaction,
+    deleteConfirmTransactionName: deleteConfirmTransaction?.name ?? "",
     descriptionInput,
     editorMode,
     editingAmountSign,
     error,
-    handleDelete,
     handleHeaderAction,
     handleSubmit,
     handleTransactionRowClick,
@@ -465,6 +505,7 @@ export const useTransactionsPageModel = (
     isAmountValid,
     isCategoriesLoading,
     isCuotasLoading,
+    isDeleteConfirmOpen: deleteConfirmTransactionId !== null,
     isDescriptionValid,
     isEditorOpen,
     isFormValid,
@@ -474,6 +515,8 @@ export const useTransactionsPageModel = (
     cuotasCount: cuotas.length,
     monthlyBalance,
     monthlyPendingInstallments,
+    pendingDeleteTransactionId,
+    requestDeleteTransaction,
     selectedAccountId,
     selectedCurrency,
     selectedCategoryId,
@@ -484,8 +527,6 @@ export const useTransactionsPageModel = (
     setSelectedAccountId,
     setSelectedCurrency,
     setSelectedCategoryId,
-    setShowDeleteConfirm,
-    showDeleteConfirm,
     showSaved,
     showValidation,
     sortedAccounts,

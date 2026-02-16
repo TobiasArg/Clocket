@@ -120,6 +120,8 @@ export { SummaryPanel } from "./SummaryPanel/SummaryPanel";
 export type { SummaryPanelProps } from "./SummaryPanel/SummaryPanel";
 export { TextBadge } from "./TextBadge/TextBadge";
 export type { TextBadgeProps } from "./TextBadge/TextBadge";
+export { TransactionDeleteConfirmDialog } from "./TransactionDeleteConfirmDialog/TransactionDeleteConfirmDialog";
+export type { TransactionDeleteConfirmDialogProps } from "./TransactionDeleteConfirmDialog/TransactionDeleteConfirmDialog";
 export { TransactionEditorWidget } from "./TransactionEditorWidget/TransactionEditorWidget";
 export type { TransactionEditorWidgetProps } from "./TransactionEditorWidget/TransactionEditorWidget";
 export { TransactionsMonthListWidget } from "./TransactionsMonthListWidget/TransactionsMonthListWidget";

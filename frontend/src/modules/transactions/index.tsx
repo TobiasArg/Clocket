@@ -8,12 +8,14 @@ export type {
 } from "@/hooks";
 export {
   PageHeader,
+  TransactionDeleteConfirmDialog,
   TransactionEditorWidget,
   TransactionsMonthListWidget,
   TransactionsMonthlyBalanceWidget,
 } from "@/components";
 export type {
   PageHeaderProps,
+  TransactionDeleteConfirmDialogProps,
   TransactionEditorWidgetProps,
   TransactionsMonthListWidgetProps,
   TransactionsMonthlyBalanceWidgetProps,

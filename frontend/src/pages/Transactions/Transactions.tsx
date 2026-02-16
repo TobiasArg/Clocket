@@ -1,5 +1,6 @@
 import {
   PageHeader,
+  TransactionDeleteConfirmDialog,
   TransactionEditorWidget,
   TransactionsMonthListWidget,
   TransactionsMonthlyBalanceWidget,
@@ -100,13 +101,15 @@ export function Transactions({
   const {
     accountsError,
     amountInput,
+    cancelDeleteTransaction,
     categoriesError,
+    confirmDeleteTransaction,
+    deleteConfirmTransactionName,
     cuotasCount,
     descriptionInput,
     editorMode,
     editingAmountSign,
     error,
-    handleDelete,
     handleHeaderAction,
     handleSubmit,
     handleTransactionRowClick,
@@ -124,18 +127,18 @@ export function Transactions({
     monthGroups,
     monthlyBalance,
     monthlyPendingInstallments,
+    pendingDeleteTransactionId,
+    requestDeleteTransaction,
     selectedAccountId,
     selectedCurrency,
     selectedCategoryId,
-    selectedTransaction,
+    isDeleteConfirmOpen,
     setAmountInput,
     setDescriptionInput,
     setEditingAmountSign,
     setSelectedAccountId,
     setSelectedCurrency,
     setSelectedCategoryId,
-    setShowDeleteConfirm,
-    showDeleteConfirm,
     showSaved,
     showValidation,
     sortedAccounts,
@@ -203,11 +206,6 @@ export function Transactions({
             quickAddCategoryLabel={quickAddCategoryLabel}
             quickAddSubmitLabel={quickAddSubmitLabel}
             editSubmitLabel={editSubmitLabel}
-            deleteActionLabel={deleteActionLabel}
-            deleteConfirmTitle={deleteConfirmTitle}
-            deleteConfirmHint={deleteConfirmHint}
-            deleteCancelLabel={deleteCancelLabel}
-            deleteConfirmLabel={deleteConfirmLabel}
             uncategorizedLabel={uncategorizedLabel}
             uncategorizedAccountLabel={uncategorizedAccountLabel}
             noAccountsLabel={noAccountsLabel}
@@ -218,7 +216,6 @@ export function Transactions({
             selectedCategoryId={selectedCategoryId}
             editingAmountSign={editingAmountSign}
             showValidation={showValidation}
-            showDeleteConfirm={showDeleteConfirm}
             isAmountValid={isAmountValid}
             isDescriptionValid={isDescriptionValid}
             isAccountValid={isAccountValid}
@@ -230,20 +227,14 @@ export function Transactions({
             categoriesError={categoriesError}
             sortedAccounts={sortedAccounts}
             sortedCategories={sortedCategories}
-            selectedTransaction={selectedTransaction}
-            isSelectedTransactionAvailable={Boolean(selectedTransaction)}
             onAmountChange={setAmountInput}
             onDescriptionChange={setDescriptionInput}
             onSelectedAccountIdChange={setSelectedAccountId}
             onCurrencyChange={setSelectedCurrency}
             onSelectedCategoryIdChange={setSelectedCategoryId}
             onSignChange={setEditingAmountSign}
-            onToggleDeleteConfirm={setShowDeleteConfirm}
             onSubmit={() => {
               void handleSubmit();
-            }}
-            onDelete={() => {
-              void handleDelete();
             }}
           />
 
@@ -255,13 +246,30 @@ export function Transactions({
             errorLabel={errorLabel}
             emptyTitle={emptyTitle}
             emptyHint={emptyHint}
+            deleteActionLabel={deleteActionLabel}
             editActionLabel={editActionLabel}
+            pendingDeleteTransactionId={pendingDeleteTransactionId}
+            onDeleteTransaction={requestDeleteTransaction}
             resolveAccountLabel={resolveAccountLabel}
             resolveCategoryLabel={resolveCategoryLabel}
             onTransactionClick={handleTransactionRowClick}
           />
         </div>
       </div>
+
+      <TransactionDeleteConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        isLoading={pendingDeleteTransactionId !== null}
+        titleLabel={deleteConfirmTitle}
+        messageLabel={deleteConfirmHint}
+        confirmLabel={deleteConfirmLabel}
+        cancelLabel={deleteCancelLabel}
+        transactionName={deleteConfirmTransactionName}
+        onCancel={cancelDeleteTransaction}
+        onConfirm={() => {
+          void confirmDeleteTransaction();
+        }}
+      />
     </div>
   );
 }
