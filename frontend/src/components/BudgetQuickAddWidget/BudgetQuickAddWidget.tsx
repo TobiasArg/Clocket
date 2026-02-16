@@ -4,9 +4,11 @@ import { ActionButton } from "@/components";
 export interface BudgetQuickAddWidgetProps {
   amountErrorLabel: string;
   amountLabel: string;
+  categoryErrorLabel: string;
   categories: BudgetCategoryOption[];
   categoryLabel: string;
   isAmountValid: boolean;
+  isCategoryValid: boolean;
   isFormValid: boolean;
   isLoading: boolean;
   isOpen: boolean;
@@ -23,9 +25,11 @@ export interface BudgetQuickAddWidgetProps {
 export function BudgetQuickAddWidget({
   amountErrorLabel,
   amountLabel,
+  categoryErrorLabel,
   categories,
   categoryLabel,
   isAmountValid,
+  isCategoryValid,
   isFormValid,
   isLoading,
   isOpen,
@@ -44,7 +48,13 @@ export function BudgetQuickAddWidget({
 
   return (
     <div className="px-5">
-      <div className="flex flex-col gap-3 bg-[#F4F4F5] rounded-2xl p-4">
+      <form
+        className="flex flex-col gap-3 bg-[#F4F4F5] rounded-2xl p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
         <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
           {title}
         </span>
@@ -63,6 +73,11 @@ export function BudgetQuickAddWidget({
               </option>
             ))}
           </select>
+          {showValidation && !isCategoryValid && (
+            <span className="text-[11px] font-medium text-[#71717A]">
+              {categoryErrorLabel}
+            </span>
+          )}
         </label>
 
         <label className="flex flex-col gap-1">
@@ -84,16 +99,17 @@ export function BudgetQuickAddWidget({
         </label>
 
         <ActionButton
+          type="submit"
           icon="plus"
-          label={submitLabel}
+          label={isLoading ? "Guardando..." : submitLabel}
           iconColor="text-[#18181B]"
           labelColor="text-[#18181B]"
-          bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"}
+          bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#D4D4D8]"}
           padding="px-4 py-3"
-          className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
-          onClick={onSubmit}
+          className={isFormValid && !isLoading ? "" : "opacity-60"}
+          disabled={!isFormValid || isLoading}
         />
-      </div>
+      </form>
     </div>
   );
 }

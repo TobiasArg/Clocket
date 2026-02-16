@@ -1,6 +1,7 @@
 import { PhosphorIcon } from "@/components";
 
 export interface ActionButtonProps {
+  type?: "button" | "submit" | "reset";
   icon?: string;
   label: string;
   iconColor?: string;
@@ -9,10 +10,12 @@ export interface ActionButtonProps {
   rounded?: string;
   padding?: string;
   onClick?: () => void;
+  disabled?: boolean;
   className?: string;
 }
 
 export function ActionButton({
+  type = "button",
   icon,
   label,
   iconColor = "text-black",
@@ -21,12 +24,14 @@ export function ActionButton({
   rounded = "rounded-2xl",
   padding = "px-5 py-4",
   onClick,
+  disabled = false,
   className = "",
 }: ActionButtonProps) {
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
+      disabled={disabled}
       className={`flex items-center justify-center gap-2 w-full ${bg} ${rounded} ${padding} ${className}`}
     >
       {icon && <PhosphorIcon name={icon} className={iconColor} />}

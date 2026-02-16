@@ -1,4 +1,5 @@
 import type { NavItem } from "@/modules/budgets";
+import { PhosphorIcon } from "@/components";
 import {
   BottomNavigation,
   BudgetListWidget,
@@ -18,16 +19,18 @@ export interface BudgetsProps {
   sectionTitle?: string;
   quickAddTitle?: string;
   quickAddCategoryLabel?: string;
+  quickAddCategoryErrorLabel?: string;
   quickAddAmountLabel?: string;
   quickAddSubmitLabel?: string;
   quickAddAmountErrorLabel?: string;
   loadingLabel?: string;
   emptyTitle?: string;
   emptyHint?: string;
+  emptyActionLabel?: string;
   errorLabel?: string;
   navItems?: NavItem[];
   onAddClick?: () => void;
-  onBudgetClick?: (index: number) => void;
+  onBudgetClick?: (budgetId: string) => void;
   onNavItemClick?: (index: number) => void;
 }
 
@@ -41,12 +44,14 @@ export function Budgets({
   sectionTitle = "Mis Budgets",
   quickAddTitle = "Nuevo budget",
   quickAddCategoryLabel = "Categoría",
+  quickAddCategoryErrorLabel = "Selecciona una categoría.",
   quickAddAmountLabel = "Monto límite",
   quickAddSubmitLabel = "Guardar budget",
   quickAddAmountErrorLabel = "Ingresa un monto mayor a 0.",
   loadingLabel = "Cargando budgets...",
   emptyTitle = "No hay budgets",
   emptyHint = "Agrega un budget para empezar a organizar tus gastos.",
+  emptyActionLabel = "Crear budget",
   errorLabel = "No pudimos cargar los budgets. Intenta nuevamente.",
   navItems = [
     { icon: "house", label: "Home", to: "/home" },
@@ -64,8 +69,12 @@ export function Budgets({
     error,
     expensesByCategoryId,
     handleCreate,
+    handleNextMonth,
+    handleOpenEditor,
+    handlePreviousMonth,
     handleHeaderAction,
     isAmountValid,
+    isCategoryValid,
     isEditorOpen,
     isFormValid,
     isLoading,
@@ -77,6 +86,7 @@ export function Budgets({
     sortedCategories,
     summary,
     visibleBudgets,
+    selectedMonthLabel,
   } = useBudgetsPageModel({ onAddClick });
 
   return (
@@ -89,10 +99,33 @@ export function Budgets({
       />
       <div className="flex-1 overflow-auto">
         <div className="flex flex-col gap-4 py-5">
+          <div className="px-5">
+            <div className="flex items-center justify-between rounded-2xl bg-[#F4F4F5] px-3 py-2">
+              <button
+                type="button"
+                onClick={handlePreviousMonth}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#3F3F46]"
+                aria-label="Mes anterior"
+              >
+                <PhosphorIcon name="caret-left" />
+              </button>
+              <span className="text-sm font-semibold text-[#18181B]">{selectedMonthLabel}</span>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#3F3F46]"
+                aria-label="Mes siguiente"
+              >
+                <PhosphorIcon name="caret-right" />
+              </button>
+            </div>
+          </div>
+
           <BudgetQuickAddWidget
             isOpen={isEditorOpen}
             title={quickAddTitle}
             categoryLabel={quickAddCategoryLabel}
+            categoryErrorLabel={quickAddCategoryErrorLabel}
             amountLabel={quickAddAmountLabel}
             submitLabel={quickAddSubmitLabel}
             amountErrorLabel={quickAddAmountErrorLabel}
@@ -101,6 +134,7 @@ export function Budgets({
             limitAmountInput={limitAmountInput}
             showValidation={showValidation}
             isAmountValid={isAmountValid}
+            isCategoryValid={isCategoryValid}
             isFormValid={isFormValid}
             isLoading={isLoading}
             onCategoryChange={setSelectedCategoryId}
@@ -118,6 +152,8 @@ export function Budgets({
             totalSpent={summary.totalSpent}
             totalBudget={summary.totalBudget}
             progress={summary.progress}
+            rawProgress={summary.rawProgress}
+            overspentAmount={summary.overspentAmount}
           />
 
           <BudgetListWidget
@@ -128,10 +164,12 @@ export function Budgets({
             errorMessage={error}
             emptyTitle={emptyTitle}
             emptyHint={emptyHint}
+            emptyActionLabel={emptyActionLabel}
             items={visibleBudgets}
             expensesByCategoryId={expensesByCategoryId}
             categoryById={categoryById}
             onBudgetClick={onBudgetClick}
+            onEmptyAction={handleOpenEditor}
           />
         </div>
       </div>
