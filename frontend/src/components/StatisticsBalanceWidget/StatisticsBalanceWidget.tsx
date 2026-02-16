@@ -6,6 +6,7 @@ import { StatisticsFlowDetailPopup } from "./StatisticsFlowDetailPopup";
 
 export interface StatisticsBalanceWidgetProps {
   balanceTitle?: string;
+  chartAnimationKey?: string;
   emptyLabel?: string;
   flowDays?: StatisticsFlowDay[];
   popupCloseLabel?: string;
@@ -15,6 +16,7 @@ export interface StatisticsBalanceWidgetProps {
 
 export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
   balanceTitle = "Flujo",
+  chartAnimationKey = "statistics-flow",
   emptyLabel = "No hay movimientos en los últimos 7 días.",
   flowDays = [],
   popupCloseLabel = "Cerrar",
@@ -101,7 +103,7 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
           <div className="flex flex-col gap-3">
             <div className="h-[210px] w-full rounded-xl bg-white/70 px-2 py-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                <BarChart key={chartAnimationKey} data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                   <XAxis
                     dataKey="label"
                     axisLine={false}
@@ -114,7 +116,9 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
                     dataKey="income"
                     fill="#16A34A"
                     radius={[6, 6, 0, 0]}
-                    isAnimationActive={false}
+                    isAnimationActive
+                    animationDuration={360}
+                    animationEasing="ease-out"
                     onClick={handleBarClick}
                   />
                   {expenseSeries.map((series, index) => (
@@ -124,7 +128,9 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
                       stackId="expense"
                       fill={series.color}
                       radius={index === expenseSeries.length - 1 ? [0, 0, 6, 6] : [0, 0, 0, 0]}
-                      isAnimationActive={false}
+                      isAnimationActive
+                      animationDuration={360}
+                      animationEasing="ease-out"
                       onClick={handleBarClick}
                     />
                   ))}

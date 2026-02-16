@@ -113,6 +113,7 @@ export type {
   InvestmentsRepository,
   UpdateInvestmentPatch,
 } from "./investmentsRepository";
+export { TRANSACTIONS_CHANGED_EVENT } from "./transactionsRepository";
 export type {
   CreateTransactionInput,
   TransactionItem,

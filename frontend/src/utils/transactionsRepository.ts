@@ -1,5 +1,7 @@
 import type { TransactionDetailed, TransactionType } from "@/types";
 
+export const TRANSACTIONS_CHANGED_EVENT = "clocket:transactions-changed" as const;
+
 export interface TransactionItem extends TransactionDetailed {
   id: string;
   accountId: string;

@@ -73,6 +73,10 @@ export const buildStatisticsDailyFlow = ({
   rangeEnd.setDate(rangeEnd.getDate() + 1);
 
   transactions.forEach((transaction) => {
+    if (transaction.transactionType === "saving") {
+      return;
+    }
+
     const transactionDate = getTransactionDateForMonthBalance(transaction);
     if (!transactionDate || !rangeStart || transactionDate < rangeStart || transactionDate >= rangeEnd) {
       return;

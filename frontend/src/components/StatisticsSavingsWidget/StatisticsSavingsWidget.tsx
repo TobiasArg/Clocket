@@ -12,6 +12,7 @@ export interface StatisticsSavingsWidgetProps {
   savingsLabel?: string;
   savingsTitle?: string;
   savingsValue?: string;
+  trendAnimationKey?: string;
   trendPoints?: TrendLinePoint[];
 }
 
@@ -23,6 +24,7 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
   savingsLabel = "Ahorrado este mes",
   savingsTitle = "Tendencia de Ahorro",
   savingsValue = "$0.00",
+  trendAnimationKey = "statistics-trend",
   trendPoints = [],
 }: StatisticsSavingsWidgetProps) {
   const metrics = [
@@ -48,7 +50,7 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
           fontWeight="font-semibold"
         />
       </div>
-      <TrendLine points={trendPoints} className="h-[112px]" />
+      <TrendLine points={trendPoints} className="h-[112px]" animationKey={trendAnimationKey} />
       <div className="grid grid-cols-2 gap-2">
         {metrics.map((metric) => (
           <div key={metric.label} className="rounded-xl bg-white/10 px-3 py-2">

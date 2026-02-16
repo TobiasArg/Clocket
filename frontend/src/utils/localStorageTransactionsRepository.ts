@@ -1,3 +1,4 @@
+import { TRANSACTIONS_CHANGED_EVENT } from "@/utils";
 import type {
   CreateTransactionInput,
   TransactionItem,
@@ -438,6 +439,10 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
     }
 
     storage.setItem(this.storageKey, JSON.stringify(next));
+
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new Event(TRANSACTIONS_CHANGED_EVENT));
+    }
   }
 }
 

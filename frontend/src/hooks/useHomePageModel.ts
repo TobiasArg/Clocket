@@ -69,12 +69,7 @@ const RECENT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-const SPENDING_COLORS = [
-  "bg-[#DC2626]",
-  "bg-[#2563EB]",
-  "bg-[#7C3AED]",
-  "bg-[#71717A]",
-] as const;
+const FALLBACK_SPENDING_COLOR = "bg-[#71717A]";
 
 const parseSignedAmount = (value: string): number => {
   const normalized = value.replace(/[^0-9+.-]/g, "");
@@ -124,10 +119,13 @@ export const useHomePageModel = (
     error: cuotasError,
   } = useCuotas();
 
-  const categoryNameById = useMemo(() => {
-    const map = new Map<string, string>();
+  const categoryInfoById = useMemo(() => {
+    const map = new Map<string, { name: string; color: string }>();
     categories.forEach((category) => {
-      map.set(category.id, category.name);
+      map.set(category.id, {
+        name: category.name,
+        color: category.iconBg || FALLBACK_SPENDING_COLOR,
+      });
     });
 
     return map;
@@ -260,9 +258,13 @@ export const useHomePageModel = (
 
   const computedSpendingCategories = useMemo<SpendingCategory[]>(() => {
     const monthWindow = getCurrentMonthWindow();
-    const grouped = new Map<string, number>();
+    const grouped = new Map<string, { label: string; amount: number; color: string }>();
 
     transactionItems.forEach((transaction) => {
+      if (transaction.transactionType === "saving") {
+        return;
+      }
+
       const transactionDate = getTransactionDateForMonthBalance(transaction);
       if (!transactionDate) {
         return;
@@ -280,27 +282,40 @@ export const useHomePageModel = (
         return;
       }
 
-      const categoryLabel = transaction.categoryId
-        ? (categoryNameById.get(transaction.categoryId) ?? "Uncategorized")
-        : (transaction.category || "Uncategorized");
+      const parentCategoryId = transaction.categoryId?.trim() || "uncategorized";
+      const categoryInfo = transaction.categoryId
+        ? categoryInfoById.get(transaction.categoryId)
+        : null;
+      const categoryLabel = categoryInfo?.name || transaction.category || "Uncategorized";
+      const categoryColor = categoryInfo?.color || FALLBACK_SPENDING_COLOR;
+      const current = grouped.get(parentCategoryId);
 
-      grouped.set(categoryLabel, (grouped.get(categoryLabel) ?? 0) + Math.abs(signedAmount));
+      if (!current) {
+        grouped.set(parentCategoryId, {
+          label: categoryLabel,
+          amount: Math.abs(signedAmount),
+          color: categoryColor,
+        });
+        return;
+      }
+
+      current.amount += Math.abs(signedAmount);
     });
 
-    const total = Array.from(grouped.values()).reduce((sum, value) => sum + value, 0);
+    const total = Array.from(grouped.values()).reduce((sum, value) => sum + value.amount, 0);
     if (total <= 0) {
       return [];
     }
 
-    return Array.from(grouped.entries())
-      .sort((left, right) => right[1] - left[1])
+    return Array.from(grouped.values())
+      .sort((left, right) => right.amount - left.amount)
       .slice(0, 4)
-      .map(([label, amount], index) => ({
-        label,
-        percentage: Math.max(1, Math.round((amount / total) * 100)),
-        color: SPENDING_COLORS[index % SPENDING_COLORS.length],
+      .map((item) => ({
+        label: item.label,
+        percentage: Math.max(1, Math.round((item.amount / total) * 100)),
+        color: item.color,
       }));
-  }, [categoryNameById, transactionItems]);
+  }, [categoryInfoById, transactionItems]);
 
   const visibleCuotas = useMemo(() => {
     if (cuotas) {

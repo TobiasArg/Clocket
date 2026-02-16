@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   CategoryBreakdown,
   DonutSegment,
@@ -9,7 +9,6 @@ import { useTransactions } from "./useTransactions";
 import {
   buildStatisticsDailyFlow,
   formatCurrency,
-  getCurrentMonthWindow,
   getMonthlyBalance,
   getTransactionDateForMonthBalance,
 } from "@/utils";
@@ -18,6 +17,8 @@ export interface StatisticsTrendPoint {
   label: string;
   value: number;
 }
+
+export type StatisticsScope = "historical" | "month" | "year";
 
 export interface UseStatisticsPageModelOptions {
   categories?: CategoryBreakdown[];
@@ -38,6 +39,9 @@ export interface UseStatisticsPageModelResult {
   monthlyBalance: ReturnType<typeof getMonthlyBalance>;
   monthlyGoal: number;
   monthlyTransactionsCount: number;
+  scope: StatisticsScope;
+  scopeLabel: string;
+  setScope: (scope: StatisticsScope) => void;
   resolvedCategoryTotal: string;
   resolvedSavingsBadge: string;
   resolvedSavingsGoalValue: string;
@@ -48,6 +52,16 @@ export interface UseStatisticsPageModelResult {
 }
 
 const DONUT_COLORS = ["#DC2626", "#2563EB", "#EA580C", "#71717A"] as const;
+const STATISTICS_SCOPE_STORAGE_KEY = "clocket.statistics.scope";
+const DEFAULT_SCOPE: StatisticsScope = "month";
+const SCOPE_LABELS: Record<StatisticsScope, string> = {
+  historical: "Histórico",
+  month: "Este mes",
+  year: "Este año",
+};
+
+const isStatisticsScope = (value: string): value is StatisticsScope =>
+  value === "historical" || value === "month" || value === "year";
 
 const parseSignedAmount = (value: string): number => {
   const normalized = value.replace(/[^0-9+.-]/g, "");
@@ -104,6 +118,22 @@ export const useStatisticsPageModel = (
 
   const { items: transactions, isLoading, error } = useTransactions();
   const { items: categoriesData } = useCategories();
+  const [scope, setScopeState] = useState<StatisticsScope>(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_SCOPE;
+    }
+
+    const storedScope = window.localStorage.getItem(STATISTICS_SCOPE_STORAGE_KEY);
+    if (storedScope && isStatisticsScope(storedScope)) {
+      return storedScope;
+    }
+
+    return DEFAULT_SCOPE;
+  });
+
+  const setScope = useCallback((nextScope: StatisticsScope) => {
+    setScopeState(nextScope);
+  }, []);
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -113,29 +143,69 @@ export const useStatisticsPageModel = (
     return map;
   }, [categoriesData]);
 
-  const monthWindow = useMemo(() => getCurrentMonthWindow(), []);
+  const balanceTransactions = useMemo(
+    () => transactions.filter((transaction) => transaction.transactionType !== "saving"),
+    [transactions],
+  );
 
-  const monthlyTransactions = useMemo(
-    () => transactions.filter((transaction) => {
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(STATISTICS_SCOPE_STORAGE_KEY, scope);
+  }, [scope]);
+
+  const scopedTransactions = useMemo(() => {
+    if (scope === "historical") {
+      return balanceTransactions;
+    }
+
+    const now = new Date();
+    const scopeStart = scope === "month"
+      ? new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+      : new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    const scopeEnd = scope === "month"
+      ? new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0)
+      : new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
+
+    return balanceTransactions.filter((transaction) => {
       const transactionDate = getTransactionDateForMonthBalance(transaction);
       if (!transactionDate) {
         return false;
       }
 
-      return transactionDate >= monthWindow.start && transactionDate < monthWindow.end;
-    }),
-    [monthWindow.end, monthWindow.start, transactions],
-  );
+      return transactionDate >= scopeStart && transactionDate < scopeEnd;
+    });
+  }, [balanceTransactions, scope]);
 
-  const monthlyBalance = useMemo(
-    () => getMonthlyBalance(transactions),
-    [transactions],
-  );
+  const monthlyBalance = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+
+    scopedTransactions.forEach((transaction) => {
+      const amount = parseSignedAmount(transaction.amount);
+      if (amount > 0) {
+        income += amount;
+        return;
+      }
+
+      if (amount < 0) {
+        expense += Math.abs(amount);
+      }
+    });
+
+    return {
+      income,
+      expense,
+      net: income - expense,
+    };
+  }, [scopedTransactions]);
 
   const computedCategoryRows = useMemo<CategoryBreakdown[]>(() => {
     const grouped = new Map<string, number>();
 
-    monthlyTransactions.forEach((transaction) => {
+    scopedTransactions.forEach((transaction) => {
       const amount = parseSignedAmount(transaction.amount);
       if (amount >= 0) {
         return;
@@ -163,7 +233,7 @@ export const useStatisticsPageModel = (
           value: `${formatCurrency(value)} (${percent}%)`,
         };
       });
-  }, [categoryNameById, monthlyTransactions]);
+  }, [categoryNameById, scopedTransactions]);
 
   const categoryRows = categories ?? computedCategoryRows;
 
@@ -193,7 +263,7 @@ export const useStatisticsPageModel = (
 
     const monthByKey = new Map(months.map((month) => [month.key, month]));
 
-    transactions.forEach((transaction) => {
+    scopedTransactions.forEach((transaction) => {
       const transactionDate = getTransactionDateForMonthBalance(transaction);
       if (!transactionDate) {
         return;
@@ -217,11 +287,11 @@ export const useStatisticsPageModel = (
       label: month.label,
       value: month.income - month.expense,
     }));
-  }, [transactions]);
+  }, [scopedTransactions]);
 
   const dailyFlow = useMemo<StatisticsFlowDay[]>(
-    () => buildStatisticsDailyFlow({ categoryNameById, transactions }),
-    [categoryNameById, transactions],
+    () => buildStatisticsDailyFlow({ categoryNameById, transactions: scopedTransactions }),
+    [categoryNameById, scopedTransactions],
   );
 
   const net = monthlyBalance.net;
@@ -238,7 +308,10 @@ export const useStatisticsPageModel = (
     hasError: Boolean(error),
     monthlyBalance,
     monthlyGoal,
-    monthlyTransactionsCount: monthlyTransactions.length,
+    monthlyTransactionsCount: scopedTransactions.length,
+    scope,
+    scopeLabel: SCOPE_LABELS[scope],
+    setScope,
     resolvedCategoryTotal: categoryTotal ?? formatCurrency(monthlyBalance.expense),
     resolvedSavingsBadge:
       savingsBadge ?? `${net >= 0 ? "+" : ""}${savingsPercent}%`,

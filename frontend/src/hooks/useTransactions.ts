@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  TRANSACTIONS_CHANGED_EVENT,
   transactionsRepository,
   type CreateTransactionInput,
   type TransactionItem,
@@ -45,8 +46,10 @@ export const useTransactions = (
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
+  const refreshTransactions = useCallback(async (showLoading: boolean) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -55,9 +58,15 @@ export const useTransactions = (
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   }, [repository]);
+
+  const refresh = useCallback(async () => {
+    await refreshTransactions(true);
+  }, [refreshTransactions]);
 
   const create = useCallback(
     async (input: CreateTransactionInput): Promise<TransactionItem | null> => {
@@ -144,6 +153,22 @@ export const useTransactions = (
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleTransactionsChanged = () => {
+      void refreshTransactions(false);
+    };
+
+    window.addEventListener(TRANSACTIONS_CHANGED_EVENT, handleTransactionsChanged);
+
+    return () => {
+      window.removeEventListener(TRANSACTIONS_CHANGED_EVENT, handleTransactionsChanged);
+    };
+  }, [refreshTransactions]);
 
   return {
     items,

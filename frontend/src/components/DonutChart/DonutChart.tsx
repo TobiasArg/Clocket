@@ -3,6 +3,7 @@ import { memo, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 export interface DonutChartProps {
+  animationKey?: string;
   segments: DonutSegment[];
   centerValue?: string;
   centerLabel?: string;
@@ -19,6 +20,7 @@ export interface DonutChartProps {
 }
 
 export const DonutChart = memo(function DonutChart({
+  animationKey = "donut",
   segments,
   centerValue,
   centerLabel,
@@ -64,7 +66,7 @@ export const DonutChart = memo(function DonutChart({
     >
       <div className={`relative ${size} shrink-0`}>
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart key={animationKey}>
             <Pie
               data={normalizedSegments}
               dataKey="percentage"
@@ -76,7 +78,9 @@ export const DonutChart = memo(function DonutChart({
               paddingAngle={2}
               stroke={bgFill}
               strokeWidth={2}
-              isAnimationActive={false}
+              isAnimationActive
+              animationDuration={380}
+              animationEasing="ease-out"
             >
               {normalizedSegments.map((segment, index) => (
                 <Cell

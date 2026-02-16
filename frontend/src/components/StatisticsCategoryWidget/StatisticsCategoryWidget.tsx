@@ -7,6 +7,7 @@ export interface StatisticsCategoryWidgetProps {
   categoryTitle?: string;
   categoryTotal?: string;
   categoryTotalLabel?: string;
+  chartAnimationKey?: string;
   chartSize?: string;
   chartType?: "donut" | "pie";
   donutSegments?: DonutSegment[];
@@ -20,6 +21,7 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
   categoryTitle = "Gastos por Categoría",
   categoryTotal = "$0.00",
   categoryTotalLabel = "Total",
+  chartAnimationKey = "statistics-category",
   chartSize = "w-[280px] h-[280px]",
   chartType = "donut",
   donutSegments = [],
@@ -46,6 +48,7 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
             </span>
           )}
           <DonutChart
+            animationKey={chartAnimationKey}
             segments={donutSegments}
             centerValue={showCenterValue ? categoryTotal : undefined}
             centerLabel={categoryTotalLabel}

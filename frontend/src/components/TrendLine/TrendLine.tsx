@@ -14,6 +14,7 @@ export interface TrendLinePoint {
 }
 
 export interface TrendLineProps {
+  animationKey?: string;
   className?: string;
   points?: TrendLinePoint[];
 }
@@ -28,6 +29,7 @@ const DEFAULT_POINTS: TrendLinePoint[] = [
 ];
 
 export const TrendLine = memo(function TrendLine({
+  animationKey = "trend",
   className = "",
   points = DEFAULT_POINTS,
 }: TrendLineProps) {
@@ -35,6 +37,7 @@ export const TrendLine = memo(function TrendLine({
     <div className={`w-full h-[88px] relative ${className}`}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
+          key={animationKey}
           data={points}
           margin={{ top: 6, right: 6, left: 6, bottom: 2 }}
         >
@@ -54,7 +57,9 @@ export const TrendLine = memo(function TrendLine({
             strokeWidth={2}
             dot={{ fill: "white", r: 3 }}
             activeDot={{ r: 4, fill: "white" }}
-            isAnimationActive={false}
+            isAnimationActive
+            animationDuration={400}
+            animationEasing="ease-out"
           />
         </LineChart>
       </ResponsiveContainer>
