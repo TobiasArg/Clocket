@@ -112,6 +112,7 @@ export type {
 } from "./useGoalDetailPageModel";
 export { useStatisticsPageModel } from "./useStatisticsPageModel";
 export type {
+  StatisticsChartView,
   StatisticsScope,
   StatisticsTrendPoint,
   UseStatisticsPageModelOptions,

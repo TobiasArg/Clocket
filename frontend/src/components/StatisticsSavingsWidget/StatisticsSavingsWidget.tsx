@@ -1,8 +1,35 @@
-import { memo } from "react";
+import type { StatisticsChartView } from "@/hooks";
+import type { ComponentType } from "react";
+import { lazy, memo, Suspense, useEffect, useMemo, useState } from "react";
+import { StatisticsViewCarousel } from "../StatisticsViewCarousel/StatisticsViewCarousel";
 import { SummaryPanel } from "../SummaryPanel/SummaryPanel";
 import { TextBadge } from "../TextBadge/TextBadge";
-import { TrendLine } from "../TrendLine/TrendLine";
 import type { TrendLinePoint } from "../TrendLine/TrendLine";
+import type { TrendChartViewProps } from "./views/TrendChartView";
+
+const TrendDayView = lazy(async () => {
+  const module = await import("./views/TrendDayView");
+  return { default: module.TrendDayView };
+});
+const TrendWeekView = lazy(async () => {
+  const module = await import("./views/TrendWeekView");
+  return { default: module.TrendWeekView };
+});
+const TrendMonthView = lazy(async () => {
+  const module = await import("./views/TrendMonthView");
+  return { default: module.TrendMonthView };
+});
+
+const TREND_VIEW_COMPONENTS: Record<StatisticsChartView, ComponentType<TrendChartViewProps>> = {
+  day: TrendDayView,
+  month: TrendMonthView,
+  week: TrendWeekView,
+};
+const EMPTY_POINTS_BY_VIEW: Record<StatisticsChartView, TrendLinePoint[]> = {
+  day: [],
+  month: [],
+  week: [],
+};
 
 export interface StatisticsSavingsWidgetProps {
   savingsBadge?: string;
@@ -13,20 +40,59 @@ export interface StatisticsSavingsWidgetProps {
   savingsTitle?: string;
   savingsValue?: string;
   trendAnimationKey?: string;
-  trendPoints?: TrendLinePoint[];
+  trendPointsByView?: Record<StatisticsChartView, TrendLinePoint[]>;
 }
 
 export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
   savingsBadge = "+0%",
-  savingsBg = "bg-[#059669]",
+  savingsBg = "bg-[#F4F4F5]",
   savingsGoalLabel = "Meta mensual",
   savingsGoalValue = "$0.00",
   savingsLabel = "Ahorrado este mes",
   savingsTitle = "Tendencia de Ahorro",
   savingsValue = "$0.00",
   trendAnimationKey = "statistics-trend",
-  trendPoints = [],
+  trendPointsByView = EMPTY_POINTS_BY_VIEW,
 }: StatisticsSavingsWidgetProps) {
+  const [activeView, setActiveView] = useState<StatisticsChartView>("day");
+  const [loadedViews, setLoadedViews] = useState<Record<StatisticsChartView, boolean>>({
+    day: true,
+    month: false,
+    week: false,
+  });
+
+  useEffect(() => {
+    setLoadedViews((current) => {
+      if (current[activeView]) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [activeView]: true,
+      };
+    });
+  }, [activeView]);
+
+  const renderTrendSlide = useMemo(() => (
+    (view: StatisticsChartView) => {
+      const points = trendPointsByView[view] ?? [];
+      if (!loadedViews[view]) {
+        return <div className="h-[124px] w-full rounded-xl bg-white/70" />;
+      }
+
+      const ViewComponent = TREND_VIEW_COMPONENTS[view];
+      return (
+        <Suspense fallback={<div className="h-[124px] w-full rounded-xl bg-white/70" />}>
+          <ViewComponent
+            animationKey={`${trendAnimationKey}-${view}`}
+            points={points}
+          />
+        </Suspense>
+      );
+    }
+  ), [loadedViews, trendAnimationKey, trendPointsByView]);
+
   const metrics = [
     { label: savingsLabel, value: savingsValue, valueClassName: "font-bold" },
     { label: savingsGoalLabel, value: savingsGoalValue, valueClassName: "font-semibold" },
@@ -39,23 +105,27 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
       padding="p-5"
     >
       <div className="flex items-start justify-between w-full">
-        <span className="text-sm font-semibold text-white/90 font-['Outfit']">{savingsTitle}</span>
+        <span className="text-sm font-semibold text-[#18181B] font-['Outfit']">{savingsTitle}</span>
         <TextBadge
           text={savingsBadge}
-          bg="bg-white/20"
-          textColor="text-white"
+          bg="bg-white"
+          textColor="text-[#18181B]"
           rounded="rounded-lg"
           padding="px-2.5 py-1"
           fontSize="text-xs"
           fontWeight="font-semibold"
         />
       </div>
-      <TrendLine points={trendPoints} className="h-[112px]" animationKey={trendAnimationKey} />
+      <StatisticsViewCarousel
+        activeView={activeView}
+        onViewChange={setActiveView}
+        renderSlide={renderTrendSlide}
+      />
       <div className="grid grid-cols-2 gap-2">
         {metrics.map((metric) => (
-          <div key={metric.label} className="rounded-xl bg-white/10 px-3 py-2">
-            <span className="block text-[10px] font-medium text-white/70">{metric.label}</span>
-            <span className={`block text-base text-white font-['Outfit'] ${metric.valueClassName}`}>
+          <div key={metric.label} className="rounded-xl bg-white px-3 py-2">
+            <span className="block text-[10px] font-medium text-[#71717A]">{metric.label}</span>
+            <span className={`block text-base text-[#18181B] font-['Outfit'] ${metric.valueClassName}`}>
               {metric.value}
             </span>
           </div>

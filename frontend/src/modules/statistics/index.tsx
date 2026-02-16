@@ -1,5 +1,6 @@
 export { useStatisticsPageModel } from "@/hooks";
 export type {
+  StatisticsChartView,
   StatisticsScope,
   StatisticsTrendPoint,
   UseStatisticsPageModelOptions,
