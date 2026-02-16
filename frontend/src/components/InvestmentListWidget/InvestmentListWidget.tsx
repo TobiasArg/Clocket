@@ -1,4 +1,4 @@
-import { CardSection, StockCard } from "@/components";
+import { CardSection, StockCard, TextBadge } from "@/components";
 import type { InvestmentStockCardItem } from "@/hooks";
 
 export interface InvestmentListWidgetProps {
@@ -51,6 +51,32 @@ export function InvestmentListWidget({
 
       {items.map((item, index) => (
         <div key={item.id} className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 px-1">
+            <TextBadge
+              text={item.priceSourceLabel}
+              bg={item.priceSource === "manual" ? "bg-[#FEF3C7]" : "bg-[#DCFCE7]"}
+              textColor={item.priceSource === "manual" ? "text-[#92400E]" : "text-[#166534]"}
+              rounded="rounded-lg"
+              padding="px-2 py-1"
+              fontSize="text-[10px]"
+              fontWeight="font-semibold"
+            />
+            <span className={`text-[11px] font-medium ${item.isUnavailable ? "text-[#B45309]" : "text-[#71717A]"}`}>
+              {item.quoteStatusLabel}
+            </span>
+            {item.quoteUpdatedAtLabel && (
+              <span className="text-[11px] font-medium text-[#A1A1AA]">
+                {`Actualizado: ${item.quoteUpdatedAtLabel}`}
+              </span>
+            )}
+          </div>
+
+          {item.isUnavailable && item.unavailableReason && (
+            <span className="px-1 text-[11px] font-medium text-[#B45309]">
+              {item.unavailableReason}
+            </span>
+          )}
+
           <StockCard
             ticker={item.stock.ticker}
             name={item.stock.name}

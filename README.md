@@ -33,3 +33,17 @@ Notas:
 
 - Si prefieres mantener READMEs separados, puedo restaurarlos; actualmente fueron combinados en el README raíz para reducir duplicación.
 - También consolidé las reglas de `.gitignore` en la raíz y eliminé los `.gitignore` en las subcarpetas.
+
+## Limpieza automática de ramas/worktrees de agente
+
+Después de commitear y pushear una rama de agente, puedes limpiar todo con:
+
+```bash
+scripts/cleanup-agent-worktree.sh --branch rescue/ec91 --yes
+```
+
+Opciones útiles:
+
+- `--force`: fuerza borrado de worktree y rama local (`-D`).
+- `--dry-run`: muestra qué haría sin ejecutar cambios.
+- `--remote origin`: remoto a usar para borrar rama remota.

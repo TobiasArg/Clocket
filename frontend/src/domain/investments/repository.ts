@@ -8,7 +8,9 @@ export interface CreateInvestmentInput {
   exchange?: string;
   shares: number;
   costBasis: number;
-  currentPrice: number;
+  currentPrice?: number;
+  priceSource?: "market" | "manual";
+  manualPrice?: number;
 }
 
 export interface UpdateInvestmentPatch {
@@ -18,6 +20,8 @@ export interface UpdateInvestmentPatch {
   shares?: number;
   costBasis?: number;
   currentPrice?: number;
+  priceSource?: "market" | "manual";
+  manualPrice?: number;
 }
 
 export interface InvestmentsRepository {

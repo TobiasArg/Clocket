@@ -7,7 +7,10 @@ import { accountsRepository } from "@/data/localStorage/accountsRepository";
 import { budgetsRepository } from "@/data/localStorage/budgetsRepository";
 import { categoriesRepository } from "@/data/localStorage/categoriesRepository";
 import { goalsRepository } from "@/data/localStorage/goalsRepository";
-import { investmentsRepository } from "@/data/localStorage/investmentsRepository";
+import {
+  LocalStorageInvestmentsRepository,
+  investmentsRepository,
+} from "@/data/localStorage/investmentsRepository";
 import {
   LocalStorageTransactionsRepository,
   transactionsRepository,
@@ -206,13 +209,47 @@ describe("localStorage repositories smoke", () => {
     });
 
     expect(created.ticker).toBe("AAPL");
+    expect(created.priceSource).toBe("market");
+    expect(created.manualPrice).toBeUndefined();
 
     const updated = await investmentsRepository.update(created.id, {
       shares: 3,
+      priceSource: "manual",
+      manualPrice: 185,
     });
 
     expect(updated?.shares).toBe(3);
+    expect(updated?.priceSource).toBe("manual");
+    expect(updated?.manualPrice).toBe(185);
     expect(await investmentsRepository.remove(created.id)).toBe(true);
+  });
+
+  it("investments repository migrates legacy payload to include price source", async () => {
+    const legacyKey = "clocket.investments.legacy-smoke";
+    window.localStorage.setItem(legacyKey, JSON.stringify({
+      version: 1,
+      items: [
+        {
+          id: "inv_legacy",
+          ticker: "MSFT",
+          name: "Microsoft",
+          exchange: "NASDAQ",
+          shares: 1,
+          costBasis: 300,
+          currentPrice: 320,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    }));
+
+    const repository = new LocalStorageInvestmentsRepository(legacyKey);
+    const migrated = await repository.list();
+
+    expect(migrated).toHaveLength(1);
+    expect(migrated[0].ticker).toBe("MSFT");
+    expect(migrated[0].priceSource).toBe("market");
+    expect(migrated[0].manualPrice).toBeUndefined();
   });
 
   it("transactions repository migrates legacy payload, emits change event and validates saving goalId", async () => {
