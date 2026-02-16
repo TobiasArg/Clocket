@@ -41,6 +41,11 @@ export {
 } from "@/domain/cuotas/cuotasDateUtils";
 
 export {
+  AlpacaQuotesHttpRepository,
+  marketQuotesRepository,
+} from "@/data/http";
+
+export {
   LocalStorageAccountsRepository,
   accountsRepository,
   LocalStorageAppSettingsRepository,
@@ -111,6 +116,13 @@ export type {
   InvestmentsRepository,
   UpdateInvestmentPatch,
 } from "@/domain/investments/repository";
+
+export type {
+  MarketQuote,
+  MarketQuotesRepository,
+  MarketQuotesResult,
+  MarketUnavailableQuote,
+} from "@/domain/market/quotesRepository";
 
 export type {
   CreateTransactionInput,

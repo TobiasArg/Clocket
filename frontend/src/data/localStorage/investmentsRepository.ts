@@ -5,15 +5,33 @@ import type {
   UpdateInvestmentPatch,
 } from "@/domain/investments/repository";
 
-const STORAGE_VERSION = 1 as const;
+const LEGACY_STORAGE_VERSION = 1 as const;
+const STORAGE_VERSION = 2 as const;
 const DEFAULT_STORAGE_KEY = "clocket.investments";
 
+interface LegacyInvestmentPositionItem {
+  id: string;
+  ticker: string;
+  name: string;
+  exchange: string;
+  shares: number;
+  costBasis: number;
+  currentPrice: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface InvestmentsStorageV1 {
+  version: typeof LEGACY_STORAGE_VERSION;
+  items: LegacyInvestmentPositionItem[];
+}
+
+interface InvestmentsStorageV2 {
   version: typeof STORAGE_VERSION;
   items: InvestmentPositionItem[];
 }
 
-const buildInitialState = (): InvestmentsStorageV1 => ({
+const buildInitialState = (): InvestmentsStorageV2 => ({
   version: STORAGE_VERSION,
   items: [],
 });
@@ -39,6 +57,12 @@ const normalizeNumber = (value: number, field: string): number => {
   return Math.round(value * 10000) / 10000;
 };
 
+const normalizePriceSource = (
+  value: "market" | "manual" | undefined,
+): "market" | "manual" => {
+  return value === "manual" ? "manual" : "market";
+};
+
 const createInvestmentId = (): string => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -47,12 +71,12 @@ const createInvestmentId = (): string => {
   return `inv_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
 };
 
-const isInvestmentItem = (value: unknown): value is InvestmentPositionItem => {
+const isLegacyInvestmentItem = (value: unknown): value is LegacyInvestmentPositionItem => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
-  const item = value as Partial<InvestmentPositionItem>;
+  const item = value as Partial<LegacyInvestmentPositionItem>;
   return (
     typeof item.id === "string" &&
     typeof item.ticker === "string" &&
@@ -69,12 +93,45 @@ const isInvestmentItem = (value: unknown): value is InvestmentPositionItem => {
   );
 };
 
-const isStorageShape = (value: unknown): value is InvestmentsStorageV1 => {
+const isInvestmentItem = (value: unknown): value is InvestmentPositionItem => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const item = value as Partial<InvestmentPositionItem>;
+  return (
+    isLegacyInvestmentItem(value) &&
+    (
+      item.priceSource === "market" ||
+      (
+        item.priceSource === "manual" &&
+        typeof item.manualPrice === "number" &&
+        Number.isFinite(item.manualPrice) &&
+        item.manualPrice > 0
+      )
+    )
+  );
+};
+
+const isStorageShapeV1 = (value: unknown): value is InvestmentsStorageV1 => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const state = value as Partial<InvestmentsStorageV1>;
+  return (
+    state.version === LEGACY_STORAGE_VERSION &&
+    Array.isArray(state.items) &&
+    state.items.every(isLegacyInvestmentItem)
+  );
+};
+
+const isStorageShapeV2 = (value: unknown): value is InvestmentsStorageV2 => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const state = value as Partial<InvestmentsStorageV2>;
   return (
     state.version === STORAGE_VERSION &&
     Array.isArray(state.items) &&
@@ -82,16 +139,43 @@ const isStorageShape = (value: unknown): value is InvestmentsStorageV1 => {
   );
 };
 
+const migrateStorageV1 = (state: InvestmentsStorageV1): InvestmentsStorageV2 => ({
+  version: STORAGE_VERSION,
+  items: state.items.map((item) => ({
+    ...item,
+    priceSource: "market",
+    manualPrice: undefined,
+  })),
+});
+
 const buildCreatedPosition = (input: CreateInvestmentInput): InvestmentPositionItem => {
   const nowIso = new Date().toISOString();
+  const priceSource = normalizePriceSource(input.priceSource);
+  const normalizedShares = normalizeNumber(input.shares, "Shares");
+  const normalizedCostBasis = normalizeNumber(input.costBasis, "Cost basis");
+  const normalizedManualPrice = input.manualPrice !== undefined
+    ? normalizeNumber(input.manualPrice, "Manual price")
+    : undefined;
+
+  if (priceSource === "manual" && normalizedManualPrice === undefined) {
+    throw new Error("Manual positions require a manual price.");
+  }
+
+  const normalizedCurrentPrice = normalizeNumber(
+    input.currentPrice ?? normalizedManualPrice ?? normalizedCostBasis,
+    "Current price",
+  );
+
   return {
     id: createInvestmentId(),
     ticker: normalizeText(input.ticker, "Ticker").toUpperCase(),
     name: normalizeText(input.name, "Name"),
     exchange: input.exchange?.trim() || "CUSTOM",
-    shares: normalizeNumber(input.shares, "Shares"),
-    costBasis: normalizeNumber(input.costBasis, "Cost basis"),
-    currentPrice: normalizeNumber(input.currentPrice, "Current price"),
+    shares: normalizedShares,
+    costBasis: normalizedCostBasis,
+    currentPrice: normalizedCurrentPrice,
+    priceSource,
+    manualPrice: priceSource === "manual" ? normalizedManualPrice : undefined,
     createdAt: nowIso,
     updatedAt: nowIso,
   };
@@ -101,6 +185,24 @@ const buildUpdatedPosition = (
   current: InvestmentPositionItem,
   patch: UpdateInvestmentPatch,
 ): InvestmentPositionItem => {
+  const priceSource = normalizePriceSource(patch.priceSource ?? current.priceSource);
+  const shares = patch.shares !== undefined
+    ? normalizeNumber(patch.shares, "Shares")
+    : current.shares;
+  const costBasis = patch.costBasis !== undefined
+    ? normalizeNumber(patch.costBasis, "Cost basis")
+    : current.costBasis;
+  const manualPriceCandidate = patch.manualPrice !== undefined
+    ? normalizeNumber(patch.manualPrice, "Manual price")
+    : current.manualPrice;
+  const currentPriceCandidate = patch.currentPrice !== undefined
+    ? normalizeNumber(patch.currentPrice, "Current price")
+    : current.currentPrice;
+
+  if (priceSource === "manual" && manualPriceCandidate === undefined) {
+    throw new Error("Manual positions require a manual price.");
+  }
+
   return {
     ...current,
     ...(patch.ticker !== undefined
@@ -110,15 +212,13 @@ const buildUpdatedPosition = (
     ...(patch.exchange !== undefined
       ? { exchange: patch.exchange.trim() || "CUSTOM" }
       : {}),
-    ...(patch.shares !== undefined
-      ? { shares: normalizeNumber(patch.shares, "Shares") }
-      : {}),
-    ...(patch.costBasis !== undefined
-      ? { costBasis: normalizeNumber(patch.costBasis, "Cost basis") }
-      : {}),
-    ...(patch.currentPrice !== undefined
-      ? { currentPrice: normalizeNumber(patch.currentPrice, "Current price") }
-      : {}),
+    shares,
+    costBasis,
+    currentPrice: priceSource === "manual"
+      ? (manualPriceCandidate ?? currentPriceCandidate)
+      : currentPriceCandidate,
+    priceSource,
+    manualPrice: priceSource === "manual" ? manualPriceCandidate : undefined,
     updatedAt: new Date().toISOString(),
   };
 };
@@ -126,7 +226,7 @@ const buildUpdatedPosition = (
 export class LocalStorageInvestmentsRepository implements InvestmentsRepository {
   private readonly storageKey: string;
 
-  private memoryState: InvestmentsStorageV1;
+  private memoryState: InvestmentsStorageV2;
 
   public constructor(storageKey: string = DEFAULT_STORAGE_KEY) {
     this.storageKey = storageKey;
@@ -196,7 +296,7 @@ export class LocalStorageInvestmentsRepository implements InvestmentsRepository 
     return window.localStorage;
   }
 
-  private readState(): InvestmentsStorageV1 {
+  private readState(): InvestmentsStorageV2 {
     const storage = this.getStorage();
 
     if (!storage) {
@@ -215,11 +315,17 @@ export class LocalStorageInvestmentsRepository implements InvestmentsRepository 
 
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (isStorageShape(parsed)) {
+      if (isStorageShapeV2(parsed)) {
         return {
           version: parsed.version,
           items: clonePositions(parsed.items),
         };
+      }
+
+      if (isStorageShapeV1(parsed)) {
+        const migrated = migrateStorageV1(parsed);
+        this.writeState(migrated);
+        return migrated;
       }
     } catch {
       // Invalid storage payload is reset to keep behavior predictable.
@@ -230,8 +336,8 @@ export class LocalStorageInvestmentsRepository implements InvestmentsRepository 
     return reset;
   }
 
-  private writeState(state: InvestmentsStorageV1): void {
-    const next: InvestmentsStorageV1 = {
+  private writeState(state: InvestmentsStorageV2): void {
+    const next: InvestmentsStorageV2 = {
       version: state.version,
       items: clonePositions(state.items),
     };

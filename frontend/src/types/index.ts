@@ -189,6 +189,8 @@ export interface InvestmentPosition {
   shares: number;
   costBasis: number;
   currentPrice: number;
+  priceSource: "market" | "manual";
+  manualPrice?: number;
   createdAt: string;
   updatedAt: string;
 }

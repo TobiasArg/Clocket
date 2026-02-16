@@ -73,6 +73,13 @@ export type {
   UpdateInvestmentPatch,
 } from "./investments/repository";
 
+export type {
+  MarketQuote,
+  MarketQuotesRepository,
+  MarketQuotesResult,
+  MarketUnavailableQuote,
+} from "./market/quotesRepository";
+
 export {
   getCurrentMonthWindow,
   getMonthlyBalance,

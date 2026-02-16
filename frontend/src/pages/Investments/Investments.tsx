@@ -16,7 +16,9 @@ export interface InvestmentsProps {
   addButtonBg?: string;
   summaryTitle?: string;
   totalLabel?: string;
+  totalArsLabel?: string;
   gainLabel?: string;
+  dayGainLabel?: string;
   listTitle?: string;
   quickAddTitle?: string;
   quickAddTickerLabel?: string;
@@ -43,14 +45,16 @@ export function Investments({
   addButtonBg = "bg-[#10B981]",
   summaryTitle = "Resumen del Portfolio",
   totalLabel = "Valor Total",
+  totalArsLabel = "Equivalente ARS",
   gainLabel = "Ganancia/Pérdida",
+  dayGainLabel = "Variación diaria",
   listTitle = "Mis Acciones",
   quickAddTitle = "Nueva inversión",
   quickAddTickerLabel = "Ticker",
   quickAddNameLabel = "Nombre",
   quickAddSharesLabel = "Cantidad",
   quickAddCostBasisLabel = "Costo promedio",
-  quickAddCurrentPriceLabel = "Precio actual",
+  quickAddCurrentPriceLabel = "Precio manual",
   quickAddSubmitLabel = "Guardar inversión",
   loadingLabel = "Cargando inversiones...",
   emptyTitle = "No hay inversiones",
@@ -75,13 +79,21 @@ export function Investments({
     error,
     handleCreate,
     handleHeaderAction,
+    handleRefreshQuotes,
     handleRemove,
     isEditorOpen,
     isFormValid,
     isLoading,
+    isManualPriceEnabled,
+    isMarketRefreshing,
+    isTickerUnavailable,
+    marketLastUpdatedLabel,
+    marketStatusColor,
+    marketStatusLabel,
     nameInput,
     setCostBasisInput,
     setCurrentPriceInput,
+    setIsManualPriceEnabled,
     setNameInput,
     setSharesInput,
     setTickerInput,
@@ -89,6 +101,7 @@ export function Investments({
     showValidation,
     summary,
     summaryChange,
+    tickerAvailabilityMessage,
     tickerInput,
   } = useInvestmentsPageModel({ onAddClick });
 
@@ -105,14 +118,33 @@ export function Investments({
           />
           <span className="text-xl font-semibold text-[#18181B] font-['Outfit']">{headerTitle}</span>
         </div>
-        <button type="button" onClick={handleHeaderAction} aria-label="Agregar inversión">
-          <IconBadge
-            icon={isEditorOpen ? "x" : "plus"}
-            bg={addButtonBg}
-            size="w-[40px] h-[40px]"
-            rounded="rounded-[20px]"
-          />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              void handleRefreshQuotes();
+            }}
+            aria-label="Actualizar cotizaciones"
+            className={`px-3 py-2 rounded-xl text-xs font-semibold bg-[#F4F4F5] ${isMarketRefreshing ? "text-[#2563EB]" : "text-[#18181B]"}`}
+          >
+            {isMarketRefreshing ? "Actualizando..." : "Actualizar"}
+          </button>
+          <button type="button" onClick={handleHeaderAction} aria-label="Agregar inversión">
+            <IconBadge
+              icon={isEditorOpen ? "x" : "plus"}
+              bg={addButtonBg}
+              size="w-[40px] h-[40px]"
+              rounded="rounded-[20px]"
+            />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-5 py-2 bg-white border-t border-[#F4F4F5]">
+        <span className={`text-xs font-semibold ${marketStatusColor}`}>{marketStatusLabel}</span>
+        <span className="text-[11px] font-medium text-[#71717A]">
+          {`Última actualización: ${marketLastUpdatedLabel}`}
+        </span>
       </div>
 
       <InvestmentQuickAddWidget
@@ -129,6 +161,9 @@ export function Investments({
         sharesInput={sharesInput}
         costBasisInput={costBasisInput}
         currentPriceInput={currentPriceInput}
+        isManualPriceEnabled={isManualPriceEnabled}
+        isTickerUnavailable={isTickerUnavailable}
+        tickerAvailabilityMessage={tickerAvailabilityMessage}
         showValidation={showValidation}
         isFormValid={isFormValid}
         isLoading={isLoading}
@@ -137,6 +172,12 @@ export function Investments({
         onSharesChange={setSharesInput}
         onCostBasisChange={setCostBasisInput}
         onCurrentPriceChange={setCurrentPriceInput}
+        onManualPriceEnabledChange={(value) => {
+          if (isTickerUnavailable && !value) {
+            return;
+          }
+          setIsManualPriceEnabled(value);
+        }}
         onSubmit={() => {
           void handleCreate();
         }}
@@ -146,9 +187,24 @@ export function Investments({
         summaryTitle={summaryTitle}
         totalLabel={totalLabel}
         totalValue={summary.current}
+        totalArsLabel={totalArsLabel}
+        totalArsValue={summary.currentArs}
         gainLabel={gainLabel}
         gainAmount={summary.gainAmount}
         summaryChange={summaryChange}
+        dayGainLabel={dayGainLabel}
+        dayGainAmount={summary.dayGainAmount}
+        dayGainPresentation={summary.dayGainPercent >= 0
+          ? {
+            text: `+${summary.dayGainPercent.toFixed(2)}%`,
+            color: "text-[#10B981]",
+            bg: "bg-[#D1FAE5]",
+          }
+          : {
+            text: `${summary.dayGainPercent.toFixed(2)}%`,
+            color: "text-[#DC2626]",
+            bg: "bg-[#FEE2E2]",
+          }}
       />
 
       <div className="flex-1 overflow-auto px-5 py-4">

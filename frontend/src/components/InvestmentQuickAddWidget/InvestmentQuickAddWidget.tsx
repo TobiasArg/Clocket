@@ -1,14 +1,17 @@
 import { ActionButton } from "@/components";
 
 export interface InvestmentQuickAddWidgetProps {
-  currentPriceInput: string;
   costBasisInput: string;
+  currentPriceInput: string;
   isFormValid: boolean;
   isLoading: boolean;
+  isManualPriceEnabled: boolean;
   isOpen: boolean;
+  isTickerUnavailable: boolean;
   nameInput: string;
   onCostBasisChange: (value: string) => void;
   onCurrentPriceChange: (value: string) => void;
+  onManualPriceEnabledChange: (value: boolean) => void;
   onNameChange: (value: string) => void;
   onSharesChange: (value: string) => void;
   onSubmit: () => void;
@@ -22,18 +25,22 @@ export interface InvestmentQuickAddWidgetProps {
   quickAddTitle: string;
   sharesInput: string;
   showValidation: boolean;
+  tickerAvailabilityMessage: string | null;
   tickerInput: string;
 }
 
 export function InvestmentQuickAddWidget({
-  currentPriceInput,
   costBasisInput,
+  currentPriceInput,
   isFormValid,
   isLoading,
+  isManualPriceEnabled,
   isOpen,
+  isTickerUnavailable,
   nameInput,
   onCostBasisChange,
   onCurrentPriceChange,
+  onManualPriceEnabledChange,
   onNameChange,
   onSharesChange,
   onSubmit,
@@ -47,6 +54,7 @@ export function InvestmentQuickAddWidget({
   quickAddTitle,
   sharesInput,
   showValidation,
+  tickerAvailabilityMessage,
   tickerInput,
 }: InvestmentQuickAddWidgetProps) {
   if (!isOpen) {
@@ -70,6 +78,12 @@ export function InvestmentQuickAddWidget({
             className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
           />
         </label>
+
+        {tickerAvailabilityMessage && (
+          <span className={`text-[11px] font-medium ${isTickerUnavailable ? "text-[#B45309]" : "text-[#52525B]"}`}>
+            {tickerAvailabilityMessage}
+          </span>
+        )}
 
         <label className="flex flex-col gap-1">
           <span className="text-xs font-medium text-[#52525B]">{quickAddNameLabel}</span>
@@ -97,6 +111,32 @@ export function InvestmentQuickAddWidget({
           </label>
 
           <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-[#52525B]">{quickAddCostBasisLabel}</span>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={costBasisInput}
+              onChange={(event) => onCostBasisChange(event.target.value)}
+              placeholder="0.00"
+              className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+            />
+          </label>
+        </div>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isManualPriceEnabled}
+            onChange={(event) => onManualPriceEnabledChange(event.target.checked)}
+            disabled={isTickerUnavailable && isManualPriceEnabled}
+            className="h-4 w-4 accent-[#10B981]"
+          />
+          <span className="text-xs font-medium text-[#52525B]">Ingresar precio manual</span>
+        </label>
+
+        {isManualPriceEnabled && (
+          <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-[#52525B]">{quickAddCurrentPriceLabel}</span>
             <input
               type="number"
@@ -108,24 +148,11 @@ export function InvestmentQuickAddWidget({
               className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
             />
           </label>
-        </div>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{quickAddCostBasisLabel}</span>
-          <input
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={costBasisInput}
-            onChange={(event) => onCostBasisChange(event.target.value)}
-            placeholder="0.00"
-            className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
-          />
-        </label>
+        )}
 
         {showValidation && !isFormValid && (
           <span className="text-[11px] font-medium text-[#71717A]">
-            Complete los campos requeridos con valores mayores a 0.
+            Completa los campos requeridos con valores mayores a 0.
           </span>
         )}
 
