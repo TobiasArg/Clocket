@@ -32,7 +32,8 @@ type StaticAppPath =
   | "/home-desktop";
 
 type GoalDetailPath = `/goals/${string}`;
-type AppPath = StaticAppPath | GoalDetailPath;
+type BudgetDetailPath = `/budget-detail/${string}`;
+type AppPath = StaticAppPath | GoalDetailPath | BudgetDetailPath;
 
 const DEFAULT_PATH: StaticAppPath = "/home";
 
@@ -78,6 +79,15 @@ const isGoalDetailPath = (value: string): value is GoalDetailPath => {
   return goalId.length > 0;
 };
 
+const isBudgetDetailPath = (value: string): value is BudgetDetailPath => {
+  if (!value.startsWith("/budget-detail/")) {
+    return false;
+  }
+
+  const budgetId = value.slice("/budget-detail/".length).trim();
+  return budgetId.length > 0;
+};
+
 const extractGoalId = (value: string): string | null => {
   if (!isGoalDetailPath(value)) {
     return null;
@@ -90,13 +100,29 @@ const extractGoalId = (value: string): string | null => {
   }
 };
 
+const extractBudgetId = (value: string): string | null => {
+  if (!isBudgetDetailPath(value)) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(value.slice("/budget-detail/".length));
+  } catch {
+    return null;
+  }
+};
+
 const resolvePathFromLocation = (): AppPath => {
   if (typeof window === "undefined") {
     return DEFAULT_PATH;
   }
 
   const normalized = normalizePath(window.location.pathname);
-  if (isStaticAppPath(normalized) || isGoalDetailPath(normalized)) {
+  if (
+    isStaticAppPath(normalized) ||
+    isGoalDetailPath(normalized) ||
+    isBudgetDetailPath(normalized)
+  ) {
     return normalized;
   }
 
@@ -105,6 +131,9 @@ const resolvePathFromLocation = (): AppPath => {
 
 const toGoalDetailPath = (goalId: string): GoalDetailPath =>
   `/goals/${encodeURIComponent(goalId)}`;
+
+const toBudgetDetailPath = (budgetId: string): BudgetDetailPath =>
+  `/budget-detail/${encodeURIComponent(budgetId)}`;
 
 const StatisticsLazy = lazy(async () => {
   const module = await import("./pages/Statistics/Statistics");
@@ -129,7 +158,11 @@ export function App() {
 
   useEffect(() => {
     const normalized = normalizePath(window.location.pathname);
-    if (isStaticAppPath(normalized) || isGoalDetailPath(normalized)) {
+    if (
+      isStaticAppPath(normalized) ||
+      isGoalDetailPath(normalized) ||
+      isBudgetDetailPath(normalized)
+    ) {
       setCurrentPath(normalized);
       return;
     }
@@ -164,6 +197,16 @@ export function App() {
       );
     }
 
+    const budgetId = extractBudgetId(currentPath);
+    if (budgetId) {
+      return (
+        <BudgetDetail
+          budgetId={budgetId}
+          onBackClick={() => navigateTo("/budgets")}
+        />
+      );
+    }
+
     switch (currentPath) {
       case "/":
       case "/home":
@@ -187,7 +230,11 @@ export function App() {
       case "/categories":
         return <Categories onBackClick={() => navigateTo("/more")} />;
       case "/budgets":
-        return <Budgets onBudgetClick={() => navigateTo("/budget-detail")} />;
+        return (
+          <Budgets
+            onBudgetClick={(budgetIdValue) => navigateTo(toBudgetDetailPath(budgetIdValue))}
+          />
+        );
       case "/budget-detail":
         return <BudgetDetail onBackClick={() => navigateTo("/budgets")} />;
       case "/goals":

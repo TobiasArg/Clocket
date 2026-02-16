@@ -4,6 +4,7 @@ import type { BudgetCategoryMeta } from "@/hooks";
 
 export interface BudgetListWidgetProps {
   categoryById: Map<string, BudgetCategoryMeta>;
+  emptyActionLabel: string;
   emptyHint: string;
   emptyTitle: string;
   errorLabel: string;
@@ -12,7 +13,8 @@ export interface BudgetListWidgetProps {
   items: BudgetPlanItem[];
   isLoading: boolean;
   loadingLabel: string;
-  onBudgetClick?: (index: number) => void;
+  onBudgetClick?: (budgetId: string) => void;
+  onEmptyAction?: () => void;
   sectionTitle: string;
 }
 
@@ -39,6 +41,12 @@ const BUDGET_COLORS = [
   },
 ] as const;
 
+const OVER_BUDGET_COLORS = {
+  percentColor: "text-[#991B1B]",
+  percentBg: "bg-[#FEE2E2]",
+  barColor: "bg-[#DC2626]",
+} as const;
+
 const YEAR_MONTH_FORMATTER = new Intl.DateTimeFormat("es-ES", {
   month: "long",
   year: "numeric",
@@ -61,6 +69,7 @@ const formatMonthLabel = (yearMonth: string): string => {
 
 export function BudgetListWidget({
   categoryById,
+  emptyActionLabel,
   emptyHint,
   emptyTitle,
   errorLabel,
@@ -70,6 +79,7 @@ export function BudgetListWidget({
   isLoading,
   loadingLabel,
   onBudgetClick,
+  onEmptyAction,
   sectionTitle,
 }: BudgetListWidgetProps) {
   const showLoading = isLoading && items.length === 0;
@@ -92,22 +102,38 @@ export function BudgetListWidget({
         <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
           <span className="block text-sm font-semibold text-black font-['Outfit']">{emptyTitle}</span>
           <span className="block text-xs font-medium text-[#71717A] mt-1">{emptyHint}</span>
+          {onEmptyAction && (
+            <button
+              type="button"
+              onClick={onEmptyAction}
+              className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#18181B] px-3 py-2 text-xs font-semibold text-white"
+            >
+              {emptyActionLabel}
+            </button>
+          )}
         </div>
       )}
 
       {items.map((budget, index) => {
         const spentAmount = expensesByCategoryId.get(budget.categoryId) ?? 0;
-        const percent = budget.limitAmount > 0
-          ? clampPercent((spentAmount / budget.limitAmount) * 100)
+        const rawPercent = budget.limitAmount > 0
+          ? Math.round((spentAmount / budget.limitAmount) * 100)
           : 0;
-        const colorSet = BUDGET_COLORS[index % BUDGET_COLORS.length];
+        const percent = budget.limitAmount > 0
+          ? clampPercent(rawPercent)
+          : 0;
+        const overspentAmount = Math.max(0, spentAmount - budget.limitAmount);
+        const isOverBudget = overspentAmount > 0;
+        const colorSet = isOverBudget
+          ? OVER_BUDGET_COLORS
+          : BUDGET_COLORS[index % BUDGET_COLORS.length];
         const categoryMeta = categoryById.get(budget.categoryId);
 
         return (
           <button
             key={budget.id}
             type="button"
-            onClick={() => onBudgetClick?.(index)}
+            onClick={() => onBudgetClick?.(budget.id)}
             className="flex flex-col gap-4 bg-[#F4F4F5] rounded-[20px] p-5 text-left"
           >
             <div className="flex min-w-0 items-center justify-between w-full gap-2">
@@ -128,7 +154,7 @@ export function BudgetListWidget({
                 </div>
               </div>
               <TextBadge
-                text={`${percent}%`}
+                text={`${isOverBudget ? rawPercent : percent}%`}
                 bg={colorSet.percentBg}
                 textColor={colorSet.percentColor}
                 rounded="rounded-[10px]"
@@ -145,6 +171,11 @@ export function BudgetListWidget({
               leftLabelClassName="text-sm font-semibold text-[#18181B] font-['Outfit']"
               rightLabelClassName="text-sm font-normal text-[#71717A]"
             />
+            {isOverBudget && (
+              <span className="text-xs font-semibold text-[#B91C1C]">
+                Excedido por {formatCurrency(overspentAmount)}
+              </span>
+            )}
           </button>
         );
       })}
