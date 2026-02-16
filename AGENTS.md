@@ -2,33 +2,19 @@
 
 These rules apply to all Codex agents/threads working in this repository.
 
-## Mandatory post-push cleanup
+<!-- CODEX_GLOBAL_POLICY_START -->
+## Global Codex Branch + Cleanup Policy
 
-When an agent finishes a task and has successfully:
-- committed the changes, and
-- pushed the branch to remote,
+- Every thread/agent must start work using:
+  - `~/.codex/tools/codex-task-start.sh "<task description>" --parent origin/main`
+- Branch naming is mandatory:
+  - `codex/<english-kebab>`
+- Cleanup is allowed only post-merge to explicit parent branch:
+  - `~/.codex/tools/codex-task-finish.sh --branch codex/<slug> --parent origin/main --yes`
+- Cleanup scope is restricted to the thread workspace under:
+  - `~/.codex/worktrees/`
+- Self thread hard-delete happens only after successful git cleanup.
 
-the agent must run the cleanup flow unless the user explicitly asks to keep the branch/worktree.
+If user explicitly asks to preserve branch/worktree/thread for handoff/debug, skip cleanup and state reason.
+<!-- CODEX_GLOBAL_POLICY_END -->
 
-Cleanup command:
-
-```bash
-BRANCH="$(git branch --show-current)"
-scripts/cleanup-agent-worktree.sh --branch "$BRANCH" --yes --force
-```
-
-Expected cleanup behavior:
-- remove the task worktree,
-- remove the local task branch,
-- remove the remote task branch,
-- prune remote refs.
-
-## Safety exceptions
-
-Never run cleanup for protected branches:
-- `main`
-- `master`
-- `develop`
-- `dev`
-
-If branch/worktree must be preserved (debug, handoff, or user request), skip cleanup and state the reason.

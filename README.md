@@ -34,16 +34,22 @@ Notas:
 - Si prefieres mantener READMEs separados, puedo restaurarlos; actualmente fueron combinados en el README raíz para reducir duplicación.
 - También consolidé las reglas de `.gitignore` en la raíz y eliminé los `.gitignore` en las subcarpetas.
 
-## Limpieza automática de ramas/worktrees de agente
+## Flujo global seguro para agentes Codex
 
-Después de commitear y pushear una rama de agente, puedes limpiar todo con:
+Inicio de tarea (crea rama `codex/<english-kebab>` y worktree aislado):
 
 ```bash
-scripts/cleanup-agent-worktree.sh --branch rescue/ec91 --yes
+~/.codex/tools/codex-task-start.sh "improve investments ui" --parent origin/main
 ```
 
-Opciones útiles:
+Cierre de tarea (solo post-merge, cleanup seguro + self-delete del thread):
 
-- `--force`: fuerza borrado de worktree y rama local (`-D`).
-- `--dry-run`: muestra qué haría sin ejecutar cambios.
-- `--remote origin`: remoto a usar para borrar rama remota.
+```bash
+~/.codex/tools/codex-task-finish.sh --branch codex/improve-investments-ui --parent origin/main --yes
+```
+
+Validación sin mutar:
+
+```bash
+~/.codex/tools/codex-task-finish.sh --branch codex/improve-investments-ui --parent origin/main --dry-run
+```
