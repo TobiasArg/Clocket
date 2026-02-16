@@ -16,7 +16,12 @@ export interface TrendLinePoint {
 export interface TrendLineProps {
   animationKey?: string;
   className?: string;
+  dotColor?: string;
+  gridColor?: string;
+  lineColor?: string;
   points?: TrendLinePoint[];
+  tickColor?: string;
+  yDomain?: [number | string, number | string];
 }
 
 const DEFAULT_POINTS: TrendLinePoint[] = [
@@ -31,7 +36,12 @@ const DEFAULT_POINTS: TrendLinePoint[] = [
 export const TrendLine = memo(function TrendLine({
   animationKey = "trend",
   className = "",
+  dotColor = "#2563EB",
+  gridColor = "rgba(63,63,70,0.12)",
+  lineColor = "#2563EB",
   points = DEFAULT_POINTS,
+  tickColor = "#71717A",
+  yDomain = ["dataMin - 5", "dataMax + 5"],
 }: TrendLineProps) {
   return (
     <div className={`w-full h-[88px] relative ${className}`}>
@@ -41,22 +51,22 @@ export const TrendLine = memo(function TrendLine({
           data={points}
           margin={{ top: 6, right: 6, left: 6, bottom: 2 }}
         >
-          <CartesianGrid stroke="rgba(255,255,255,0.14)" vertical={false} />
+          <CartesianGrid stroke={gridColor} vertical={false} />
           <XAxis
             dataKey="label"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 10, fontWeight: 500 }}
+            tick={{ fill: tickColor, fontSize: 10, fontWeight: 600 }}
             dy={4}
           />
-          <YAxis hide domain={["dataMin - 5", "dataMax + 5"]} />
+          <YAxis hide domain={yDomain} />
           <Line
             type="monotone"
             dataKey="value"
-            stroke="rgba(255,255,255,0.95)"
+            stroke={lineColor}
             strokeWidth={2}
-            dot={{ fill: "white", r: 3 }}
-            activeDot={{ r: 4, fill: "white" }}
+            dot={{ fill: dotColor, r: 2.5 }}
+            activeDot={{ r: 3.5, fill: dotColor }}
             isAnimationActive
             animationDuration={400}
             animationEasing="ease-out"

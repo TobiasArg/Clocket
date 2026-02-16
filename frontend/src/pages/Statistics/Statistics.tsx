@@ -71,7 +71,7 @@ export function Statistics({
   savingsValue,
   savingsGoalLabel = "Meta",
   savingsGoalValue,
-  savingsBg = "bg-[#059669]",
+  savingsBg = "bg-[#F4F4F5]",
   loadingLabel = "Cargando estadísticas...",
   emptyLabel = "No hay movimientos este mes.",
   errorLabel = "No pudimos cargar estadísticas. Intenta nuevamente.",
@@ -86,7 +86,7 @@ export function Statistics({
   onNavItemClick,
 }: StatisticsProps) {
   const {
-    dailyFlow,
+    flowByView,
     donutSegments,
     hasError,
     isLoading,
@@ -98,7 +98,7 @@ export function Statistics({
     resolvedSavingsBadge,
     resolvedSavingsGoalValue,
     resolvedSavingsValue,
-    trendPoints,
+    trendPointsByView,
   } = useStatisticsPageModel({
     categories,
     categoryTotal,
@@ -222,7 +222,7 @@ export function Statistics({
 
           <StatisticsBalanceWidget
             balanceTitle={balanceTitle}
-            flowDays={dailyFlow}
+            flowByView={flowByView}
             popupIncomeLabel={totalIncomeLabel}
             popupExpenseLabel={totalExpenseLabel}
             emptyLabel={emptyLabel}
@@ -237,7 +237,7 @@ export function Statistics({
             savingsGoalLabel={savingsGoalLabel}
             savingsGoalValue={resolvedSavingsGoalValue}
             savingsBg={savingsBg}
-            trendPoints={trendPoints}
+            trendPointsByView={trendPointsByView}
             trendAnimationKey={chartAnimationKey}
           />
         </div>

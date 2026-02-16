@@ -5,13 +5,14 @@ import type {
   StatisticsFlowDay,
 } from "@/types";
 import { useCategories } from "./useCategories";
+import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
 import {
-  buildStatisticsDailyFlow,
   formatCurrency,
   getMonthlyBalance,
   getTransactionDateForMonthBalance,
 } from "@/utils";
+import type { TransactionItem } from "@/domain/transactions/repository";
 
 export interface StatisticsTrendPoint {
   label: string;
@@ -19,6 +20,7 @@ export interface StatisticsTrendPoint {
 }
 
 export type StatisticsScope = "historical" | "month" | "year";
+export type StatisticsChartView = "day" | "week" | "month";
 
 export interface UseStatisticsPageModelOptions {
   categories?: CategoryBreakdown[];
@@ -33,6 +35,7 @@ export interface UseStatisticsPageModelOptions {
 export interface UseStatisticsPageModelResult {
   categoryRows: CategoryBreakdown[];
   dailyFlow: StatisticsFlowDay[];
+  flowByView: Record<StatisticsChartView, StatisticsFlowDay[]>;
   donutSegments: DonutSegment[];
   isLoading: boolean;
   hasError: boolean;
@@ -49,9 +52,20 @@ export interface UseStatisticsPageModelResult {
   resolvedTotalExpenseValue: string;
   resolvedTotalIncomeValue: string;
   trendPoints: StatisticsTrendPoint[];
+  trendPointsByView: Record<StatisticsChartView, StatisticsTrendPoint[]>;
 }
 
 const DONUT_COLORS = ["#DC2626", "#2563EB", "#EA580C", "#71717A"] as const;
+const FLOW_EXPENSE_COLORS = [
+  "#DC2626",
+  "#EA580C",
+  "#D97706",
+  "#2563EB",
+  "#7C3AED",
+  "#0891B2",
+  "#52525B",
+] as const;
+const FLOW_INCOME_COLOR = "#16A34A";
 const STATISTICS_SCOPE_STORAGE_KEY = "clocket.statistics.scope";
 const DEFAULT_SCOPE: StatisticsScope = "month";
 const SCOPE_LABELS: Record<StatisticsScope, string> = {
@@ -68,6 +82,14 @@ const parseSignedAmount = (value: string): number => {
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+const clampPercentValue = (value: number): number => (
+  Math.max(0, Math.min(100, value))
+);
+
+const roundToSingleDecimal = (value: number): number => (
+  Math.round(value * 10) / 10
+);
 
 const clampPercent = (value: number): number => {
   if (!Number.isFinite(value)) {
@@ -103,6 +125,312 @@ const buildMonthLabel = (date: Date): string => {
     .toUpperCase();
 };
 
+const buildDateKey = (date: Date): string => (
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+);
+
+const buildWeekdayLabel = (date: Date): string => (
+  new Intl.DateTimeFormat("es-ES", { weekday: "short" }).format(date).replace(".", "").toUpperCase()
+);
+
+const buildDateLabel = (date: Date): string => (
+  new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short" }).format(date).replace(".", "")
+);
+
+const buildNumericDateLabel = (date: Date): string => (
+  new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit" }).format(date)
+);
+
+const buildMonthYearLabel = (date: Date): string => (
+  new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(date)
+);
+
+const sortByAmountDesc = (entries: [string, number][]): [string, number][] => (
+  entries.sort((left, right) => right[1] - left[1])
+);
+
+const startOfDay = (value: Date): Date => (
+  new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0)
+);
+
+const addDays = (value: Date, days: number): Date => {
+  const next = new Date(value);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const startOfWeek = (value: Date): Date => {
+  const next = startOfDay(value);
+  const day = next.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  return addDays(next, diff);
+};
+
+interface ScopeRange {
+  start: Date;
+  end: Date;
+}
+
+const getScopeRange = (scope: StatisticsScope, now: Date): ScopeRange | null => {
+  if (scope === "historical") {
+    return null;
+  }
+
+  if (scope === "month") {
+    return {
+      start: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
+      end: new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0),
+    };
+  }
+
+  return {
+    start: new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0),
+    end: new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0),
+  };
+};
+
+const isWithinRange = (value: Date, range: ScopeRange | null): boolean => {
+  if (!range) {
+    return true;
+  }
+
+  return value >= range.start && value < range.end;
+};
+
+interface TrendBucket {
+  end: Date;
+  label: string;
+  start: Date;
+}
+
+const buildDayTrendBuckets = (now: Date): TrendBucket[] => {
+  const today = startOfDay(now);
+  const start = addDays(today, -6);
+
+  return Array.from({ length: 7 }).map((_, index) => {
+    const bucketStart = addDays(start, index);
+    return {
+      end: addDays(bucketStart, 1),
+      label: buildWeekdayLabel(bucketStart),
+      start: bucketStart,
+    };
+  });
+};
+
+const buildWeekTrendBuckets = (now: Date): TrendBucket[] => {
+  const thisWeekStart = startOfWeek(now);
+  const start = addDays(thisWeekStart, -7 * 7);
+
+  return Array.from({ length: 8 }).map((_, index) => {
+    const bucketStart = addDays(start, index * 7);
+    return {
+      end: addDays(bucketStart, 7),
+      label: buildNumericDateLabel(bucketStart),
+      start: bucketStart,
+    };
+  });
+};
+
+const buildMonthTrendBuckets = (now: Date): TrendBucket[] => {
+  const start = new Date(now.getFullYear(), now.getMonth() - 5, 1, 0, 0, 0, 0);
+
+  return Array.from({ length: 6 }).map((_, index) => {
+    const bucketStart = new Date(start.getFullYear(), start.getMonth() + index, 1, 0, 0, 0, 0);
+    return {
+      end: new Date(bucketStart.getFullYear(), bucketStart.getMonth() + 1, 1, 0, 0, 0, 0),
+      label: buildMonthLabel(bucketStart),
+      start: bucketStart,
+    };
+  });
+};
+
+const buildGoalSavingsTrendPoints = (
+  transactions: TransactionItem[],
+  totalGoalAmount: number,
+  buckets: TrendBucket[],
+): StatisticsTrendPoint[] => {
+  let cumulativeSaved = 0;
+
+  return buckets.map((bucket) => {
+    const bucketSaved = transactions.reduce((sum, transaction) => {
+      const date = getTransactionDateForMonthBalance(transaction);
+      if (!date || date < bucket.start || date >= bucket.end) {
+        return sum;
+      }
+
+      const amount = parseSignedAmount(transaction.amount);
+      if (amount >= 0) {
+        return sum;
+      }
+
+      return sum + Math.abs(amount);
+    }, 0);
+
+    cumulativeSaved += bucketSaved;
+
+    const percent = totalGoalAmount > 0
+      ? (cumulativeSaved / totalGoalAmount) * 100
+      : 0;
+
+    return {
+      label: bucket.label,
+      value: roundToSingleDecimal(clampPercentValue(percent)),
+    };
+  });
+};
+
+interface FlowBucket {
+  dateLabel: string;
+  end: Date;
+  expenseMap: Map<string, number>;
+  expenseTotal: number;
+  incomeMap: Map<string, number>;
+  incomeTotal: number;
+  key: string;
+  label: string;
+  start: Date;
+}
+
+const buildDayFlowBuckets = (now: Date): FlowBucket[] => {
+  const today = startOfDay(now);
+  const start = addDays(today, -6);
+
+  return Array.from({ length: 7 }).map((_, index) => {
+    const bucketStart = addDays(start, index);
+    return {
+      dateLabel: buildDateLabel(bucketStart),
+      end: addDays(bucketStart, 1),
+      expenseMap: new Map<string, number>(),
+      expenseTotal: 0,
+      incomeMap: new Map<string, number>(),
+      incomeTotal: 0,
+      key: buildDateKey(bucketStart),
+      label: buildWeekdayLabel(bucketStart),
+      start: bucketStart,
+    };
+  });
+};
+
+const buildWeekFlowBuckets = (now: Date): FlowBucket[] => {
+  const thisWeekStart = startOfWeek(now);
+  const start = addDays(thisWeekStart, -7 * 7);
+
+  return Array.from({ length: 8 }).map((_, index) => {
+    const bucketStart = addDays(start, index * 7);
+    const bucketEnd = addDays(bucketStart, 7);
+    const bucketEndInclusive = addDays(bucketEnd, -1);
+
+    return {
+      dateLabel: `${buildDateLabel(bucketStart)} - ${buildDateLabel(bucketEndInclusive)}`,
+      end: bucketEnd,
+      expenseMap: new Map<string, number>(),
+      expenseTotal: 0,
+      incomeMap: new Map<string, number>(),
+      incomeTotal: 0,
+      key: `${buildDateKey(bucketStart)}_week`,
+      label: buildNumericDateLabel(bucketStart),
+      start: bucketStart,
+    };
+  });
+};
+
+const buildMonthFlowBuckets = (now: Date): FlowBucket[] => {
+  const start = new Date(now.getFullYear(), now.getMonth() - 5, 1, 0, 0, 0, 0);
+
+  return Array.from({ length: 6 }).map((_, index) => {
+    const bucketStart = new Date(start.getFullYear(), start.getMonth() + index, 1, 0, 0, 0, 0);
+    const bucketEnd = new Date(bucketStart.getFullYear(), bucketStart.getMonth() + 1, 1, 0, 0, 0, 0);
+
+    return {
+      dateLabel: buildMonthYearLabel(bucketStart),
+      end: bucketEnd,
+      expenseMap: new Map<string, number>(),
+      expenseTotal: 0,
+      incomeMap: new Map<string, number>(),
+      incomeTotal: 0,
+      key: `${buildMonthKey(bucketStart)}_month`,
+      label: buildMonthLabel(bucketStart),
+      start: bucketStart,
+    };
+  });
+};
+
+const buildFlowRows = (
+  transactions: TransactionItem[],
+  categoryNameById: Map<string, string>,
+  buckets: FlowBucket[],
+): StatisticsFlowDay[] => {
+  transactions.forEach((transaction) => {
+    if (transaction.transactionType === "saving") {
+      return;
+    }
+
+    const transactionDate = getTransactionDateForMonthBalance(transaction);
+    if (!transactionDate) {
+      return;
+    }
+
+    const bucket = buckets.find((entry) => (
+      transactionDate >= entry.start && transactionDate < entry.end
+    ));
+    if (!bucket) {
+      return;
+    }
+
+    const amount = parseSignedAmount(transaction.amount);
+    if (amount === 0) {
+      return;
+    }
+
+    const category = transaction.categoryId
+      ? (categoryNameById.get(transaction.categoryId) ?? "Uncategorized")
+      : (transaction.category || (amount > 0 ? "Ingreso" : "Uncategorized"));
+
+    if (amount > 0) {
+      bucket.incomeMap.set(category, (bucket.incomeMap.get(category) ?? 0) + amount);
+      bucket.incomeTotal += amount;
+      return;
+    }
+
+    const expenseAmount = Math.abs(amount);
+    bucket.expenseMap.set(category, (bucket.expenseMap.get(category) ?? 0) + expenseAmount);
+    bucket.expenseTotal += expenseAmount;
+  });
+
+  const expenseTotalsByCategory = new Map<string, number>();
+  buckets.forEach((bucket) => {
+    bucket.expenseMap.forEach((amount, category) => {
+      expenseTotalsByCategory.set(category, (expenseTotalsByCategory.get(category) ?? 0) + amount);
+    });
+  });
+
+  const expenseColorByCategory = new Map<string, string>();
+  sortByAmountDesc(Array.from(expenseTotalsByCategory.entries()))
+    .forEach(([category], index) => {
+      expenseColorByCategory.set(category, FLOW_EXPENSE_COLORS[index % FLOW_EXPENSE_COLORS.length]);
+    });
+
+  return buckets.map((bucket) => ({
+    dateKey: bucket.key,
+    dateLabel: bucket.dateLabel,
+    expenseByCategory: sortByAmountDesc(Array.from(bucket.expenseMap.entries()))
+      .map(([category, amount]) => ({
+        amount,
+        category,
+        color: expenseColorByCategory.get(category) ?? FLOW_EXPENSE_COLORS[0],
+      })),
+    expenseTotal: bucket.expenseTotal,
+    incomeByCategory: sortByAmountDesc(Array.from(bucket.incomeMap.entries()))
+      .map(([category, amount]) => ({
+        amount,
+        category,
+        color: FLOW_INCOME_COLOR,
+      })),
+    incomeTotal: bucket.incomeTotal,
+    label: bucket.label,
+  }));
+};
+
 export const useStatisticsPageModel = (
   options: UseStatisticsPageModelOptions = {},
 ): UseStatisticsPageModelResult => {
@@ -118,6 +446,7 @@ export const useStatisticsPageModel = (
 
   const { items: transactions, isLoading, error } = useTransactions();
   const { items: categoriesData } = useCategories();
+  const { items: goals } = useGoals();
   const [scope, setScopeState] = useState<StatisticsScope>(() => {
     if (typeof window === "undefined") {
       return DEFAULT_SCOPE;
@@ -147,6 +476,10 @@ export const useStatisticsPageModel = (
     () => transactions.filter((transaction) => transaction.transactionType !== "saving"),
     [transactions],
   );
+  const savingsTransactions = useMemo(
+    () => transactions.filter((transaction) => transaction.transactionType === "saving"),
+    [transactions],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -157,17 +490,8 @@ export const useStatisticsPageModel = (
   }, [scope]);
 
   const scopedTransactions = useMemo(() => {
-    if (scope === "historical") {
-      return balanceTransactions;
-    }
-
     const now = new Date();
-    const scopeStart = scope === "month"
-      ? new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
-      : new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-    const scopeEnd = scope === "month"
-      ? new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0)
-      : new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
+    const scopeRange = getScopeRange(scope, now);
 
     return balanceTransactions.filter((transaction) => {
       const transactionDate = getTransactionDateForMonthBalance(transaction);
@@ -175,9 +499,22 @@ export const useStatisticsPageModel = (
         return false;
       }
 
-      return transactionDate >= scopeStart && transactionDate < scopeEnd;
+      return isWithinRange(transactionDate, scopeRange);
     });
   }, [balanceTransactions, scope]);
+  const scopedSavingTransactions = useMemo(() => {
+    const now = new Date();
+    const scopeRange = getScopeRange(scope, now);
+
+    return savingsTransactions.filter((transaction) => {
+      const transactionDate = getTransactionDateForMonthBalance(transaction);
+      if (!transactionDate) {
+        return false;
+      }
+
+      return isWithinRange(transactionDate, scopeRange);
+    });
+  }, [savingsTransactions, scope]);
 
   const monthlyBalance = useMemo(() => {
     let income = 0;
@@ -249,60 +586,52 @@ export const useStatisticsPageModel = (
     });
   }, [categoryRows]);
 
-  const trendPoints = useMemo<StatisticsTrendPoint[]>(() => {
-    const now = new Date();
-    const months = Array.from({ length: 6 }).map((_, index) => {
-      const monthDate = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
-      return {
-        key: buildMonthKey(monthDate),
-        label: buildMonthLabel(monthDate),
-        income: 0,
-        expense: 0,
-      };
-    });
-
-    const monthByKey = new Map(months.map((month) => [month.key, month]));
-
-    scopedTransactions.forEach((transaction) => {
-      const transactionDate = getTransactionDateForMonthBalance(transaction);
-      if (!transactionDate) {
-        return;
-      }
-
-      const key = buildMonthKey(transactionDate);
-      const month = monthByKey.get(key);
-      if (!month) {
-        return;
-      }
-
-      const amount = parseSignedAmount(transaction.amount);
-      if (amount > 0) {
-        month.income += amount;
-      } else if (amount < 0) {
-        month.expense += Math.abs(amount);
-      }
-    });
-
-    return months.map((month) => ({
-      label: month.label,
-      value: month.income - month.expense,
-    }));
-  }, [scopedTransactions]);
-
-  const dailyFlow = useMemo<StatisticsFlowDay[]>(
-    () => buildStatisticsDailyFlow({ categoryNameById, transactions: scopedTransactions }),
-    [categoryNameById, scopedTransactions],
+  const totalGoalsTarget = useMemo(
+    () => goals.reduce((sum, goal) => sum + Math.max(0, goal.targetAmount), 0),
+    [goals],
   );
 
-  const net = monthlyBalance.net;
-  const monthlyGoal = Math.max(0, monthlyBalance.income * 0.6);
+  const totalGoalsSaved = useMemo(
+    () => scopedSavingTransactions.reduce((sum, transaction) => {
+      const amount = parseSignedAmount(transaction.amount);
+      if (amount >= 0) {
+        return sum;
+      }
+
+      return sum + Math.abs(amount);
+    }, 0),
+    [scopedSavingTransactions],
+  );
+
+  const trendPointsByView = useMemo<Record<StatisticsChartView, StatisticsTrendPoint[]>>(() => {
+    const now = new Date();
+    return {
+      day: buildGoalSavingsTrendPoints(scopedSavingTransactions, totalGoalsTarget, buildDayTrendBuckets(now)),
+      month: buildGoalSavingsTrendPoints(scopedSavingTransactions, totalGoalsTarget, buildMonthTrendBuckets(now)),
+      week: buildGoalSavingsTrendPoints(scopedSavingTransactions, totalGoalsTarget, buildWeekTrendBuckets(now)),
+    };
+  }, [scopedSavingTransactions, totalGoalsTarget]);
+
+  const flowByView = useMemo<Record<StatisticsChartView, StatisticsFlowDay[]>>(() => {
+    const now = new Date();
+    return {
+      day: buildFlowRows(scopedTransactions, categoryNameById, buildDayFlowBuckets(now)),
+      month: buildFlowRows(scopedTransactions, categoryNameById, buildMonthFlowBuckets(now)),
+      week: buildFlowRows(scopedTransactions, categoryNameById, buildWeekFlowBuckets(now)),
+    };
+  }, [categoryNameById, scopedTransactions]);
+  const dailyFlow = flowByView.day;
+  const trendPoints = trendPointsByView.day;
+
+  const monthlyGoal = Math.max(0, totalGoalsTarget);
   const savingsPercent = monthlyGoal > 0
-    ? clampPercent((net / monthlyGoal) * 100)
+    ? clampPercent((totalGoalsSaved / monthlyGoal) * 100)
     : 0;
 
   return {
     categoryRows,
     dailyFlow,
+    flowByView,
     donutSegments,
     isLoading,
     hasError: Boolean(error),
@@ -314,14 +643,15 @@ export const useStatisticsPageModel = (
     setScope,
     resolvedCategoryTotal: categoryTotal ?? formatCurrency(monthlyBalance.expense),
     resolvedSavingsBadge:
-      savingsBadge ?? `${net >= 0 ? "+" : ""}${savingsPercent}%`,
+      savingsBadge ?? `${savingsPercent}%`,
     resolvedSavingsGoalValue:
       savingsGoalValue ?? formatCurrency(monthlyGoal),
-    resolvedSavingsValue: savingsValue ?? formatCurrency(net),
+    resolvedSavingsValue: savingsValue ?? formatCurrency(totalGoalsSaved),
     resolvedTotalExpenseValue:
       totalExpenseValue ?? formatCurrency(monthlyBalance.expense),
     resolvedTotalIncomeValue:
       totalIncomeValue ?? formatCurrency(monthlyBalance.income),
     trendPoints,
+    trendPointsByView,
   };
 };
