@@ -7,7 +7,7 @@ export const formatCurrency = (
   value: number,
   options: FormatCurrencyOptions = {},
 ): string => {
-  const { currency = "USD", locale = "en-US" } = options;
+  const { currency = "ARS", locale = "es-AR" } = options;
 
   return new Intl.NumberFormat(locale, {
     style: "currency",

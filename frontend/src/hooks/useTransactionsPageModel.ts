@@ -7,7 +7,9 @@ import {
   getMonthlyBalance,
   getPendingInstallmentsTotalForMonth,
   getTransactionDateForMonthBalance,
+  toArsTransactionAmount,
   type TransactionItem,
+  type TransactionInputCurrency,
 } from "@/utils";
 
 export interface TransactionsMonthGroup {
@@ -59,12 +61,14 @@ export interface UseTransactionsPageModelResult {
   monthlyBalance: ReturnType<typeof getMonthlyBalance>;
   monthlyPendingInstallments: number;
   selectedAccountId: string;
+  selectedCurrency: TransactionInputCurrency;
   selectedCategoryId: string;
   selectedTransaction: TransactionItem | null;
   setAmountInput: (value: string) => void;
   setDescriptionInput: (value: string) => void;
   setEditingAmountSign: (value: AmountSign) => void;
   setSelectedAccountId: (value: string) => void;
+  setSelectedCurrency: (value: TransactionInputCurrency) => void;
   setSelectedCategoryId: (value: string) => void;
   setShowDeleteConfirm: (value: boolean) => void;
   showDeleteConfirm: boolean;
@@ -161,6 +165,7 @@ export const useTransactionsPageModel = (
   const [editorMode, setEditorMode] = useState<TransactionsEditorMode>(null);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [selectedCurrency, setSelectedCurrency] = useState<TransactionInputCurrency>("ARS");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [editingAmountSign, setEditingAmountSign] = useState<AmountSign>("-");
   const [amountInput, setAmountInput] = useState<string>("");
@@ -314,6 +319,7 @@ export const useTransactionsPageModel = (
     setEditorMode(null);
     setSelectedTransactionId(null);
     setSelectedAccountId("");
+    setSelectedCurrency("ARS");
     setSelectedCategoryId("");
     setEditingAmountSign("-");
     setAmountInput("");
@@ -326,6 +332,7 @@ export const useTransactionsPageModel = (
     setEditorMode("create");
     setSelectedTransactionId(null);
     setSelectedAccountId(defaultAccountId);
+    setSelectedCurrency("ARS");
     setSelectedCategoryId("");
     setEditingAmountSign("-");
     setAmountInput("");
@@ -338,6 +345,7 @@ export const useTransactionsPageModel = (
     setEditorMode("edit");
     setSelectedTransactionId(transaction.id);
     setSelectedAccountId(transaction.accountId);
+    setSelectedCurrency("ARS");
     setSelectedCategoryId(transaction.categoryId ?? "");
     setEditingAmountSign(parseAmountSign(transaction.amount));
     setAmountInput(getAbsoluteAmountFromValue(transaction.amount));
@@ -379,6 +387,7 @@ export const useTransactionsPageModel = (
         (selectedCategoryId ? categoriesById.get(selectedCategoryId) : undefined) ??
         uncategorizedLabel;
       const isIncome = editingAmountSign === "+";
+      const amountInArs = toArsTransactionAmount(amountValue, selectedCurrency);
 
       const created = await create({
         icon: isIncome ? "arrow-up-right" : "receipt",
@@ -389,7 +398,7 @@ export const useTransactionsPageModel = (
         categoryId: selectedCategoryId || undefined,
         date: todayIso,
         createdAt: new Date().toISOString(),
-        amount: formatAmountWithSign(amountValue, editingAmountSign),
+        amount: formatAmountWithSign(amountInArs, editingAmountSign),
         amountColor: getAmountColorBySign(editingAmountSign),
         meta: `${todayIso} • ${dateLabel}`,
       });
@@ -406,12 +415,13 @@ export const useTransactionsPageModel = (
       const selectedCategoryName =
         (selectedCategoryId ? categoriesById.get(selectedCategoryId) : undefined) ??
         uncategorizedLabel;
+      const amountInArs = toArsTransactionAmount(amountValue, selectedCurrency);
       const updated = await update(selectedTransactionId, {
         name: normalizedDescription,
         accountId: selectedAccountId,
         category: selectedCategoryName,
         categoryId: selectedCategoryId || undefined,
-        amount: formatAmountWithSign(amountValue, editingAmountSign),
+        amount: formatAmountWithSign(amountInArs, editingAmountSign),
         amountColor: getAmountColorBySign(editingAmountSign),
       });
 
@@ -465,12 +475,14 @@ export const useTransactionsPageModel = (
     monthlyBalance,
     monthlyPendingInstallments,
     selectedAccountId,
+    selectedCurrency,
     selectedCategoryId,
     selectedTransaction,
     setAmountInput,
     setDescriptionInput,
     setEditingAmountSign,
     setSelectedAccountId,
+    setSelectedCurrency,
     setSelectedCategoryId,
     setShowDeleteConfirm,
     showDeleteConfirm,

@@ -15,6 +15,7 @@ export interface TransactionsProps {
   quickAddAmountLabel?: string;
   quickAddDescriptionLabel?: string;
   quickAddAccountLabel?: string;
+  quickAddCurrencyLabel?: string;
   quickAddCategoryLabel?: string;
   quickAddAmountPlaceholder?: string;
   quickAddDescriptionPlaceholder?: string;
@@ -60,6 +61,7 @@ export function Transactions({
   quickAddAmountLabel = "Monto",
   quickAddDescriptionLabel = "Descripción",
   quickAddAccountLabel = "Cuenta",
+  quickAddCurrencyLabel = "Moneda",
   quickAddCategoryLabel = "Categoría",
   quickAddAmountPlaceholder = "0.00",
   quickAddDescriptionPlaceholder = "Ej. Café, Uber, supermercado",
@@ -123,12 +125,14 @@ export function Transactions({
     monthlyBalance,
     monthlyPendingInstallments,
     selectedAccountId,
+    selectedCurrency,
     selectedCategoryId,
     selectedTransaction,
     setAmountInput,
     setDescriptionInput,
     setEditingAmountSign,
     setSelectedAccountId,
+    setSelectedCurrency,
     setSelectedCategoryId,
     setShowDeleteConfirm,
     showDeleteConfirm,
@@ -194,6 +198,7 @@ export function Transactions({
             quickAddDescriptionPlaceholder={quickAddDescriptionPlaceholder}
             quickAddDescriptionErrorLabel={quickAddDescriptionErrorLabel}
             quickAddAccountLabel={quickAddAccountLabel}
+            quickAddCurrencyLabel={quickAddCurrencyLabel}
             quickAddAccountErrorLabel={quickAddAccountErrorLabel}
             quickAddCategoryLabel={quickAddCategoryLabel}
             quickAddSubmitLabel={quickAddSubmitLabel}
@@ -209,6 +214,7 @@ export function Transactions({
             amountInput={amountInput}
             descriptionInput={descriptionInput}
             selectedAccountId={selectedAccountId}
+            selectedCurrency={selectedCurrency}
             selectedCategoryId={selectedCategoryId}
             editingAmountSign={editingAmountSign}
             showValidation={showValidation}
@@ -229,6 +235,7 @@ export function Transactions({
             onAmountChange={setAmountInput}
             onDescriptionChange={setDescriptionInput}
             onSelectedAccountIdChange={setSelectedAccountId}
+            onCurrencyChange={setSelectedCurrency}
             onSelectedCategoryIdChange={setSelectedCategoryId}
             onSignChange={setEditingAmountSign}
             onToggleDeleteConfirm={setShowDeleteConfirm}

@@ -1,4 +1,5 @@
 import { ActionButton } from "@/components";
+import type { TransactionInputCurrency } from "@/utils";
 
 const getCurrentDateInputValue = (): string => {
   const now = new Date();
@@ -21,6 +22,7 @@ export interface PlansQuickAddWidgetProps {
   isLoading?: boolean;
   isOpen?: boolean;
   isCreationDateValid?: boolean;
+  selectedCurrency?: TransactionInputCurrency;
   isTotalAmountValid?: boolean;
   nameInput?: string;
   nameLabel?: string;
@@ -28,6 +30,7 @@ export interface PlansQuickAddWidgetProps {
   onCreationDateChange?: (value: string) => void;
   onInstallmentsCountChange?: (value: string) => void;
   onNameChange?: (value: string) => void;
+  onCurrencyChange?: (value: TransactionInputCurrency) => void;
   onSubmit?: () => void;
   onTotalAmountChange?: (value: string) => void;
   showValidation?: boolean;
@@ -37,6 +40,7 @@ export interface PlansQuickAddWidgetProps {
   totalAmountInput?: string;
   totalAmountLabel?: string;
   totalAmountPlaceholder?: string;
+  currencyLabel?: string;
 }
 
 export function PlansQuickAddWidget({
@@ -52,6 +56,7 @@ export function PlansQuickAddWidget({
   isLoading = false,
   isOpen = false,
   isCreationDateValid = false,
+  selectedCurrency = "ARS",
   isTotalAmountValid = false,
   nameInput = "",
   nameLabel = "Título",
@@ -59,6 +64,7 @@ export function PlansQuickAddWidget({
   onCreationDateChange,
   onInstallmentsCountChange,
   onNameChange,
+  onCurrencyChange,
   onSubmit,
   onTotalAmountChange,
   showValidation = false,
@@ -68,6 +74,7 @@ export function PlansQuickAddWidget({
   totalAmountInput = "",
   totalAmountLabel = "Monto total",
   totalAmountPlaceholder = "0.00",
+  currencyLabel = "Moneda",
 }: PlansQuickAddWidgetProps) {
   if (!isOpen) {
     return null;
@@ -88,6 +95,18 @@ export function PlansQuickAddWidget({
           placeholder={namePlaceholder}
           className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
         />
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-[#52525B]">{currencyLabel}</span>
+        <select
+          value={selectedCurrency}
+          onChange={(event) => onCurrencyChange?.(event.target.value as TransactionInputCurrency)}
+          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+        >
+          <option value="ARS">ARS</option>
+          <option value="USD">USD</option>
+        </select>
       </label>
 
       <label className="flex flex-col gap-1">

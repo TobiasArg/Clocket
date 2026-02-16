@@ -8,6 +8,8 @@ import {
   getTodayDatePartsLocal,
   isFutureDateParts,
   parseDateParts,
+  toArsTransactionAmount,
+  type TransactionInputCurrency,
 } from "@/utils";
 
 export interface UsePlansPageModelOptions {
@@ -25,6 +27,7 @@ export interface UsePlansPageModelResult {
   installmentsCountInput: string;
   isEditorOpen: boolean;
   isCreationDateValid: boolean;
+  selectedCurrency: TransactionInputCurrency;
   isFormValid: boolean;
   isInstallmentsCountValid: boolean;
   isLoading: boolean;
@@ -37,6 +40,7 @@ export interface UsePlansPageModelResult {
   setDeleteConfirmPlanId: (value: string | null) => void;
   setInstallmentsCountInput: (value: string) => void;
   setNameInput: (value: string) => void;
+  setSelectedCurrency: (value: TransactionInputCurrency) => void;
   setStatusFilter: (value: UsePlansPageModelFilterStatus) => void;
   setTotalAmountInput: (value: string) => void;
   showValidation: boolean;
@@ -81,6 +85,7 @@ export const usePlansPageModel = (
   const [nameInput, setNameInput] = useState<string>("");
   const [totalAmountInput, setTotalAmountInput] = useState<string>("");
   const [installmentsCountInput, setInstallmentsCountInput] = useState<string>("");
+  const [selectedCurrency, setSelectedCurrency] = useState<TransactionInputCurrency>("ARS");
   const [creationDateInput, setCreationDateInput] = useState<string>(getCurrentDateInputValue);
   const [statusFilter, setStatusFilter] = useState<UsePlansPageModelFilterStatus>("all");
   const [showValidation, setShowValidation] = useState<boolean>(false);
@@ -199,6 +204,7 @@ export const usePlansPageModel = (
     setNameInput("");
     setTotalAmountInput("");
     setInstallmentsCountInput("");
+    setSelectedCurrency("ARS");
     setCreationDateInput(getCurrentDateInputValue());
     setShowValidation(false);
   };
@@ -221,10 +227,12 @@ export const usePlansPageModel = (
     }
     const normalizedTitle = nameInput.trim();
 
+    const totalAmountArs = toArsTransactionAmount(totalAmountValue, selectedCurrency);
+
     const created = await create({
       title: normalizedTitle || undefined,
       subcategoryName: normalizedTitle || undefined,
-      totalAmount: totalAmountValue,
+      totalAmount: totalAmountArs,
       installmentsCount: installmentsCountValue,
       startMonth: normalizedCreationDate.slice(0, 7),
       createdAt: normalizedCreationDate,
@@ -321,6 +329,7 @@ export const usePlansPageModel = (
     installmentsCountInput,
     isEditorOpen,
     isCreationDateValid,
+    selectedCurrency,
     isFormValid,
     isInstallmentsCountValid,
     isLoading,
@@ -333,6 +342,7 @@ export const usePlansPageModel = (
     setDeleteConfirmPlanId,
     setInstallmentsCountInput,
     setNameInput,
+    setSelectedCurrency,
     setStatusFilter,
     setTotalAmountInput,
     showValidation,

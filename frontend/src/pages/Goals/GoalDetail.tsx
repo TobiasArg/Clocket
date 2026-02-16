@@ -35,6 +35,7 @@ export function GoalDetail({
     redirectGoalId,
     savedAmount,
     selectedEntryAccountId,
+    selectedEntryCurrency,
     setDeleteResolution,
     setEntryAmountInput,
     setEntryDateInput,
@@ -43,6 +44,7 @@ export function GoalDetail({
     setRedirectAccountId,
     setRedirectGoalId,
     setSelectedEntryAccountId,
+    setSelectedEntryCurrency,
     targetAmount,
     visibleAccounts,
     visibleGoalsForRedirect,
@@ -142,6 +144,18 @@ export function GoalDetail({
                     {account.name}
                   </option>
                 ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[#52525B]">Moneda</span>
+              <select
+                value={selectedEntryCurrency}
+                onChange={(event) => setSelectedEntryCurrency(event.target.value as "ARS" | "USD")}
+                className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+              >
+                <option value="ARS">ARS</option>
+                <option value="USD">USD</option>
               </select>
             </label>
 

@@ -16,6 +16,7 @@ export interface PlansProps {
   quickAddTitle?: string;
   quickAddNameLabel?: string;
   quickAddTotalAmountLabel?: string;
+  quickAddCurrencyLabel?: string;
   quickAddInstallmentsLabel?: string;
   quickAddCreationDateLabel?: string;
   quickAddNamePlaceholder?: string;
@@ -55,6 +56,7 @@ export function Plans({
   quickAddTitle = "Nueva cuota",
   quickAddNameLabel = "Título",
   quickAddTotalAmountLabel = "Monto total",
+  quickAddCurrencyLabel = "Moneda",
   quickAddInstallmentsLabel = "Cantidad de cuotas",
   quickAddCreationDateLabel = "Fecha de creación",
   quickAddNamePlaceholder = "Ej. Notebook",
@@ -92,6 +94,7 @@ export function Plans({
     installmentsCountInput,
     isEditorOpen,
     isCreationDateValid,
+    selectedCurrency,
     isFormValid,
     isInstallmentsCountValid,
     isLoading,
@@ -104,6 +107,7 @@ export function Plans({
     setDeleteConfirmPlanId,
     setInstallmentsCountInput,
     setNameInput,
+    setSelectedCurrency,
     setStatusFilter,
     setTotalAmountInput,
     showValidation,
@@ -167,6 +171,7 @@ export function Plans({
             title={quickAddTitle}
             nameLabel={quickAddNameLabel}
             totalAmountLabel={quickAddTotalAmountLabel}
+            currencyLabel={quickAddCurrencyLabel}
             installmentsLabel={quickAddInstallmentsLabel}
             creationDateLabel={quickAddCreationDateLabel}
             namePlaceholder={quickAddNamePlaceholder}
@@ -180,6 +185,7 @@ export function Plans({
             totalAmountInput={totalAmountInput}
             installmentsCountInput={installmentsCountInput}
             creationDateInput={creationDateInput}
+            selectedCurrency={selectedCurrency}
             showValidation={showValidation}
             isTotalAmountValid={isTotalAmountValid}
             isInstallmentsCountValid={isInstallmentsCountValid}
@@ -189,6 +195,7 @@ export function Plans({
             onNameChange={setNameInput}
             onTotalAmountChange={setTotalAmountInput}
             onInstallmentsCountChange={setInstallmentsCountInput}
+            onCurrencyChange={setSelectedCurrency}
             onCreationDateChange={setCreationDateInput}
             onSubmit={() => {
               void handleCreate();

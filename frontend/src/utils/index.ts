@@ -1,4 +1,10 @@
 export { formatCurrency } from "./formatCurrency";
+export {
+  DEFAULT_USD_RATE,
+  getUsdRate,
+  normalizeUsdRate,
+  toArsTransactionAmount,
+} from "./transactionCurrency";
 export { getPercentWidthClass } from "./percentWidthClass";
 export {
   DEFAULT_GOAL_COLOR_KEY,
@@ -114,3 +120,4 @@ export type {
   UpdateTransactionPatch,
 } from "./transactionsRepository";
 export type { GoalColorOption } from "./goalAppearance";
+export type { TransactionInputCurrency } from "./transactionCurrency";

@@ -3,7 +3,13 @@ import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
-import { formatCurrency, getGoalCategoryName, getGoalColorOption } from "@/utils";
+import {
+  formatCurrency,
+  getGoalCategoryName,
+  getGoalColorOption,
+  toArsTransactionAmount,
+  type TransactionInputCurrency,
+} from "@/utils";
 
 export type GoalDeleteResolution = "redirect_goal" | "redirect_account" | "delete_entries";
 
@@ -40,6 +46,7 @@ export interface UseGoalDetailPageModelResult {
   redirectGoalId: string;
   savedAmount: number;
   selectedEntryAccountId: string;
+  selectedEntryCurrency: TransactionInputCurrency;
   setDeleteResolution: (value: GoalDeleteResolution) => void;
   setEntryAmountInput: (value: string) => void;
   setEntryDateInput: (value: string) => void;
@@ -48,6 +55,7 @@ export interface UseGoalDetailPageModelResult {
   setRedirectAccountId: (value: string) => void;
   setRedirectGoalId: (value: string) => void;
   setSelectedEntryAccountId: (value: string) => void;
+  setSelectedEntryCurrency: (value: TransactionInputCurrency) => void;
   targetAmount: number;
   visibleAccounts: ReturnType<typeof useAccounts>["items"];
   visibleGoalsForRedirect: ReturnType<typeof useGoals>["items"];
@@ -144,6 +152,7 @@ export const useGoalDetailPageModel = (
   const [entryDateInput, setEntryDateInput] = useState<string>(toIsoDate(new Date()));
   const [entryNoteInput, setEntryNoteInput] = useState<string>("");
   const [selectedEntryAccountId, setSelectedEntryAccountId] = useState<string>("");
+  const [selectedEntryCurrency, setSelectedEntryCurrency] = useState<TransactionInputCurrency>("ARS");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [deleteResolution, setDeleteResolution] = useState<GoalDeleteResolution>("delete_entries");
   const [redirectGoalId, setRedirectGoalId] = useState<string>("");
@@ -182,7 +191,7 @@ export const useGoalDetailPageModel = (
       return;
     }
 
-    const amount = Number(entryAmountInput);
+    const amount = toArsTransactionAmount(Number(entryAmountInput), selectedEntryCurrency);
     const note = entryNoteInput.trim();
     const color = getGoalColorOption(goal.colorKey);
 
@@ -287,6 +296,7 @@ export const useGoalDetailPageModel = (
     redirectGoalId,
     savedAmount,
     selectedEntryAccountId,
+    selectedEntryCurrency,
     setDeleteResolution,
     setEntryAmountInput,
     setEntryDateInput,
@@ -295,6 +305,7 @@ export const useGoalDetailPageModel = (
     setRedirectAccountId,
     setRedirectGoalId,
     setSelectedEntryAccountId,
+    setSelectedEntryCurrency,
     targetAmount,
     visibleAccounts: accounts,
     visibleGoalsForRedirect,

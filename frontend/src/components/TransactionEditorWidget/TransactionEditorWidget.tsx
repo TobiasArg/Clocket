@@ -1,6 +1,6 @@
 import { ActionButton } from "@/components";
 import type { AmountSign, TransactionsEditorMode } from "@/hooks";
-import type { TransactionItem } from "@/utils";
+import type { TransactionInputCurrency, TransactionItem } from "@/utils";
 
 export interface TransactionEditorWidgetProps {
   accountsError?: string | null;
@@ -26,6 +26,7 @@ export interface TransactionEditorWidgetProps {
   isDescriptionValid?: boolean;
   noAccountsLabel?: string;
   onAmountChange?: (value: string) => void;
+  onCurrencyChange?: (value: TransactionInputCurrency) => void;
   onDelete?: () => void;
   onDescriptionChange?: (value: string) => void;
   onSelectedAccountIdChange?: (value: string) => void;
@@ -39,6 +40,7 @@ export interface TransactionEditorWidgetProps {
   quickAddAmountLabel?: string;
   quickAddAmountPlaceholder?: string;
   quickAddCategoryLabel?: string;
+  quickAddCurrencyLabel?: string;
   quickAddDescriptionErrorLabel?: string;
   quickAddDescriptionLabel?: string;
   quickAddDescriptionPlaceholder?: string;
@@ -48,6 +50,7 @@ export interface TransactionEditorWidgetProps {
   quickAddTitle?: string;
   quickAddTypeLabel?: string;
   selectedAccountId?: string;
+  selectedCurrency?: TransactionInputCurrency;
   selectedCategoryId?: string;
   selectedTransaction?: TransactionItem | null;
   showDeleteConfirm?: boolean;
@@ -84,6 +87,7 @@ export function TransactionEditorWidget({
   isSelectedTransactionAvailable = false,
   noAccountsLabel = "Crea una cuenta en Más > Cuentas para registrar transacciones.",
   onAmountChange,
+  onCurrencyChange,
   onDelete,
   onDescriptionChange,
   onSelectedAccountIdChange,
@@ -97,6 +101,7 @@ export function TransactionEditorWidget({
   quickAddAmountLabel = "Monto",
   quickAddAmountPlaceholder = "0.00",
   quickAddCategoryLabel = "Categoría",
+  quickAddCurrencyLabel = "Moneda",
   quickAddDescriptionErrorLabel = "Agrega una descripción corta.",
   quickAddDescriptionLabel = "Descripción",
   quickAddDescriptionPlaceholder = "Ej. Café, Uber, supermercado",
@@ -106,6 +111,7 @@ export function TransactionEditorWidget({
   quickAddTitle = "Quick Add",
   quickAddTypeLabel = "Tipo",
   selectedAccountId = "",
+  selectedCurrency = "ARS",
   selectedCategoryId = "",
   selectedTransaction = null,
   showDeleteConfirm = false,
@@ -169,6 +175,18 @@ export function TransactionEditorWidget({
             {quickAddAmountErrorLabel}
           </span>
         )}
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-[#52525B]">{quickAddCurrencyLabel}</span>
+        <select
+          value={selectedCurrency}
+          onChange={(event) => onCurrencyChange?.(event.target.value as TransactionInputCurrency)}
+          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+        >
+          <option value="ARS">ARS</option>
+          <option value="USD">USD</option>
+        </select>
       </label>
 
       <label className="flex flex-col gap-1">
