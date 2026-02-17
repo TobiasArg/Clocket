@@ -26,7 +26,7 @@ export interface UseInvestmentsResult {
 }
 
 const FALLBACK_ERROR_MESSAGE =
-  "We couldn’t complete that investment action. Please try again.";
+  "No pudimos completar esa acción de inversión. Intenta nuevamente.";
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {

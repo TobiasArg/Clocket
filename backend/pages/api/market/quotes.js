@@ -192,7 +192,7 @@ export default async function handler(req, res) {
   }
 
   const payload = await providerResponse.json();
-  const snapshots = payload?.snapshots ?? {};
+  const snapshots = payload ?? {};
 
   const quotes = [];
   const unavailable = [];

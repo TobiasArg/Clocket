@@ -44,6 +44,7 @@ export interface UseInvestmentsPageModelResult {
   cardItems: InvestmentStockCardItem[];
   costBasisInput: string;
   currentPriceInput: string;
+  dayGainChange: InvestmentChangePresentation;
   error: string | null;
   handleCreate: () => Promise<void>;
   handleHeaderAction: () => void;
@@ -141,11 +142,12 @@ export const calculatePortfolioSummary = (
     const effectivePrice = resolvePositionPrice(item, quote);
     const positionInvested = item.shares * item.costBasis;
     const positionCurrent = item.shares * effectivePrice;
+    const usesMarketPrice = !(item.priceSource === "manual" && item.manualPrice && item.manualPrice > 0);
 
     invested += positionInvested;
     current += positionCurrent;
 
-    if (quote?.previousClose && quote.previousClose > 0) {
+    if (usesMarketPrice && quote?.previousClose && quote.previousClose > 0) {
       previousCloseTotal += item.shares * quote.previousClose;
       dayGainAmount += item.shares * (effectivePrice - quote.previousClose);
     }
@@ -235,9 +237,10 @@ export const useInvestmentsPageModel = (
     }
   }, [normalizedTickerInput, quoteBySymbol, unavailableBySymbol]);
 
+  const usdRate = getUsdRate();
   const summary = useMemo<InvestmentsSummary>(
-    () => calculatePortfolioSummary(items, quoteBySymbol, getUsdRate()),
-    [items, quoteBySymbol],
+    () => calculatePortfolioSummary(items, quoteBySymbol, usdRate),
+    [items, quoteBySymbol, usdRate],
   );
 
   const quoteUpdatedAtLabel = asOf ? formatDateTimeLabel(asOf) : null;
@@ -416,6 +419,7 @@ export const useInvestmentsPageModel = (
     cardItems,
     currentPriceInput,
     costBasisInput,
+    dayGainChange: getChangePresentation(summary.dayGainPercent),
     error: error ?? marketError,
     handleCreate,
     handleHeaderAction,

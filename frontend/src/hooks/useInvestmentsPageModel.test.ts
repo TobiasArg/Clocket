@@ -83,7 +83,7 @@ describe("useInvestmentsPageModel helpers", () => {
     expect(summary.invested).toBe(250);
     expect(summary.current).toBe(300);
     expect(summary.gainAmount).toBe(50);
-    expect(summary.dayGainAmount).toBe(-65);
+    expect(summary.dayGainAmount).toBe(4);
     expect(summary.currentArs).toBe(300000);
   });
 });

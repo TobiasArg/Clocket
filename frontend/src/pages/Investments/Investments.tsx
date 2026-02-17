@@ -76,6 +76,7 @@ export function Investments({
     cardItems,
     currentPriceInput,
     costBasisInput,
+    dayGainChange,
     error,
     handleCreate,
     handleHeaderAction,
@@ -194,17 +195,7 @@ export function Investments({
         summaryChange={summaryChange}
         dayGainLabel={dayGainLabel}
         dayGainAmount={summary.dayGainAmount}
-        dayGainPresentation={summary.dayGainPercent >= 0
-          ? {
-            text: `+${summary.dayGainPercent.toFixed(2)}%`,
-            color: "text-[#10B981]",
-            bg: "bg-[#D1FAE5]",
-          }
-          : {
-            text: `${summary.dayGainPercent.toFixed(2)}%`,
-            color: "text-[#DC2626]",
-            bg: "bg-[#FEE2E2]",
-          }}
+        dayGainPresentation={dayGainChange}
       />
 
       <div className="flex-1 overflow-auto px-5 py-4">

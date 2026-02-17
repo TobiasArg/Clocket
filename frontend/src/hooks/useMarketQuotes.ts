@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   marketQuotesRepository,
   type MarketQuote,
@@ -60,6 +60,8 @@ export const useMarketQuotes = (
   const pollingMs = options.pollingMs ?? DEFAULT_POLLING_MS;
   const symbols = useMemo(() => normalizeSymbols(options.symbols), [options.symbols]);
   const symbolsKey = symbols.join(",");
+  const symbolsRef = useRef(symbols);
+  symbolsRef.current = symbols;
 
   const [asOf, setAsOf] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
@@ -117,19 +119,19 @@ export const useMarketQuotes = (
   );
 
   const refresh = useCallback(async () => {
-    await fetchQuotes(symbols, { silent: true });
-  }, [fetchQuotes, symbols]);
+    await fetchQuotes(symbolsRef.current, { silent: true });
+  }, [fetchQuotes]);
 
   useEffect(() => {
     if (!isDocumentVisible()) {
       return;
     }
 
-    void fetchQuotes(symbols);
-  }, [fetchQuotes, symbolsKey, symbols]);
+    void fetchQuotes(symbolsRef.current);
+  }, [fetchQuotes, symbolsKey]);
 
   useEffect(() => {
-    if (symbols.length === 0) {
+    if (symbolsRef.current.length === 0) {
       return;
     }
 
@@ -142,7 +144,7 @@ export const useMarketQuotes = (
         return;
       }
 
-      void fetchQuotes(symbols, { silent: true });
+      void fetchQuotes(symbolsRef.current, { silent: true });
     }, pollingMs);
 
     const handleVisibilityChange = () => {
@@ -150,7 +152,7 @@ export const useMarketQuotes = (
         return;
       }
 
-      void fetchQuotes(symbols, { silent: true });
+      void fetchQuotes(symbolsRef.current, { silent: true });
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -158,7 +160,7 @@ export const useMarketQuotes = (
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [fetchQuotes, pollingMs, symbolsKey, symbols]);
+  }, [fetchQuotes, pollingMs, symbolsKey]);
 
   const quoteBySymbol = useMemo(
     () => new Map<string, MarketQuote>(quotes.map((quote) => [quote.symbol.toUpperCase(), quote])),
