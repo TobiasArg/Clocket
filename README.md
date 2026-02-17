@@ -48,7 +48,7 @@ Cierre de tarea (solo post-merge, cleanup seguro + self-delete del thread):
 ~/.codex/tools/codex-task-finish.sh --branch codex/improve-investments-ui --parent origin/main --yes
 ```
 
-Ese cierre ahora también aplica scrub residual seguro en `~/.codex` (JSONL remanentes, backups de state y carpetas vacías de worktrees).
+Ese cierre ahora también aplica preflight fail-fast de self-destruction antes de mutar Git y scrub residual seguro en `~/.codex` (JSONL remanentes, backups de state y carpetas vacías de worktrees).
 
 Validación sin mutar:
 
