@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode, UIEvent as ReactUIEvent } from "react";
+import { useEffect, useRef } from "react";
 import type { StatisticsChartView } from "@/hooks";
 
 export interface StatisticsViewOption {
@@ -29,19 +30,44 @@ export function StatisticsViewCarousel({
   options = STATISTICS_VIEW_OPTIONS,
   renderSlide,
 }: StatisticsViewCarouselProps) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeViewIndex = Math.max(0, options.findIndex((option) => option.id === activeView));
-  const sliderStyle: CSSProperties = {
-    transform: `translateX(-${activeViewIndex * 100}%)`,
-  };
 
-  const handleShift = (step: -1 | 1) => {
-    if (options.length <= 0) {
+  useEffect(() => {
+    const viewportNode = viewportRef.current;
+    if (!viewportNode || options.length === 0 || activeViewIndex < 0) {
       return;
     }
 
-    const nextIndex = (activeViewIndex + step + options.length) % options.length;
+    const width = viewportNode.clientWidth;
+    if (width <= 0) {
+      return;
+    }
+
+    const targetScrollLeft = activeViewIndex * width;
+    const distance = Math.abs(viewportNode.scrollLeft - targetScrollLeft);
+    if (distance < 1) {
+      return;
+    }
+
+    viewportNode.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+  }, [activeViewIndex, options.length]);
+
+  const handleViewportScroll = (event: ReactUIEvent<HTMLDivElement>): void => {
+    if (options.length === 0) {
+      return;
+    }
+
+    const viewportNode = event.currentTarget;
+    const width = viewportNode.clientWidth;
+    if (width <= 0) {
+      return;
+    }
+
+    const rawIndex = Math.round(viewportNode.scrollLeft / width);
+    const nextIndex = Math.max(0, Math.min(rawIndex, options.length - 1));
     const nextView = options[nextIndex];
-    if (!nextView) {
+    if (!nextView || nextView.id === activeView) {
       return;
     }
 
@@ -50,55 +76,16 @@ export function StatisticsViewCarousel({
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => handleShift(-1)}
-          className="h-7 min-w-7 rounded-md border border-[#D4D4D8] bg-white px-2 text-xs font-semibold text-[#52525B] hover:bg-[#F4F4F5]"
-          aria-label="Vista anterior"
-        >
-          {"<"}
-        </button>
-
-        <div className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#E4E4E7] p-1">
-          {options.map((option) => {
-            const isActive = option.id === activeView;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => onViewChange(option.id)}
-                className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
-                  isActive
-                    ? "bg-white text-[#18181B] shadow-sm"
-                    : "text-[#52525B] hover:bg-white/70"
-                }`}
-                aria-pressed={isActive}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => handleShift(1)}
-          className="h-7 min-w-7 rounded-md border border-[#D4D4D8] bg-white px-2 text-xs font-semibold text-[#52525B] hover:bg-[#F4F4F5]"
-          aria-label="Vista siguiente"
-        >
-          {">"}
-        </button>
-      </div>
-
-      <div className={`overflow-hidden ${contentClassName}`}>
-        <div className="flex w-full transition-transform duration-300 ease-out" style={sliderStyle}>
-          {options.map((option) => (
-            <div key={option.id} className="w-full shrink-0">
-              {renderSlide(option.id, option.id === activeView)}
-            </div>
-          ))}
-        </div>
+      <div
+        ref={viewportRef}
+        className={`flex overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${contentClassName}`}
+        onScroll={handleViewportScroll}
+      >
+        {options.map((option) => (
+          <div key={option.id} className="w-full shrink-0 snap-center">
+            {renderSlide(option.id, option.id === activeView)}
+          </div>
+        ))}
       </div>
 
       <div className="flex items-center justify-center gap-1">
