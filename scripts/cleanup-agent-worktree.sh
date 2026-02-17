@@ -22,7 +22,7 @@ Behavior:
 - Post-merge cleanup only.
 - Scope restricted to worktrees under ~/.codex/worktrees.
 - Deletes only: target worktree, target local branch, target remote branch.
-- If Git cleanup succeeds, triggers self thread deletion via thread-clean.sh --self.
+- If Git cleanup succeeds, triggers self thread deletion plus residual scrub.
 USAGE
 }
 
@@ -241,7 +241,7 @@ run_mutation "${GIT_CMD[@]}" fetch --prune "$REMOTE"
 echo "Git cleanup completed for '$BRANCH'."
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
-  echo "[dry-run] $THREAD_CLEAN_SCRIPT delete --self --yes"
+  echo "[dry-run] $THREAD_CLEAN_SCRIPT delete --self --yes --scrub-residuals"
   exit 0
 fi
 
@@ -250,6 +250,6 @@ if [[ ! -x "$THREAD_CLEAN_SCRIPT" ]]; then
   exit 0
 fi
 
-"$THREAD_CLEAN_SCRIPT" delete --self --yes
+"$THREAD_CLEAN_SCRIPT" delete --self --yes --scrub-residuals
 
 echo "Self thread delete completed."
