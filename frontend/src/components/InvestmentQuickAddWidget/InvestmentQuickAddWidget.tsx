@@ -7,7 +7,6 @@ export interface InvestmentQuickAddWidgetProps {
   isLoading: boolean;
   isManualPriceEnabled: boolean;
   isOpen: boolean;
-  isTickerUnavailable: boolean;
   nameInput: string;
   onCostBasisChange: (value: string) => void;
   onCurrentPriceChange: (value: string) => void;
@@ -25,7 +24,6 @@ export interface InvestmentQuickAddWidgetProps {
   quickAddTitle: string;
   sharesInput: string;
   showValidation: boolean;
-  tickerAvailabilityMessage: string | null;
   tickerInput: string;
 }
 
@@ -36,7 +34,6 @@ export function InvestmentQuickAddWidget({
   isLoading,
   isManualPriceEnabled,
   isOpen,
-  isTickerUnavailable,
   nameInput,
   onCostBasisChange,
   onCurrentPriceChange,
@@ -54,7 +51,6 @@ export function InvestmentQuickAddWidget({
   quickAddTitle,
   sharesInput,
   showValidation,
-  tickerAvailabilityMessage,
   tickerInput,
 }: InvestmentQuickAddWidgetProps) {
   if (!isOpen) {
@@ -78,12 +74,6 @@ export function InvestmentQuickAddWidget({
             className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
           />
         </label>
-
-        {tickerAvailabilityMessage && (
-          <span className={`text-[11px] font-medium ${isTickerUnavailable ? "text-[#B45309]" : "text-[#52525B]"}`}>
-            {tickerAvailabilityMessage}
-          </span>
-        )}
 
         <label className="flex flex-col gap-1">
           <span className="text-xs font-medium text-[#52525B]">{quickAddNameLabel}</span>
@@ -129,7 +119,6 @@ export function InvestmentQuickAddWidget({
             type="checkbox"
             checked={isManualPriceEnabled}
             onChange={(event) => onManualPriceEnabledChange(event.target.checked)}
-            disabled={isTickerUnavailable && isManualPriceEnabled}
             className="h-4 w-4 accent-[#10B981]"
           />
           <span className="text-xs font-medium text-[#52525B]">Ingresar precio manual</span>

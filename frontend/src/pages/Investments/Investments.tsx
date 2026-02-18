@@ -54,7 +54,7 @@ export function Investments({
   quickAddNameLabel = "Nombre",
   quickAddSharesLabel = "Cantidad",
   quickAddCostBasisLabel = "Costo promedio",
-  quickAddCurrentPriceLabel = "Precio manual",
+  quickAddCurrentPriceLabel = "Precio actual",
   quickAddSubmitLabel = "Guardar inversión",
   loadingLabel = "Cargando inversiones...",
   emptyTitle = "No hay inversiones",
@@ -79,17 +79,11 @@ export function Investments({
     error,
     handleCreate,
     handleHeaderAction,
-    handleRefreshQuotes,
     handleRemove,
     isEditorOpen,
     isFormValid,
     isLoading,
     isManualPriceEnabled,
-    isMarketRefreshing,
-    isTickerUnavailable,
-    marketLastUpdatedLabel,
-    marketStatusColor,
-    marketStatusLabel,
     nameInput,
     setCostBasisInput,
     setCurrentPriceInput,
@@ -101,7 +95,6 @@ export function Investments({
     showValidation,
     summary,
     summaryChange,
-    tickerAvailabilityMessage,
     tickerInput,
   } = useInvestmentsPageModel({ onAddClick });
 
@@ -119,16 +112,6 @@ export function Investments({
           <span className="text-xl font-semibold text-[#18181B] font-['Outfit']">{headerTitle}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              void handleRefreshQuotes();
-            }}
-            aria-label="Actualizar cotizaciones"
-            className={`px-3 py-2 rounded-xl text-xs font-semibold bg-[#F4F4F5] ${isMarketRefreshing ? "text-[#2563EB]" : "text-[#18181B]"}`}
-          >
-            {isMarketRefreshing ? "Actualizando..." : "Actualizar"}
-          </button>
           <button type="button" onClick={handleHeaderAction} aria-label="Agregar inversión">
             <IconBadge
               icon={isEditorOpen ? "x" : "plus"}
@@ -138,13 +121,6 @@ export function Investments({
             />
           </button>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between px-5 py-2 bg-white border-t border-[#F4F4F5]">
-        <span className={`text-xs font-semibold ${marketStatusColor}`}>{marketStatusLabel}</span>
-        <span className="text-[11px] font-medium text-[#71717A]">
-          {`Última actualización: ${marketLastUpdatedLabel}`}
-        </span>
       </div>
 
       <InvestmentQuickAddWidget
@@ -162,8 +138,6 @@ export function Investments({
         costBasisInput={costBasisInput}
         currentPriceInput={currentPriceInput}
         isManualPriceEnabled={isManualPriceEnabled}
-        isTickerUnavailable={isTickerUnavailable}
-        tickerAvailabilityMessage={tickerAvailabilityMessage}
         showValidation={showValidation}
         isFormValid={isFormValid}
         isLoading={isLoading}
@@ -172,12 +146,7 @@ export function Investments({
         onSharesChange={setSharesInput}
         onCostBasisChange={setCostBasisInput}
         onCurrentPriceChange={setCurrentPriceInput}
-        onManualPriceEnabledChange={(value) => {
-          if (isTickerUnavailable && !value) {
-            return;
-          }
-          setIsManualPriceEnabled(value);
-        }}
+        onManualPriceEnabledChange={setIsManualPriceEnabled}
         onSubmit={() => {
           void handleCreate();
         }}
