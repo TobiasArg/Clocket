@@ -40,7 +40,7 @@ export interface GoalsProps {
 
 export function Goals({
   avatarInitials = "JS",
-  headerTitle = "Goals",
+  headerTitle = "Metas",
   summaryTitle = "RESUMEN DE AHORRO",
   totalLabel = "Total Ahorrado",
   goalLabel = "Meta Total",
@@ -63,11 +63,11 @@ export function Goals({
   emptyHint = "Agrega una meta para empezar a ahorrar con foco.",
   errorLabel = "No pudimos cargar las metas. Intenta nuevamente.",
   navItems = [
-    { icon: "house", label: "Home", to: "/home" },
-    { icon: "wallet", label: "Budgets", to: "/budgets" },
-    { icon: "chart-pie-slice", label: "Statistics", to: "/statistics" },
+    { icon: "house", label: "Inicio", to: "/home" },
+    { icon: "wallet", label: "Presupuestos", to: "/budgets" },
+    { icon: "chart-bar", label: "Estadísticas", to: "/statistics" },
     { icon: "trend-up", label: "Inversiones", to: "/investments" },
-    { icon: "dots-three-outline", label: "Más", active: true, to: "/more" },
+    { icon: "dots-three", label: "Más", active: true, to: "/more" },
   ],
   onAddClick,
   onGoalClick,

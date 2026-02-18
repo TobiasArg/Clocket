@@ -36,8 +36,8 @@ export function More({
         title={headerTitle}
         avatarInitials={avatarInitials}
         onActionClick={onCloseClick}
-        actionIcon="sign-out"
-        actionAriaLabel="Salir"
+        actionIcon="x"
+        actionAriaLabel="Cerrar"
         actionButtonClassName="bg-[#F4F4F5] border border-[#E4E4E7]"
         actionIconClassName="text-[#3F3F46]"
       />

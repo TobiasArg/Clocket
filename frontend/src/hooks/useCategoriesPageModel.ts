@@ -39,9 +39,9 @@ export const useCategoriesPageModel = (
 ): UseCategoriesPageModelResult => {
   const {
     categories,
-    checkingUsageLabel = "Checking transactions...",
+    checkingUsageLabel = "Verificando transacciones...",
     errorLabel = "No pudimos cargar las categorías. Intenta nuevamente.",
-    inUseDeleteMessage = "This category is in use and can’t be deleted yet.",
+    inUseDeleteMessage = "Esta categoría está en uso y no puede eliminarse aún.",
     onAddClick,
     onCategoryClick,
   } = options;

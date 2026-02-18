@@ -47,8 +47,8 @@ export function Accounts({
   errorLabel = "No pudimos cargar las cuentas. Intenta nuevamente.",
   deleteActionLabel = "Eliminar",
   updatedPrefix = "Actualizado",
-  incomeLabel = "In",
-  expenseLabel = "Out",
+  incomeLabel = "Ing.",
+  expenseLabel = "Gas.",
   onBackClick,
   onAddClick,
 }: AccountsProps) {

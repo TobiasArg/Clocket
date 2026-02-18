@@ -36,7 +36,7 @@ export interface BudgetsProps {
 
 export function Budgets({
   avatarInitials = "JS",
-  headerTitle = "Budgets",
+  headerTitle = "Presupuestos",
   summaryTitle = "RESUMEN DE PRESUPUESTO",
   summaryLeftLabel = "Total Gastado",
   summaryRightLabel = "Presupuesto Total",
@@ -54,9 +54,9 @@ export function Budgets({
   emptyActionLabel = "Crear budget",
   errorLabel = "No pudimos cargar los budgets. Intenta nuevamente.",
   navItems = [
-    { icon: "house", label: "Home", to: "/home" },
-    { icon: "wallet", label: "Budgets", active: true, to: "/budgets" },
-    { icon: "chart-bar", label: "Statistics", to: "/statistics" },
+    { icon: "house", label: "Inicio", to: "/home" },
+    { icon: "wallet", label: "Presupuestos", active: true, to: "/budgets" },
+    { icon: "chart-bar", label: "Estadísticas", to: "/statistics" },
     { icon: "trend-up", label: "Inversiones", to: "/investments" },
     { icon: "dots-three", label: "Más", to: "/more" },
   ],

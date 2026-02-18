@@ -30,12 +30,12 @@ export interface PlansListWidgetProps {
 
 export function PlansListWidget({
   cuotaLabel = "Cuota mensual",
-  deleteActionLabel = "Delete",
-  deleteCancelLabel = "Cancel",
-  deleteConfirmHint = "This can’t be undone.",
-  deleteConfirmLabel = "Delete",
+  deleteActionLabel = "Eliminar",
+  deleteCancelLabel = "Cancelar",
+  deleteConfirmHint = "No se puede deshacer.",
+  deleteConfirmLabel = "Eliminar",
   deleteConfirmPlanId = null,
-  deleteConfirmTitle = "Delete this plan?",
+  deleteConfirmTitle = "¿Eliminar este plan?",
   emptyHint = "Agrega una cuota para ver el pendiente mensual.",
   emptyTitle = "No hay cuotas activas",
   errorLabel = "No pudimos cargar las cuotas. Intenta nuevamente.",
