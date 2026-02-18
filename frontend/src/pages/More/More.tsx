@@ -34,12 +34,7 @@ export function More({
     <div className="flex flex-col h-full w-full bg-[#FAFAFA]">
       <PageHeader
         title={headerTitle}
-        avatarInitials={avatarInitials}
-        onActionClick={onCloseClick}
-        actionIcon="x"
-        actionAriaLabel="Cerrar"
-        actionButtonClassName="bg-[#F4F4F5] border border-[#E4E4E7]"
-        actionIconClassName="text-[#3F3F46]"
+        onBackClick={onCloseClick}
       />
       <div className="flex-1 overflow-auto px-5 py-8">
         <MoreOptionsWidget

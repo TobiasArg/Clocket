@@ -33,6 +33,7 @@ export interface GoalsProps {
   emptyHint?: string;
   errorLabel?: string;
   navItems?: NavItem[];
+  onBackClick?: () => void;
   onAddClick?: () => void;
   onGoalClick?: (goalId: string) => void;
   onNavItemClick?: (index: number) => void;
@@ -69,6 +70,7 @@ export function Goals({
     { icon: "trend-up", label: "Inversiones", to: "/investments" },
     { icon: "dots-three", label: "Más", active: true, to: "/more" },
   ],
+  onBackClick,
   onAddClick,
   onGoalClick,
   onNavItemClick,
@@ -108,7 +110,7 @@ export function Goals({
     <div className="flex flex-col h-full w-full bg-white">
       <PageHeader
         title={headerTitle}
-        avatarInitials={avatarInitials}
+        onBackClick={onBackClick}
         onActionClick={handleHeaderAction}
         actionIcon={isEditorOpen ? "x" : "plus"}
       />

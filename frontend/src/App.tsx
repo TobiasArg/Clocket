@@ -221,7 +221,7 @@ export function App() {
       case "/transactions":
         return (
           <Transactions
-            onBackClick={() => navigateTo("/home")}
+            onBackClick={() => window.history.back()}
             onTransactionClick={() => undefined}
           />
         );
@@ -240,6 +240,7 @@ export function App() {
       case "/goals":
         return (
           <Goals
+            onBackClick={() => navigateTo("/more")}
             onGoalClick={(goalIdValue) => navigateTo(toGoalDetailPath(goalIdValue))}
           />
         );
