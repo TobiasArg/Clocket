@@ -85,13 +85,6 @@ export type {
 } from "./investments/portfolioTypes";
 
 export type {
-  MarketQuote,
-  MarketQuotesRepository,
-  MarketQuotesResult,
-  MarketUnavailableQuote,
-} from "./market/quotesRepository";
-
-export {
   getCurrentMonthWindow,
   getMonthlyBalance,
   getTransactionDateForMonthBalance,
