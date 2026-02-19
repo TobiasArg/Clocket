@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { InvestmentPositionItem } from "@/utils";
+import type { InvestmentPositionItem, MarketQuote } from "@/utils";
 import {
   calculatePortfolioSummary,
   resolvePositionPrice,
@@ -20,6 +20,17 @@ const buildPosition = (patch: Partial<InvestmentPositionItem>): InvestmentPositi
   ...patch,
 });
 
+const buildQuote = (patch: Partial<MarketQuote>): MarketQuote => ({
+  symbol: "AAPL",
+  price: 120,
+  previousClose: 118,
+  changePercent: 1.69,
+  currency: "USD",
+  status: "ok",
+  source: "alpaca",
+  ...patch,
+});
+
 describe("useInvestmentsPageModel helpers", () => {
   it("uses manual price when position source is manual", () => {
     const position = buildPosition({
@@ -27,20 +38,21 @@ describe("useInvestmentsPageModel helpers", () => {
       manualPrice: 150,
       currentPrice: 100,
     });
+    const quote = buildQuote({ price: 190 });
 
-    expect(resolvePositionPrice(position)).toBe(150);
+    expect(resolvePositionPrice(position, quote)).toBe(150);
   });
 
-  it("falls back to persisted currentPrice when manual price is unavailable", () => {
+  it("falls back to persisted currentPrice when market quote is unavailable", () => {
     const position = buildPosition({
       priceSource: "market",
       currentPrice: 111,
     });
 
-    expect(resolvePositionPrice(position)).toBe(111);
+    expect(resolvePositionPrice(position, undefined)).toBe(111);
   });
 
-  it("calculates invested/current/unrealized from persisted prices", () => {
+  it("calculates invested/current/unrealized and day change from market quotes", () => {
     const items = [
       buildPosition({
         id: "inv_market",
@@ -61,12 +73,17 @@ describe("useInvestmentsPageModel helpers", () => {
       }),
     ];
 
-    const summary = calculatePortfolioSummary(items, 1000);
+    const quoteBySymbol = new Map<string, MarketQuote>([
+      ["AAPL", buildQuote({ symbol: "AAPL", price: 120, previousClose: 118 })],
+      ["MSFT", buildQuote({ symbol: "MSFT", price: 130, previousClose: 129 })],
+    ]);
+
+    const summary = calculatePortfolioSummary(items, quoteBySymbol, 1000);
 
     expect(summary.invested).toBe(250);
-    expect(summary.current).toBe(270);
-    expect(summary.gainAmount).toBe(20);
-    expect(summary.dayGainAmount).toBe(0);
-    expect(summary.currentArs).toBe(270000);
+    expect(summary.current).toBe(300);
+    expect(summary.gainAmount).toBe(50);
+    expect(summary.dayGainAmount).toBe(-65);
+    expect(summary.currentArs).toBe(300000);
   });
 });
