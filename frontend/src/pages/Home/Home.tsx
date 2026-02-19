@@ -1,3 +1,4 @@
+import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type {
   CuotaItem,
   GoalCardSimple,
@@ -74,13 +75,7 @@ export function Home({
   cuotasTitle = "Planes de Cuotas",
   cuotasViewAll = "Ver todos",
   cuotas,
-  navItems = [
-    { icon: "house", label: "Inicio", active: true, to: "/home" },
-    { icon: "wallet", label: "Presupuestos", to: "/budgets" },
-    { icon: "chart-bar", label: "Estadísticas", to: "/statistics" },
-    { icon: "trend-up", label: "Inversiones", to: "/investments" },
-    { icon: "dots-three", label: "Más", to: "/more" },
-  ],
+  navItems = DEFAULT_NAV_ITEMS,
   loadingLabel = "Cargando...",
   errorLabel = "No pudimos cargar esta sección. Intenta nuevamente.",
   emptyTransactionsLabel = "Aún no hay transacciones.",

@@ -1,7 +1,6 @@
 import type { SidebarNavItem, UserProfile } from "@/types";
-import { Avatar } from "@/components";
-import { Divider } from "@/components";
-import { PhosphorIcon } from "@/components";
+import { Avatar, Divider, PhosphorIcon } from "@/components";
+import { navigateToPath } from "@/utils";
 
 export interface SidebarNavProps {
   logoInitial?: string;
@@ -31,19 +30,6 @@ export function SidebarNav({
     }
 
     return currentPath === to;
-  };
-
-  const navigateToPath = (to: string): void => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (window.location.pathname === to) {
-      return;
-    }
-
-    window.history.pushState(null, "", to);
-    window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
   return (
@@ -166,10 +152,10 @@ export function SidebarNav({
             navigateToPath("/goals");
           }}
           className="flex items-center gap-3.5 px-4 py-3.5 rounded-[14px] text-left"
-          aria-label="Goals"
+          aria-label="Metas"
         >
           <PhosphorIcon name="target" className="text-[#71717A]" size="text-[22px]" />
-          <span className="text-[15px] font-medium text-[#71717A]">Goals</span>
+          <span className="text-[15px] font-medium text-[#71717A]">Metas</span>
         </a>
 
         {user && (
