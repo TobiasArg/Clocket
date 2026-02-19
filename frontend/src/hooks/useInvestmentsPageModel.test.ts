@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildHistoricalSeries, computePositionMetrics } from "@/domain/investments/portfolioMetrics";
 import type { InvestmentPositionItem } from "@/domain/investments/repository";
 import type { AssetRefs } from "@/domain/investments/portfolioTypes";
+import { buildSparklinePoints, formatLastUpdatedLabel } from "./useInvestmentsPageModel";
 
 const buildPosition = (patch: Partial<InvestmentPositionItem> = {}): InvestmentPositionItem => ({
   id: "pos_1",
@@ -74,5 +75,22 @@ describe("portfolio metrics", () => {
     expect(points[0].timestamp).toBe("2026-01-01T00:00:00.000Z");
     expect(points[0].equity).toBe(900);
     expect(points[1].equity).toBe(950);
+  });
+
+  it("formats last updated labels with safe fallback", () => {
+    expect(formatLastUpdatedLabel(null)).toBe("Sin actualización");
+    expect(formatLastUpdatedLabel("invalid-date")).toBe("Sin actualización");
+    expect(formatLastUpdatedLabel("2026-01-10T12:30:00.000Z")).not.toBe("Sin actualización");
+  });
+
+  it("builds sparkline points from historical points", () => {
+    const points = buildSparklinePoints([
+      { timestamp: "2026-01-01T00:00:00.000Z", equity: 1000, pnlVsInvested: 0 },
+      { timestamp: "2026-01-02T00:00:00.000Z", equity: 1015, pnlVsInvested: 15 },
+    ]);
+
+    expect(points).toHaveLength(2);
+    expect(points[0].value).toBe(1000);
+    expect(points[1].value).toBe(1015);
   });
 });

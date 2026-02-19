@@ -1,11 +1,14 @@
 import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { NavItem } from "@/modules/investments";
 import {
-  Avatar,
   BottomNavigation,
+  InvestmentDeleteConfirmDialog,
   InvestmentListWidget,
+  InvestmentPositionDetailPanel,
   InvestmentQuickAddWidget,
   InvestmentSummaryWidget,
+  PageHeader,
+  PullToRefreshIndicator,
   useInvestmentsPageModel,
 } from "@/modules/investments";
 
@@ -17,106 +20,137 @@ export interface InvestmentsProps {
 }
 
 export function Investments({
-  avatarInitials = "JS",
-  headerTitle = "Investments Portfolio",
-  navItems = [
-    { icon: "house", label: "Home", to: "/home" },
-    { icon: "wallet", label: "Budgets", to: "/budgets" },
-    { icon: "chart-pie-slice", label: "Statistics", to: "/statistics" },
-    { icon: "trend-up", label: "Inversiones", active: true, to: "/investments" },
-    { icon: "dots-three-outline", label: "Más", to: "/more" },
-  ],
+  avatarInitials,
+  headerTitle = "Inversiones",
+  navItems = DEFAULT_NAV_ITEMS,
   onNavItemClick,
 }: InvestmentsProps) {
   const {
     rows,
+    selectedRow,
+    selectedEntries,
     summary,
     error,
     isLoading,
-    isRefreshingAll,
+    isPullRefreshing,
     isEditorOpen,
     editingPositionId,
-    expandedRowId,
+    isDetailOpen,
+    isEntriesLoading,
+    deletingEntryId,
+    isDeleteConfirmOpen,
+    pendingDeletePositionId,
+    isDeleteSubmitting,
+    uiMessage,
+    pullProgress,
+    pullState,
+    pullContainerRef,
+    handlePullTouchStart,
+    handlePullTouchMove,
+    handlePullTouchEnd,
+    handlePullTouchCancel,
     assetTypeInput,
+    entryTypeInput,
     tickerInput,
     usdSpentInput,
     buyPriceInput,
+    createdAtInput,
+    availableAmountLabel,
     isFormValid,
     showValidation,
     derivedAmountLabel,
+    formValidationLabel,
     handleOpenCreate,
     handleOpenEdit,
+    handleCloseDetail,
     handleCloseEditor,
-    handleToggleRowExpand,
-    handleRefreshAll,
-    handleRefreshRow,
-    handleDelete,
+    handleOpenDetail,
+    handleDeleteEntry,
+    handleRequestDelete,
+    handleCancelDelete,
+    handleConfirmDelete,
     handleSubmit,
+    dismissUiMessage,
     setAssetTypeInput,
+    setEntryTypeInput,
     setTickerInput,
     setUsdSpentInput,
     setBuyPriceInput,
+    setCreatedAtInput,
   } = useInvestmentsPageModel();
 
-  return (
-    <div className="relative flex h-full w-full flex-col bg-[#F3F4F6]">
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] bg-white px-5 py-4">
-        <div className="flex items-center gap-3">
-          <Avatar
-            initials={avatarInitials}
-            bg="bg-[#2563EB]"
-            size="w-[40px] h-[40px]"
-            textSize="text-sm"
-            className="rounded-[20px]"
-          />
-          <div className="flex flex-col">
-            <span className="text-xl font-semibold text-[#111827] font-['Outfit']">{headerTitle}</span>
-            <span className="text-[11px] font-medium text-[#6B7280]">
-              Base currency: USD • Tracking propio con snapshots
-            </span>
-          </div>
-        </div>
+  const pendingDeleteTicker = pendingDeletePositionId
+    ? rows.find((row) => row.id === pendingDeletePositionId)?.ticker
+    : undefined;
+  const pullOffset = Math.round(
+    Math.min(24, pullProgress * 20 + (pullState === "refreshing" ? 8 : 0)),
+  );
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              void handleRefreshAll();
-            }}
-            className="rounded-xl border border-[#D1D5DB] bg-white px-3 py-2 text-xs font-semibold text-[#374151]"
-          >
-            {isRefreshingAll ? "Refreshing..." : "Refresh all"}
-          </button>
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="rounded-xl bg-[#2563EB] px-3 py-2 text-xs font-semibold text-white"
-          >
-            Add position
-          </button>
-        </div>
+  return (
+    <div className="relative flex h-full w-full flex-col bg-white">
+      <div className="border-b border-[#E5E7EB] bg-white">
+        <PageHeader
+          title={headerTitle}
+          avatarInitials={avatarInitials}
+          onActionClick={handleOpenCreate}
+          actionIcon="plus"
+          actionAriaLabel="Agregar entrada"
+        />
       </div>
 
-      <div className="flex-1 overflow-auto px-5 py-4">
-        <div className="flex flex-col gap-4">
+      <div
+        ref={pullContainerRef}
+        onTouchStart={handlePullTouchStart}
+        onTouchMove={handlePullTouchMove}
+        onTouchEnd={handlePullTouchEnd}
+        onTouchCancel={handlePullTouchCancel}
+        className="flex-1 overflow-auto bg-[#F3F4F6] overscroll-contain"
+      >
+        <div
+          className="flex flex-col gap-3 px-5 py-3 transition-transform duration-300 ease-out will-change-transform"
+          style={{ transform: `translateY(${pullOffset}px)` }}
+        >
+          <PullToRefreshIndicator state={pullState} progress={pullProgress} />
           <InvestmentSummaryWidget summary={summary} />
+
+          {uiMessage && (
+            <div
+              role="status"
+              aria-live="polite"
+              className={`flex items-start justify-between gap-3 rounded-xl px-3 py-2 ${
+                uiMessage.kind === "success"
+                  ? "border border-[#BBF7D0] bg-[#F0FDF4]"
+                  : "border border-[#FECACA] bg-[#FEF2F2]"
+              }`}
+            >
+              <span
+                className={`text-xs font-semibold ${
+                  uiMessage.kind === "success" ? "text-[#15803D]" : "text-[#B91C1C]"
+                }`}
+              >
+                {uiMessage.text}
+              </span>
+              <button
+                type="button"
+                onClick={dismissUiMessage}
+                className="text-xs font-semibold text-[#6B7280]"
+                aria-label="Cerrar mensaje"
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
 
           <InvestmentListWidget
             rows={rows}
-            isLoading={isLoading}
+            isLoading={isLoading || isPullRefreshing}
             errorMessage={error}
-            expandedRowId={expandedRowId}
-            onRefreshRow={(id) => {
-              void handleRefreshRow(id);
-            }}
-            onEdit={handleOpenEdit}
-            onDelete={(id) => {
-              void handleDelete(id);
-            }}
-            onToggleExpand={handleToggleRowExpand}
+            onOpenDetail={handleOpenDetail}
           />
         </div>
       </div>
+
+      <BottomNavigation items={navItems} onItemClick={onNavItemClick} activeColor="text-[#2563EB]" />
 
       <InvestmentQuickAddWidget
         isOpen={isEditorOpen}
@@ -125,21 +159,49 @@ export function Investments({
         isFormValid={isFormValid}
         showValidation={showValidation}
         assetTypeInput={assetTypeInput}
+        entryTypeInput={entryTypeInput}
         tickerInput={tickerInput}
         usdSpentInput={usdSpentInput}
         buyPriceInput={buyPriceInput}
+        createdAtInput={createdAtInput}
+        availableAmountLabel={availableAmountLabel}
         derivedAmountLabel={derivedAmountLabel}
+        validationMessage={formValidationLabel}
         onClose={handleCloseEditor}
         onSubmit={() => {
           void handleSubmit();
         }}
         onAssetTypeChange={setAssetTypeInput}
+        onEntryTypeChange={setEntryTypeInput}
         onTickerChange={setTickerInput}
         onUsdSpentChange={setUsdSpentInput}
         onBuyPriceChange={setBuyPriceInput}
+        onCreatedAtChange={setCreatedAtInput}
       />
 
-      <BottomNavigation items={navItems} onItemClick={onNavItemClick} activeColor="text-[#2563EB]" />
+      <InvestmentPositionDetailPanel
+        isOpen={isDetailOpen}
+        row={selectedRow}
+        entries={selectedEntries}
+        isEntriesLoading={isEntriesLoading}
+        deletingEntryId={deletingEntryId}
+        onClose={handleCloseDetail}
+        onAddEntry={handleOpenEdit}
+        onDeleteEntry={(entryId) => {
+          void handleDeleteEntry(entryId);
+        }}
+        onRequestDelete={handleRequestDelete}
+      />
+
+      <InvestmentDeleteConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        isLoading={isDeleteSubmitting}
+        ticker={pendingDeleteTicker}
+        onCancel={handleCancelDelete}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
+      />
     </div>
   );
 }

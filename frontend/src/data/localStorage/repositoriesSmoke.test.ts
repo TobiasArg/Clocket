@@ -198,33 +198,40 @@ describe("localStorage repositories smoke", () => {
     expect(afterCategories.length).toBe(beforeCategories.length);
   });
 
-  it("investments repository stores derived amount and supports edit/delete", async () => {
-    const created = await investmentsRepository.addPosition({
+  it("investments repository aggregates entries per ticker and supports entry delete", async () => {
+    const created = await investmentsRepository.addEntry({
       ticker: "aapl",
       assetType: "stock",
+      entryType: "ingreso",
       usd_gastado: 1000,
       buy_price: 200,
     });
 
-    expect(created.ticker).toBe("AAPL");
-    expect(created.amount).toBe(5);
+    expect(created.position?.ticker).toBe("AAPL");
+    expect(created.position?.amount).toBe(5);
 
-    const updated = await investmentsRepository.editPosition(created.id, {
-      usd_gastado: 1200,
-      buy_price: 240,
+    const extra = await investmentsRepository.addEntry({
+      ticker: "AAPL",
+      assetType: "stock",
+      entryType: "ingreso",
+      usd_gastado: 200,
+      buy_price: 250,
     });
 
-    expect(updated?.amount).toBe(5);
-    expect(updated?.usd_gastado).toBe(1200);
-    expect(updated?.buy_price).toBe(240);
-    expect(await investmentsRepository.deletePosition(created.id)).toBe(true);
+    const positions = await investmentsRepository.listPositions();
+    expect(positions).toHaveLength(1);
+    expect(positions[0].amount).toBeGreaterThan(5);
+
+    expect(await investmentsRepository.deleteEntry(extra.entry.id)).toBe(true);
+    expect(await investmentsRepository.deletePosition(positions[0].id)).toBe(true);
   });
 
   it("investments repository stores snapshots and initializes refs", async () => {
     const repository = new LocalStorageInvestmentsRepository();
-    await repository.addPosition({
+    await repository.addEntry({
       ticker: "MSFT",
       assetType: "stock",
+      entryType: "ingreso",
       usd_gastado: 500,
       buy_price: 250,
     });

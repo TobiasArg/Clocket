@@ -3,11 +3,24 @@ export type AssetType = "stock" | "crypto";
 export type SnapshotSource = "GLOBAL_QUOTE" | "CURRENCY_EXCHANGE_RATE";
 
 export type AssetKey = `${AssetType}:${string}`;
+export type EntryType = "ingreso" | "egreso";
 
 export interface Position {
   id: string;
   assetType: AssetType;
   ticker: string;
+  usd_gastado: number;
+  buy_price: number;
+  amount: number;
+  createdAt: string;
+}
+
+export interface PositionEntry {
+  id: string;
+  positionId: string;
+  assetType: AssetType;
+  ticker: string;
+  entryType: EntryType;
   usd_gastado: number;
   buy_price: number;
   amount: number;

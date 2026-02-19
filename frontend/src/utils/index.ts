@@ -118,14 +118,19 @@ export type {
   AssetKey,
   AssetRefs,
   AssetType,
+  EntryType,
   HistoricalPoint,
   Position,
+  PositionEntry,
   Snapshot,
   SnapshotSource,
 } from "@/domain/investments/portfolioTypes";
 
 export type {
+  AddInvestmentEntryInput,
+  AddInvestmentEntryResult,
   CreateInvestmentInput,
+  InvestmentEntryItem,
   InvestmentSnapshotItem,
   InvestmentPositionItem,
   InvestmentsRepository,

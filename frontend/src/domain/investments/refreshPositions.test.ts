@@ -124,18 +124,22 @@ describe("refreshPositions", () => {
 
   it("deduplicates refresh calls by asset key when multiple positions share ticker", async () => {
     const repository = new LocalStorageInvestmentsPortfolioRepository();
-    const first = await repository.addPosition({
+    await repository.addEntry({
       assetType: "stock",
       ticker: "AAPL",
+      entryType: "ingreso",
       usd_gastado: 1000,
       buy_price: 100,
     });
-    const second = await repository.addPosition({
+    await repository.addEntry({
       assetType: "stock",
       ticker: "aapl",
+      entryType: "ingreso",
       usd_gastado: 500,
       buy_price: 250,
     });
+
+    const [aggregated] = await repository.listPositions();
 
     vi.mocked(fetchStockQuote).mockResolvedValue({
       assetType: "stock",
@@ -150,15 +154,14 @@ describe("refreshPositions", () => {
       timezone: null,
     });
 
-    const rows = await refreshPositions([first, second], {
+    const rows = await refreshPositions([aggregated], {
       repository,
       force: true,
       now: new Date("2026-02-19T10:00:00.000Z"),
     });
 
     expect(fetchStockQuote).toHaveBeenCalledTimes(1);
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(1);
     expect(rows[0].currentPrice).toBe(120);
-    expect(rows[1].currentPrice).toBe(120);
   });
 });

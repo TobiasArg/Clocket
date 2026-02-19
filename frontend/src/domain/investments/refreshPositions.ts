@@ -16,8 +16,7 @@ import {
   type PositionMetrics,
 } from "./portfolioMetrics";
 
-const STOCK_REFRESH_THRESHOLD_MS = 45 * 60 * 1000;
-const CRYPTO_REFRESH_THRESHOLD_MS = 12 * 60 * 1000;
+const DAILY_REFRESH_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
 export interface RefreshedPositionViewModel extends PositionMetrics {
   id: string;
@@ -57,9 +56,8 @@ const buildAssetCacheKey = (
   ticker: string,
 ): string => `${assetType}:${ticker.trim().toUpperCase()}`;
 
-const shouldRefreshByAge = (
+const shouldRefreshByUtcDay = (
   latestSnapshot: InvestmentSnapshotItem | null,
-  position: InvestmentPositionItem,
   now: Date,
 ): boolean => {
   if (!latestSnapshot) {
@@ -71,12 +69,7 @@ const shouldRefreshByAge = (
     return true;
   }
 
-  const ageMs = now.getTime() - latestTimestamp.getTime();
-  const threshold = position.assetType === "crypto"
-    ? CRYPTO_REFRESH_THRESHOLD_MS
-    : STOCK_REFRESH_THRESHOLD_MS;
-
-  return ageMs >= threshold;
+  return latestTimestamp.toISOString().slice(0, 10) !== now.toISOString().slice(0, 10);
 };
 
 const toStaleFallback = (
@@ -160,8 +153,7 @@ const refreshAssetIfNeeded = (
     let staleWarning: string | null = null;
     let refreshError: string | null = null;
 
-    const shouldRefresh = runtime.force ||
-      shouldRefreshByAge(latestSnapshot, position, runtime.now);
+    const shouldRefresh = shouldRefreshByUtcDay(latestSnapshot, runtime.now);
 
     if (shouldRefresh) {
       try {
@@ -285,6 +277,6 @@ export const refreshPositions = async (
 };
 
 export const REFRESH_THRESHOLDS_MS = {
-  stock: STOCK_REFRESH_THRESHOLD_MS,
-  crypto: CRYPTO_REFRESH_THRESHOLD_MS,
+  stock: DAILY_REFRESH_THRESHOLD_MS,
+  crypto: DAILY_REFRESH_THRESHOLD_MS,
 } as const;

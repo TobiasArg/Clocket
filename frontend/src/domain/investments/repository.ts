@@ -2,17 +2,21 @@ import type {
   AssetKey,
   AssetRefs,
   AssetType,
+  EntryType,
   Position,
+  PositionEntry,
   Snapshot,
   SnapshotSource,
 } from "./portfolioTypes";
 
 export type InvestmentPositionItem = Position;
 export type InvestmentSnapshotItem = Snapshot;
+export type InvestmentEntryItem = PositionEntry;
 
 export interface CreateInvestmentInput {
   assetType: AssetType;
   ticker: string;
+  entryType?: EntryType;
   usd_gastado: number;
   buy_price: number;
   createdAt?: string;
@@ -24,6 +28,20 @@ export interface UpdateInvestmentPatch {
   usd_gastado?: number;
   buy_price?: number;
   createdAt?: string;
+}
+
+export interface AddInvestmentEntryInput {
+  assetType: AssetType;
+  ticker: string;
+  entryType: EntryType;
+  usd_gastado: number;
+  buy_price: number;
+  createdAt?: string;
+}
+
+export interface AddInvestmentEntryResult {
+  position: InvestmentPositionItem | null;
+  entry: InvestmentEntryItem;
 }
 
 export interface AddSnapshotInput {
@@ -39,6 +57,13 @@ export interface AddSnapshotInput {
 export interface InvestmentsRepository {
   listPositions: () => Promise<InvestmentPositionItem[]>;
   getPositionById: (id: string) => Promise<InvestmentPositionItem | null>;
+  listEntriesByPosition: (positionId: string) => Promise<InvestmentEntryItem[]>;
+  listEntriesByAsset: (
+    assetType: AssetType,
+    ticker: string,
+  ) => Promise<InvestmentEntryItem[]>;
+  addEntry: (input: AddInvestmentEntryInput) => Promise<AddInvestmentEntryResult>;
+  deleteEntry: (entryId: string) => Promise<boolean>;
   addPosition: (input: CreateInvestmentInput) => Promise<InvestmentPositionItem>;
   editPosition: (
     id: string,

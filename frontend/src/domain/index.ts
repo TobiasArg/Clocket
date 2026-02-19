@@ -67,8 +67,11 @@ export type {
 } from "./goals/repository";
 
 export type {
+  AddInvestmentEntryInput,
+  AddInvestmentEntryResult,
   AddSnapshotInput,
   CreateInvestmentInput,
+  InvestmentEntryItem,
   InvestmentSnapshotItem,
   InvestmentPositionItem,
   InvestmentsRepository,
@@ -78,8 +81,10 @@ export type {
   AssetKey,
   AssetRefs,
   AssetType,
+  EntryType,
   HistoricalPoint,
   Position,
+  PositionEntry,
   Snapshot,
   SnapshotSource,
 } from "./investments/portfolioTypes";

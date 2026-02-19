@@ -62,9 +62,18 @@ export { useInvestmentsPageModel } from "./useInvestmentsPageModel";
 export type {
   InvestmentTableRow,
   InvestmentsSummary,
+  InvestmentsUiMessage,
+  PositionEntryRow,
+  SparklinePoint,
   UseInvestmentsPageModelOptions,
   UseInvestmentsPageModelResult,
 } from "./useInvestmentsPageModel";
+export { usePullToRefresh } from "./usePullToRefresh";
+export type {
+  PullToRefreshState,
+  UsePullToRefreshOptions,
+  UsePullToRefreshResult,
+} from "./usePullToRefresh";
 export { useMorePageModel } from "./useMorePageModel";
 export type {
   UseMorePageModelOptions,

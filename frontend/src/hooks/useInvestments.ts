@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { investmentsRepository } from "@/data/localStorage/investmentsRepository";
 import type {
+  AddInvestmentEntryInput,
+  AddInvestmentEntryResult,
   CreateInvestmentInput,
+  InvestmentEntryItem,
   InvestmentPositionItem,
   InvestmentsRepository,
   UpdateInvestmentPatch,
@@ -16,6 +19,9 @@ export interface UseInvestmentsResult {
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  addEntry: (input: AddInvestmentEntryInput) => Promise<AddInvestmentEntryResult | null>;
+  listEntriesByPosition: (positionId: string) => Promise<InvestmentEntryItem[]>;
+  deleteEntry: (entryId: string) => Promise<boolean>;
   addPosition: (input: CreateInvestmentInput) => Promise<InvestmentPositionItem | null>;
   editPosition: (
     id: string,
@@ -69,7 +75,7 @@ export const useInvestments = (
 
       try {
         const created = await repository.addPosition(input);
-        setPositions((current) => [...current, created]);
+        await refresh();
         return created;
       } catch (createError) {
         setError(getErrorMessage(createError));
@@ -78,7 +84,60 @@ export const useInvestments = (
         setIsLoading(false);
       }
     },
+    [refresh, repository],
+  );
+
+  const addEntry = useCallback(
+    async (input: AddInvestmentEntryInput): Promise<AddInvestmentEntryResult | null> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await repository.addEntry(input);
+        await refresh();
+        return result;
+      } catch (createError) {
+        setError(getErrorMessage(createError));
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refresh, repository],
+  );
+
+  const listEntriesByPosition = useCallback(
+    async (positionId: string): Promise<InvestmentEntryItem[]> => {
+      try {
+        return await repository.listEntriesByPosition(positionId);
+      } catch (listError) {
+        setError(getErrorMessage(listError));
+        return [];
+      }
+    },
     [repository],
+  );
+
+  const deleteEntry = useCallback(
+    async (entryId: string): Promise<boolean> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const removed = await repository.deleteEntry(entryId);
+        if (removed) {
+          await refresh();
+        }
+
+        return removed;
+      } catch (removeError) {
+        setError(getErrorMessage(removeError));
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refresh, repository],
   );
 
   const editPosition = useCallback(
@@ -95,9 +154,7 @@ export const useInvestments = (
           return null;
         }
 
-        setPositions((current) =>
-          current.map((item) => (item.id === updated.id ? updated : item)),
-        );
+        await refresh();
         return updated;
       } catch (updateError) {
         setError(getErrorMessage(updateError));
@@ -106,7 +163,7 @@ export const useInvestments = (
         setIsLoading(false);
       }
     },
-    [repository],
+    [refresh, repository],
   );
 
   const deletePosition = useCallback(
@@ -117,7 +174,7 @@ export const useInvestments = (
       try {
         const removed = await repository.deletePosition(id);
         if (removed) {
-          setPositions((current) => current.filter((item) => item.id !== id));
+          await refresh();
         }
         return removed;
       } catch (removeError) {
@@ -127,7 +184,7 @@ export const useInvestments = (
         setIsLoading(false);
       }
     },
-    [repository],
+    [refresh, repository],
   );
 
   const clearAll = useCallback(async () => {
@@ -153,6 +210,9 @@ export const useInvestments = (
     isLoading,
     error,
     refresh,
+    addEntry,
+    listEntriesByPosition,
+    deleteEntry,
     addPosition,
     editPosition,
     deletePosition,
