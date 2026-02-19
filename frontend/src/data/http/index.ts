@@ -1,8 +1,4 @@
 export {
-  AlpacaQuotesHttpRepository,
-  marketQuotesRepository,
-} from "./alpacaQuotesClient";
-export {
   fetchCryptoRate,
   fetchStockQuote,
   MarketQuoteApiError,

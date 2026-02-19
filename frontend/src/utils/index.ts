@@ -42,11 +42,9 @@ export {
 } from "@/domain/cuotas/cuotasDateUtils";
 
 export {
-  AlpacaQuotesHttpRepository,
   fetchCryptoRate,
   fetchStockQuote,
   MarketQuoteApiError,
-  marketQuotesRepository,
 } from "@/data/http";
 
 export {
@@ -134,13 +132,6 @@ export type {
   AddSnapshotInput,
   UpdateInvestmentPatch,
 } from "@/domain/investments/repository";
-
-export type {
-  MarketQuote,
-  MarketQuotesRepository,
-  MarketQuotesResult,
-  MarketUnavailableQuote,
-} from "@/domain/market/quotesRepository";
 
 export type {
   CreateTransactionInput,
