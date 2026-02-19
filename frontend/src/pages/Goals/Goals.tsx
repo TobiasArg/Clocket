@@ -1,3 +1,4 @@
+import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { GoalColorKey, NavItem } from "@/modules/goals";
 import {
   BottomNavigation,
@@ -9,7 +10,6 @@ import {
 } from "@/modules/goals";
 
 export interface GoalsProps {
-  avatarInitials?: string;
   headerTitle?: string;
   summaryTitle?: string;
   totalLabel?: string;
@@ -33,14 +33,14 @@ export interface GoalsProps {
   emptyHint?: string;
   errorLabel?: string;
   navItems?: NavItem[];
+  onBackClick?: () => void;
   onAddClick?: () => void;
   onGoalClick?: (goalId: string) => void;
   onNavItemClick?: (index: number) => void;
 }
 
 export function Goals({
-  avatarInitials = "JS",
-  headerTitle = "Goals",
+  headerTitle = "Metas",
   summaryTitle = "RESUMEN DE AHORRO",
   totalLabel = "Total Ahorrado",
   goalLabel = "Meta Total",
@@ -62,13 +62,8 @@ export function Goals({
   emptyTitle = "No hay metas",
   emptyHint = "Agrega una meta para empezar a ahorrar con foco.",
   errorLabel = "No pudimos cargar las metas. Intenta nuevamente.",
-  navItems = [
-    { icon: "house", label: "Home", to: "/home" },
-    { icon: "wallet", label: "Budgets", to: "/budgets" },
-    { icon: "chart-pie-slice", label: "Statistics", to: "/statistics" },
-    { icon: "trend-up", label: "Inversiones", to: "/investments" },
-    { icon: "dots-three-outline", label: "Más", active: true, to: "/more" },
-  ],
+  navItems = DEFAULT_NAV_ITEMS,
+  onBackClick,
   onAddClick,
   onGoalClick,
   onNavItemClick,
@@ -108,7 +103,7 @@ export function Goals({
     <div className="flex flex-col h-full w-full bg-white">
       <PageHeader
         title={headerTitle}
-        avatarInitials={avatarInitials}
+        onBackClick={onBackClick}
         onActionClick={handleHeaderAction}
         actionIcon={isEditorOpen ? "x" : "plus"}
       />

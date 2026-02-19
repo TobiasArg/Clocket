@@ -7,7 +7,6 @@ import {
 } from "@/modules/more";
 
 export interface MoreProps {
-  avatarInitials?: string;
   headerTitle?: string;
   gridRows?: GridOption[][];
   navItems?: NavItem[];
@@ -17,7 +16,6 @@ export interface MoreProps {
 }
 
 export function More({
-  avatarInitials = "JS",
   headerTitle = "Más",
   gridRows,
   navItems,
@@ -34,12 +32,7 @@ export function More({
     <div className="flex flex-col h-full w-full bg-[#FAFAFA]">
       <PageHeader
         title={headerTitle}
-        avatarInitials={avatarInitials}
-        onActionClick={onCloseClick}
-        actionIcon="sign-out"
-        actionAriaLabel="Salir"
-        actionButtonClassName="bg-[#F4F4F5] border border-[#E4E4E7]"
-        actionIconClassName="text-[#3F3F46]"
+        onBackClick={onCloseClick}
       />
       <div className="flex-1 overflow-auto px-5 py-8">
         <MoreOptionsWidget

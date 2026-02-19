@@ -149,7 +149,7 @@ export const useTransactionsPageModel = (
     onFilterClick,
     onTransactionClick,
     uncategorizedAccountLabel = "Sin cuenta",
-    uncategorizedLabel = "Uncategorized",
+    uncategorizedLabel = "Sin categoría",
   } = options;
 
   const { items, isLoading, error, create, update, remove } = useTransactions();

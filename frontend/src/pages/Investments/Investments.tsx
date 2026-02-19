@@ -1,3 +1,4 @@
+import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { NavItem } from "@/modules/investments";
 import {
   Avatar,

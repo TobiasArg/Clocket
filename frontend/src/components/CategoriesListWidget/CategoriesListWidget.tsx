@@ -28,18 +28,18 @@ export interface CategoriesListWidgetProps {
 
 export function CategoriesListWidget({
   categories = [],
-  deleteActionLabel = "Delete",
-  deleteCancelLabel = "Cancel",
+  deleteActionLabel = "Eliminar",
+  deleteCancelLabel = "Cancelar",
   deleteConfirmCategoryId = null,
-  deleteConfirmHint = "This can’t be undone.",
-  deleteConfirmLabel = "Delete",
-  deleteConfirmTitle = "Delete this category?",
+  deleteConfirmHint = "No se puede deshacer.",
+  deleteConfirmLabel = "Eliminar",
+  deleteConfirmTitle = "¿Eliminar esta categoría?",
   emptyHint = "Agrega tu primera categoría para organizar tus movimientos.",
   emptyTitle = "No hay categorías",
   errorLabel = "No pudimos cargar las categorías. Intenta nuevamente.",
   expandedIndex = 0,
   hasError = false,
-  inUseLabelPrefix = "In use in",
+  inUseLabelPrefix = "Usada en",
   isLoading = false,
   isUsingExternalCategories = false,
   loadingLabel = "Cargando categorías...",
@@ -130,7 +130,7 @@ export function CategoriesListWidget({
                 <div className="pt-2 flex flex-col gap-2">
                   {usageCount > 0 && (
                     <span className="text-[11px] font-medium text-[#71717A]">
-                      {inUseLabelPrefix} {usageCount} transaction{usageCount === 1 ? "" : "s"}.
+                      {inUseLabelPrefix} {usageCount} {usageCount === 1 ? "transacción" : "transacciones"}.
                     </span>
                   )}
 

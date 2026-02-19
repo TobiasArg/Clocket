@@ -1,3 +1,4 @@
+import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type {
   CategoryBreakdown,
   LegendItem,
@@ -48,7 +49,7 @@ export interface StatisticsProps {
 
 export function Statistics({
   avatarInitials = "JS",
-  headerTitle = "Statistics",
+  headerTitle = "Estadísticas",
   periodLabel,
   balanceTitle = "Flujo",
   balanceLegend = [
@@ -75,13 +76,7 @@ export function Statistics({
   loadingLabel = "Cargando estadísticas...",
   emptyLabel = "No hay movimientos este mes.",
   errorLabel = "No pudimos cargar estadísticas. Intenta nuevamente.",
-  navItems = [
-    { icon: "house", label: "Home", to: "/home" },
-    { icon: "wallet", label: "Budgets", to: "/budgets" },
-    { icon: "chart-bar", label: "Statistics", active: true, to: "/statistics" },
-    { icon: "trend-up", label: "Inversiones", to: "/investments" },
-    { icon: "dots-three", label: "Más", to: "/more" },
-  ],
+  navItems = DEFAULT_NAV_ITEMS,
   onPeriodClick,
   onNavItemClick,
 }: StatisticsProps) {

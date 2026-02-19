@@ -1,7 +1,7 @@
 import { ActionButton } from "@/components";
 
 export interface CategoryQuickAddWidgetProps {
-  amountErrorLabel?: string;
+  nameErrorLabel?: string;
   isCategoryNameValid?: boolean;
   isLoading?: boolean;
   isOpen?: boolean;
@@ -16,7 +16,7 @@ export interface CategoryQuickAddWidgetProps {
 }
 
 export function CategoryQuickAddWidget({
-  amountErrorLabel = "Agrega un nombre corto.",
+  nameErrorLabel = "Agrega un nombre corto.",
   isCategoryNameValid = false,
   isLoading = false,
   isOpen = false,
@@ -50,7 +50,7 @@ export function CategoryQuickAddWidget({
         />
         {showValidation && !isCategoryNameValid && (
           <span className="text-[11px] font-medium text-[#71717A]">
-            {amountErrorLabel}
+            {nameErrorLabel}
           </span>
         )}
       </label>

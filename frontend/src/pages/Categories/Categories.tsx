@@ -42,13 +42,13 @@ export function Categories({
   emptyTitle = "No hay categorías",
   emptyHint = "Agrega tu primera categoría para organizar tus movimientos.",
   errorLabel = "No pudimos cargar las categorías. Intenta nuevamente.",
-  inUseDeleteMessage = "This category is in use and can’t be deleted yet.",
-  deleteActionLabel = "Delete",
-  deleteConfirmTitle = "Delete this category?",
-  deleteConfirmHint = "This can’t be undone.",
-  deleteCancelLabel = "Cancel",
-  deleteConfirmLabel = "Delete",
-  checkingUsageLabel = "Checking transactions...",
+  inUseDeleteMessage = "Esta categoría está en uso y no puede eliminarse aún.",
+  deleteActionLabel = "Eliminar",
+  deleteConfirmTitle = "¿Eliminar esta categoría?",
+  deleteConfirmHint = "No se puede deshacer.",
+  deleteCancelLabel = "Cancelar",
+  deleteConfirmLabel = "Eliminar",
+  checkingUsageLabel = "Verificando transacciones...",
   onBackClick,
   onAddClick,
   onCategoryClick,
@@ -97,7 +97,7 @@ export function Categories({
             nameLabel={quickAddNameLabel}
             namePlaceholder={quickAddNamePlaceholder}
             submitLabel={quickAddSubmitLabel}
-            amountErrorLabel={quickAddNameErrorLabel}
+            nameErrorLabel={quickAddNameErrorLabel}
             nameInput={categoryNameInput}
             showValidation={showValidation}
             isCategoryNameValid={isCategoryNameValid}

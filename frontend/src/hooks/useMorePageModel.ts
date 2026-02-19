@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { GridOption, NavItem } from "@/types";
 
 export interface UseMorePageModelOptions {
@@ -21,17 +22,9 @@ const DEFAULT_GRID_ROWS: GridOption[][] = [
     { icon: "calendar", label: "Planes", to: "/plans" },
   ],
   [
-    { icon: "gear", label: "Settings", to: "/settings" },
-    { icon: "target", label: "Goals", to: "/goals" },
+    { icon: "gear", label: "Configuración", to: "/settings" },
+    { icon: "target", label: "Metas", to: "/goals" },
   ],
-];
-
-const DEFAULT_NAV_ITEMS: NavItem[] = [
-  { icon: "house", label: "Home", to: "/home" },
-  { icon: "wallet", label: "Budgets", to: "/budgets" },
-  { icon: "chart-bar", label: "Statistics", to: "/statistics" },
-  { icon: "trend-up", label: "Inversiones", to: "/investments" },
-  { icon: "dots-three", label: "Más", active: true, to: "/more" },
 ];
 
 export const useMorePageModel = (
@@ -41,6 +34,7 @@ export const useMorePageModel = (
 
   const resolvedGridRows = useMemo(() => gridRows ?? DEFAULT_GRID_ROWS, [gridRows]);
   const resolvedNavItems = useMemo(() => navItems ?? DEFAULT_NAV_ITEMS, [navItems]);
+
 
   return {
     resolvedGridRows,

@@ -53,9 +53,9 @@ export function GoalDetail({
   if (!goal) {
     return (
       <div className="flex flex-col h-full w-full bg-white">
-        <PageHeader title="Goal" onBackClick={onBackClick} />
+        <PageHeader title="Meta" onBackClick={onBackClick} />
         <div className="flex-1 flex items-center justify-center px-6">
-          <span className="text-sm font-medium text-[#71717A]">Goal no encontrado.</span>
+          <span className="text-sm font-medium text-[#71717A]">Meta no encontrada.</span>
         </div>
       </div>
     );
@@ -65,7 +65,7 @@ export function GoalDetail({
 
   return (
     <div className="flex flex-col h-full w-full bg-white">
-      <PageHeader title="Goal" onBackClick={onBackClick} />
+      <PageHeader title="Meta" onBackClick={onBackClick} />
 
       <div className="flex-1 overflow-auto px-5 py-3">
         <div className="flex flex-col gap-4">
@@ -91,8 +91,8 @@ export function GoalDetail({
               <button
                 type="button"
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="h-9 w-9 rounded-lg bg-white flex items-center justify-center"
-                aria-label="Delete goal"
+                className="h-9 w-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center"
+                aria-label="Eliminar meta"
               >
                 <PhosphorIcon name="trash" className="text-[#DC2626]" size="text-[16px]" />
               </button>
