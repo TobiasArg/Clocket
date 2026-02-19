@@ -44,8 +44,7 @@ export { HomeDesktop } from "./home-desktop";
 export type { HomeDesktopProps } from "./home-desktop";
 export { useInvestmentsPageModel } from "./investments";
 export type {
-  InvestmentChangePresentation,
-  InvestmentStockCardItem,
+  InvestmentTableRow,
   InvestmentsSummary,
   UseInvestmentsPageModelOptions,
   UseInvestmentsPageModelResult,

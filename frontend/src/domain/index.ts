@@ -67,11 +67,22 @@ export type {
 } from "./goals/repository";
 
 export type {
+  AddSnapshotInput,
   CreateInvestmentInput,
+  InvestmentSnapshotItem,
   InvestmentPositionItem,
   InvestmentsRepository,
   UpdateInvestmentPatch,
 } from "./investments/repository";
+export type {
+  AssetKey,
+  AssetRefs,
+  AssetType,
+  HistoricalPoint,
+  Position,
+  Snapshot,
+  SnapshotSource,
+} from "./investments/portfolioTypes";
 
 export type {
   MarketQuote,

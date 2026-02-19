@@ -12,16 +12,16 @@ export interface UseInvestmentsOptions {
 }
 
 export interface UseInvestmentsResult {
-  items: InvestmentPositionItem[];
+  positions: InvestmentPositionItem[];
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  create: (input: CreateInvestmentInput) => Promise<InvestmentPositionItem | null>;
-  update: (
+  addPosition: (input: CreateInvestmentInput) => Promise<InvestmentPositionItem | null>;
+  editPosition: (
     id: string,
     patch: UpdateInvestmentPatch,
   ) => Promise<InvestmentPositionItem | null>;
-  remove: (id: string) => Promise<boolean>;
+  deletePosition: (id: string) => Promise<boolean>;
   clearAll: () => Promise<void>;
 }
 
@@ -44,7 +44,7 @@ export const useInvestments = (
     [options.repository],
   );
 
-  const [items, setItems] = useState<InvestmentPositionItem[]>([]);
+  const [positions, setPositions] = useState<InvestmentPositionItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,8 +53,8 @@ export const useInvestments = (
     setError(null);
 
     try {
-      const nextItems = await repository.list();
-      setItems(nextItems);
+      const nextItems = await repository.listPositions();
+      setPositions(nextItems);
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
@@ -62,14 +62,14 @@ export const useInvestments = (
     }
   }, [repository]);
 
-  const create = useCallback(
+  const addPosition = useCallback(
     async (input: CreateInvestmentInput): Promise<InvestmentPositionItem | null> => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const created = await repository.create(input);
-        setItems((current) => [...current, created]);
+        const created = await repository.addPosition(input);
+        setPositions((current) => [...current, created]);
         return created;
       } catch (createError) {
         setError(getErrorMessage(createError));
@@ -81,7 +81,7 @@ export const useInvestments = (
     [repository],
   );
 
-  const update = useCallback(
+  const editPosition = useCallback(
     async (
       id: string,
       patch: UpdateInvestmentPatch,
@@ -90,12 +90,12 @@ export const useInvestments = (
       setError(null);
 
       try {
-        const updated = await repository.update(id, patch);
+        const updated = await repository.editPosition(id, patch);
         if (!updated) {
           return null;
         }
 
-        setItems((current) =>
+        setPositions((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
         return updated;
@@ -109,15 +109,15 @@ export const useInvestments = (
     [repository],
   );
 
-  const remove = useCallback(
+  const deletePosition = useCallback(
     async (id: string): Promise<boolean> => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const removed = await repository.remove(id);
+        const removed = await repository.deletePosition(id);
         if (removed) {
-          setItems((current) => current.filter((item) => item.id !== id));
+          setPositions((current) => current.filter((item) => item.id !== id));
         }
         return removed;
       } catch (removeError) {
@@ -136,7 +136,7 @@ export const useInvestments = (
 
     try {
       await repository.clearAll();
-      setItems([]);
+      setPositions([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
@@ -149,13 +149,13 @@ export const useInvestments = (
   }, [refresh]);
 
   return {
-    items,
+    positions,
     isLoading,
     error,
     refresh,
-    create,
-    update,
-    remove,
+    addPosition,
+    editPosition,
+    deletePosition,
     clearAll,
   };
 };

@@ -198,58 +198,48 @@ describe("localStorage repositories smoke", () => {
     expect(afterCategories.length).toBe(beforeCategories.length);
   });
 
-  it("investments repository normalizes ticker and updates values", async () => {
-    const created = await investmentsRepository.create({
+  it("investments repository stores derived amount and supports edit/delete", async () => {
+    const created = await investmentsRepository.addPosition({
       ticker: "aapl",
-      name: "Apple",
-      exchange: "NASDAQ",
-      shares: 2,
-      costBasis: 150,
-      currentPrice: 180,
+      assetType: "stock",
+      usd_gastado: 1000,
+      buy_price: 200,
     });
 
     expect(created.ticker).toBe("AAPL");
-    expect(created.priceSource).toBe("market");
-    expect(created.manualPrice).toBeUndefined();
+    expect(created.amount).toBe(5);
 
-    const updated = await investmentsRepository.update(created.id, {
-      shares: 3,
-      priceSource: "manual",
-      manualPrice: 185,
+    const updated = await investmentsRepository.editPosition(created.id, {
+      usd_gastado: 1200,
+      buy_price: 240,
     });
 
-    expect(updated?.shares).toBe(3);
-    expect(updated?.priceSource).toBe("manual");
-    expect(updated?.manualPrice).toBe(185);
-    expect(await investmentsRepository.remove(created.id)).toBe(true);
+    expect(updated?.amount).toBe(5);
+    expect(updated?.usd_gastado).toBe(1200);
+    expect(updated?.buy_price).toBe(240);
+    expect(await investmentsRepository.deletePosition(created.id)).toBe(true);
   });
 
-  it("investments repository migrates legacy payload to include price source", async () => {
-    const legacyKey = "clocket.investments.legacy-smoke";
-    window.localStorage.setItem(legacyKey, JSON.stringify({
-      version: 1,
-      items: [
-        {
-          id: "inv_legacy",
-          ticker: "MSFT",
-          name: "Microsoft",
-          exchange: "NASDAQ",
-          shares: 1,
-          costBasis: 300,
-          currentPrice: 320,
-          createdAt: "2026-01-01T00:00:00.000Z",
-          updatedAt: "2026-01-01T00:00:00.000Z",
-        },
-      ],
-    }));
+  it("investments repository stores snapshots and initializes refs", async () => {
+    const repository = new LocalStorageInvestmentsRepository();
+    await repository.addPosition({
+      ticker: "MSFT",
+      assetType: "stock",
+      usd_gastado: 500,
+      buy_price: 250,
+    });
+    await repository.addSnapshot({
+      ticker: "MSFT",
+      assetType: "stock",
+      price: 255,
+      source: "GLOBAL_QUOTE",
+      timestamp: "2026-01-01T00:00:00.000Z",
+    });
 
-    const repository = new LocalStorageInvestmentsRepository(legacyKey);
-    const migrated = await repository.list();
+    const refs = await repository.getOrInitRefs("stock", "MSFT");
 
-    expect(migrated).toHaveLength(1);
-    expect(migrated[0].ticker).toBe("MSFT");
-    expect(migrated[0].priceSource).toBe("market");
-    expect(migrated[0].manualPrice).toBeUndefined();
+    expect(refs.dailyRefPrice).toBe(255);
+    expect(refs.monthRefPrice).toBe(255);
   });
 
   it("transactions repository migrates legacy payload, emits change event and validates saving goalId", async () => {

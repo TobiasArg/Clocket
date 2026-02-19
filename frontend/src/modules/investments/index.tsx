@@ -1,7 +1,6 @@
 export { useInvestmentsPageModel } from "@/hooks/useInvestmentsPageModel";
 export type {
-  InvestmentChangePresentation,
-  InvestmentStockCardItem,
+  InvestmentTableRow,
   InvestmentsSummary,
   UseInvestmentsPageModelOptions,
   UseInvestmentsPageModelResult,
@@ -12,9 +11,6 @@ export {
 export {
   BottomNavigation,
 } from "@/components/BottomNavigation/BottomNavigation";
-export {
-  IconBadge,
-} from "@/components/IconBadge/IconBadge";
 export {
   InvestmentListWidget,
 } from "@/components/InvestmentListWidget/InvestmentListWidget";

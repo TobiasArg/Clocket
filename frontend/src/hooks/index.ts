@@ -65,8 +65,7 @@ export type {
 } from "./useBudgetDetailPageModel";
 export { useInvestmentsPageModel } from "./useInvestmentsPageModel";
 export type {
-  InvestmentChangePresentation,
-  InvestmentStockCardItem,
+  InvestmentTableRow,
   InvestmentsSummary,
   UseInvestmentsPageModelOptions,
   UseInvestmentsPageModelResult,

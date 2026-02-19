@@ -1,90 +1,78 @@
 import { describe, expect, it } from "vitest";
+import { buildHistoricalSeries, computePositionMetrics } from "@/domain/investments/portfolioMetrics";
 import type { InvestmentPositionItem } from "@/domain/investments/repository";
-import type { MarketQuote } from "@/domain/market/quotesRepository";
-import {
-  calculatePortfolioSummary,
-  resolvePositionPrice,
-} from "./useInvestmentsPageModel";
+import type { AssetRefs } from "@/domain/investments/portfolioTypes";
 
-const buildPosition = (patch: Partial<InvestmentPositionItem>): InvestmentPositionItem => ({
-  id: "inv_1",
+const buildPosition = (patch: Partial<InvestmentPositionItem> = {}): InvestmentPositionItem => ({
+  id: "pos_1",
+  assetType: "stock",
   ticker: "AAPL",
-  name: "Apple",
-  exchange: "NASDAQ",
-  shares: 2,
-  costBasis: 100,
-  currentPrice: 110,
-  priceSource: "market",
-  manualPrice: undefined,
+  usd_gastado: 1000,
+  buy_price: 200,
+  amount: 5,
   createdAt: "2026-01-01T00:00:00.000Z",
-  updatedAt: "2026-01-01T00:00:00.000Z",
   ...patch,
 });
 
-const buildQuote = (patch: Partial<MarketQuote>): MarketQuote => ({
-  symbol: "AAPL",
-  price: 120,
-  previousClose: 118,
-  changePercent: 1.69,
-  currency: "USD",
-  status: "ok",
-  source: "alpaca",
+const buildRefs = (patch: Partial<AssetRefs> = {}): AssetRefs => ({
+  dailyRefPrice: 205,
+  dailyRefTimestamp: "2026-01-10T00:00:00.000Z",
+  monthRefPrice: 180,
+  monthRefTimestamp: "2026-01-01T00:00:00.000Z",
   ...patch,
 });
 
-describe("useInvestmentsPageModel helpers", () => {
-  it("uses manual price when position source is manual", () => {
-    const position = buildPosition({
-      priceSource: "manual",
-      manualPrice: 150,
-      currentPrice: 100,
-    });
-    const quote = buildQuote({ price: 190 });
+describe("portfolio metrics", () => {
+  it("computes invested/current and total pnl", () => {
+    const metrics = computePositionMetrics(
+      buildPosition(),
+      220,
+      buildRefs(),
+      "2026-01-11T00:00:00.000Z",
+    );
 
-    expect(resolvePositionPrice(position, quote)).toBe(150);
+    expect(metrics.investedUSD).toBe(1000);
+    expect(metrics.currentValueUSD).toBe(1100);
+    expect(metrics.pnlTotalUSD).toBe(100);
+    expect(metrics.pnlTotalPct).toBe(10);
+    expect(metrics.pnlDailyUSD).toBe(75);
+    expect(metrics.pnlMonthUSD).toBe(200);
   });
 
-  it("falls back to persisted currentPrice when market quote is unavailable", () => {
-    const position = buildPosition({
-      priceSource: "market",
-      currentPrice: 111,
-    });
+  it("returns zero percentage when reference price is 0", () => {
+    const metrics = computePositionMetrics(
+      buildPosition(),
+      220,
+      buildRefs({ dailyRefPrice: 0, monthRefPrice: 0 }),
+      null,
+    );
 
-    expect(resolvePositionPrice(position, undefined)).toBe(111);
+    expect(metrics.pnlDailyPct).toBe(0);
+    expect(metrics.pnlMonthPct).toBe(0);
   });
 
-  it("calculates invested/current/unrealized and day change from market quotes", () => {
-    const items = [
-      buildPosition({
-        id: "inv_market",
+  it("builds historical equity points from snapshots", () => {
+    const points = buildHistoricalSeries(buildPosition(), [
+      {
+        id: "snap_2",
         ticker: "AAPL",
-        shares: 2,
-        costBasis: 100,
-        currentPrice: 105,
-        priceSource: "market",
-      }),
-      buildPosition({
-        id: "inv_manual",
-        ticker: "MSFT",
-        shares: 1,
-        costBasis: 50,
-        currentPrice: 52,
-        priceSource: "manual",
-        manualPrice: 60,
-      }),
-    ];
-
-    const quoteBySymbol = new Map<string, MarketQuote>([
-      ["AAPL", buildQuote({ symbol: "AAPL", price: 120, previousClose: 118 })],
-      ["MSFT", buildQuote({ symbol: "MSFT", price: 130, previousClose: 129 })],
+        assetType: "stock",
+        timestamp: "2026-01-02T00:00:00.000Z",
+        price: 190,
+        source: "GLOBAL_QUOTE",
+      },
+      {
+        id: "snap_1",
+        ticker: "AAPL",
+        assetType: "stock",
+        timestamp: "2026-01-01T00:00:00.000Z",
+        price: 180,
+        source: "GLOBAL_QUOTE",
+      },
     ]);
 
-    const summary = calculatePortfolioSummary(items, quoteBySymbol, 1000);
-
-    expect(summary.invested).toBe(250);
-    expect(summary.current).toBe(300);
-    expect(summary.gainAmount).toBe(50);
-    expect(summary.dayGainAmount).toBe(-65);
-    expect(summary.currentArs).toBe(300000);
+    expect(points[0].timestamp).toBe("2026-01-01T00:00:00.000Z");
+    expect(points[0].equity).toBe(900);
+    expect(points[1].equity).toBe(950);
   });
 });

@@ -23,6 +23,10 @@ export {
   goalsRepository,
 } from "./goalsRepository";
 export {
+  LocalStorageInvestmentsPortfolioRepository,
+  investmentsPortfolioRepository,
+} from "./investmentsPortfolioRepository";
+export {
   LocalStorageInvestmentsRepository,
   investmentsRepository,
 } from "./investmentsRepository";

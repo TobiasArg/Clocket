@@ -42,6 +42,9 @@ export {
 
 export {
   AlpacaQuotesHttpRepository,
+  fetchCryptoRate,
+  fetchStockQuote,
+  MarketQuoteApiError,
   marketQuotesRepository,
 } from "@/data/http";
 
@@ -58,6 +61,8 @@ export {
   cuotasRepository,
   LocalStorageGoalsRepository,
   goalsRepository,
+  LocalStorageInvestmentsPortfolioRepository,
+  investmentsPortfolioRepository,
   LocalStorageInvestmentsRepository,
   investmentsRepository,
   LocalStorageTransactionsRepository,
@@ -111,9 +116,21 @@ export type {
 } from "@/domain/goals/repository";
 
 export type {
+  AssetKey,
+  AssetRefs,
+  AssetType,
+  HistoricalPoint,
+  Position,
+  Snapshot,
+  SnapshotSource,
+} from "@/domain/investments/portfolioTypes";
+
+export type {
   CreateInvestmentInput,
+  InvestmentSnapshotItem,
   InvestmentPositionItem,
   InvestmentsRepository,
+  AddSnapshotInput,
   UpdateInvestmentPatch,
 } from "@/domain/investments/repository";
 

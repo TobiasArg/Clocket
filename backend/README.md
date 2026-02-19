@@ -17,11 +17,12 @@ The dev server runs on port 3001 (configured in package scripts).
 Endpoint:
 
 - `GET /api/market/quotes?symbols=AAPL,MSFT`
+- `GET /api/market/quote?assetType=stock&ticker=AAPL`
+- `GET /api/market/quote?assetType=crypto&ticker=BTC`
 
 Required environment variables:
 
-- `APCA_API_KEY_ID`
-- `APCA_API_SECRET_KEY`
+- `ALPHA_VANTAGE_API_KEY`
 
 Optional environment variables:
 

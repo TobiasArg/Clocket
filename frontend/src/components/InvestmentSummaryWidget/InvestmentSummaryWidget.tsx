@@ -1,93 +1,53 @@
-import { StatDisplay, SummaryPanel, TextBadge } from "@/components";
-import type { InvestmentChangePresentation } from "@/hooks/useInvestmentsPageModel";
 import { formatCurrency } from "@/utils/formatCurrency";
+import type { InvestmentsSummary } from "@/hooks/useInvestmentsPageModel";
 
 export interface InvestmentSummaryWidgetProps {
-  dayGainAmount: number;
-  dayGainLabel: string;
-  dayGainPresentation: InvestmentChangePresentation;
-  gainAmount: number;
-  gainLabel: string;
-  summaryChange: InvestmentChangePresentation;
-  summaryTitle: string;
-  totalArsLabel: string;
-  totalArsValue: number;
-  totalLabel: string;
-  totalValue: number;
+  summary: InvestmentsSummary;
 }
 
-export function InvestmentSummaryWidget({
-  dayGainAmount,
-  dayGainLabel,
-  dayGainPresentation,
-  gainAmount,
-  gainLabel,
-  summaryChange,
-  summaryTitle,
-  totalArsLabel,
-  totalArsValue,
-  totalLabel,
-  totalValue,
-}: InvestmentSummaryWidgetProps) {
+const pctClassName = (value: number): string => {
+  return value >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+};
+
+const moneyClassName = (value: number): string => {
+  return value >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+};
+
+export function InvestmentSummaryWidget({ summary }: InvestmentSummaryWidgetProps) {
   return (
-    <SummaryPanel
-      title={summaryTitle}
-      titleClassName="text-sm font-medium text-[#71717A] font-['Outfit']"
-      bg="bg-white"
-      padding="px-5 py-4"
-      gap="gap-4"
-    >
-      <div className="flex justify-between w-full">
+    <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <div className="flex flex-col gap-1">
-          <StatDisplay
-            label={totalLabel}
-            value={formatCurrency(totalValue, { currency: "USD", locale: "en-US" })}
-            labelClassName="text-xs font-normal text-[#71717A]"
-            valueClassName="text-2xl font-bold text-[#18181B] font-['Outfit']"
-          />
-          <span className="text-xs font-medium text-[#71717A]">
-            {`${totalArsLabel}: ${formatCurrency(totalArsValue, { currency: "ARS", locale: "es-AR" })}`}
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Invertido</span>
+          <span className="text-sm font-semibold text-[#111827]">
+            {formatCurrency(summary.investedUSD, { currency: "USD", locale: "en-US" })}
           </span>
         </div>
-
-        <div className="flex flex-col gap-2 items-end">
-          <div className="flex flex-col gap-1 items-end">
-            <span className="text-xs font-normal text-[#71717A]">{gainLabel}</span>
-            <div className="flex items-center gap-2">
-              <span className={`text-lg font-semibold font-['Outfit'] ${summaryChange.color}`}>
-                {`${gainAmount >= 0 ? "+" : "-"}${formatCurrency(Math.abs(gainAmount), { currency: "USD", locale: "en-US" })}`}
-              </span>
-              <TextBadge
-                text={summaryChange.text}
-                bg={summaryChange.bg}
-                textColor={summaryChange.color}
-                rounded="rounded-lg"
-                padding="px-2 py-1"
-                fontSize="text-xs"
-                fontWeight="font-medium"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1 items-end">
-            <span className="text-xs font-normal text-[#71717A]">{dayGainLabel}</span>
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-semibold font-['Outfit'] ${dayGainPresentation.color}`}>
-                {`${dayGainAmount >= 0 ? "+" : "-"}${formatCurrency(Math.abs(dayGainAmount), { currency: "USD", locale: "en-US" })}`}
-              </span>
-              <TextBadge
-                text={dayGainPresentation.text}
-                bg={dayGainPresentation.bg}
-                textColor={dayGainPresentation.color}
-                rounded="rounded-lg"
-                padding="px-2 py-1"
-                fontSize="text-xs"
-                fontWeight="font-medium"
-              />
-            </div>
-          </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Valor actual</span>
+          <span className="text-sm font-semibold text-[#111827]">
+            {formatCurrency(summary.currentValueUSD, { currency: "USD", locale: "en-US" })}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">PnL total</span>
+          <span className={`text-sm font-semibold ${moneyClassName(summary.pnlTotalUSD)}`}>
+            {`${summary.pnlTotalUSD >= 0 ? "+" : "-"}${formatCurrency(Math.abs(summary.pnlTotalUSD), { currency: "USD", locale: "en-US" })}`}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">PnL diario</span>
+          <span className={`text-sm font-semibold ${moneyClassName(summary.pnlDailyUSD)}`}>
+            {`${summary.pnlDailyUSD >= 0 ? "+" : "-"}${formatCurrency(Math.abs(summary.pnlDailyUSD), { currency: "USD", locale: "en-US" })}`}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">PnL total %</span>
+          <span className={`text-sm font-semibold ${pctClassName(summary.pnlTotalPct)}`}>
+            {`${summary.pnlTotalPct >= 0 ? "+" : ""}${summary.pnlTotalPct.toFixed(2)}%`}
+          </span>
         </div>
       </div>
-    </SummaryPanel>
+    </div>
   );
 }

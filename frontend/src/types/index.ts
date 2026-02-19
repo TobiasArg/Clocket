@@ -183,16 +183,12 @@ export interface StockCard {
 
 export interface InvestmentPosition {
   id: string;
+  assetType: "stock" | "crypto";
   ticker: string;
-  name: string;
-  exchange: string;
-  shares: number;
-  costBasis: number;
-  currentPrice: number;
-  priceSource: "market" | "manual";
-  manualPrice?: number;
+  usd_gastado: number;
+  buy_price: number;
+  amount: number;
   createdAt: string;
-  updatedAt: string;
 }
 
 // === Estadisticas ===

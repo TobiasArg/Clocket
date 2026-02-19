@@ -1,449 +1,351 @@
-import { useEffect, useMemo, useState } from "react";
-import type { StockCard as StockCardType } from "@/types";
-import { getUsdRate } from "@/domain/currency/transactionCurrency";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { InvestmentPositionItem } from "@/domain/investments/repository";
-import type { MarketQuote } from "@/domain/market/quotesRepository";
-import { formatCurrency } from "@/utils/formatCurrency";
+import { refreshPositions, type RefreshedPositionViewModel } from "@/domain/investments/refreshPositions";
 import { useInvestments } from "./useInvestments";
-import { useMarketQuotes } from "./useMarketQuotes";
 
-export interface InvestmentChangePresentation {
-  bg: string;
-  color: string;
-  text: string;
-}
-
-export interface InvestmentStockCardItem {
-  id: string;
-  isUnavailable: boolean;
-  priceSource: "market" | "manual";
-  priceSourceLabel: string;
-  quoteStatusLabel: string;
-  quoteUpdatedAtLabel: string | null;
-  unavailableReason: string | null;
-  stock: StockCardType;
-}
-
-export interface InvestmentsSummary {
-  current: number;
-  currentArs: number;
-  dayGainAmount: number;
-  dayGainPercent: number;
-  gainAmount: number;
-  gainPercent: number;
-  invested: number;
-}
-
-export interface UseInvestmentsPageModelOptions {
-  onAddClick?: () => void;
-}
-
-export interface UseInvestmentsPageModelResult {
-  cardItems: InvestmentStockCardItem[];
-  costBasisInput: string;
-  currentPriceInput: string;
-  error: string | null;
-  handleCreate: () => Promise<void>;
-  handleHeaderAction: () => void;
-  handleRefreshQuotes: () => Promise<void>;
-  handleRemove: (id: string) => Promise<void>;
-  isEditorOpen: boolean;
-  isFormValid: boolean;
-  isLoading: boolean;
-  isManualPriceEnabled: boolean;
-  isMarketRefreshing: boolean;
-  isTickerUnavailable: boolean;
-  marketLastUpdatedLabel: string;
-  marketStatusColor: string;
-  marketStatusLabel: string;
-  nameInput: string;
-  setCostBasisInput: (value: string) => void;
-  setCurrentPriceInput: (value: string) => void;
-  setIsManualPriceEnabled: (value: boolean) => void;
-  setNameInput: (value: string) => void;
-  setSharesInput: (value: string) => void;
-  setTickerInput: (value: string) => void;
-  sharesInput: string;
-  showValidation: boolean;
-  summary: InvestmentsSummary;
-  summaryChange: InvestmentChangePresentation;
-  tickerAvailabilityMessage: string | null;
-  tickerInput: string;
-}
+const VISIBLE_POSITIONS_BATCH = 8;
 
 const parsePositiveNumber = (value: string): number => {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
 
-const normalizeTicker = (value: string): string => value.trim().toUpperCase();
-
-const formatDateTimeLabel = (valueIso: string): string => {
-  const date = new Date(valueIso);
-  if (Number.isNaN(date.getTime())) {
-    return "Sin actualización";
-  }
-
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
+const formatPctText = (value: number): string => {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 };
 
-const getChangePresentation = (value: number): InvestmentChangePresentation => {
-  if (value >= 0) {
-    return {
-      text: `+${value.toFixed(2)}%`,
-      color: "text-[#10B981]",
-      bg: "bg-[#D1FAE5]",
-    };
-  }
-
-  return {
-    text: `${value.toFixed(2)}%`,
-    color: "text-[#DC2626]",
-    bg: "bg-[#FEE2E2]",
-  };
-};
-
-export const resolvePositionPrice = (
-  position: InvestmentPositionItem,
-  quote?: MarketQuote,
-): number => {
-  if (position.priceSource === "manual" && position.manualPrice && position.manualPrice > 0) {
-    return position.manualPrice;
-  }
-
-  if (quote && quote.price > 0) {
-    return quote.price;
-  }
-
-  return position.currentPrice;
-};
-
-export const calculatePortfolioSummary = (
-  items: InvestmentPositionItem[],
-  quoteBySymbol: Map<string, MarketQuote>,
-  usdRate: number = getUsdRate(),
-): InvestmentsSummary => {
-  let invested = 0;
-  let current = 0;
-  let previousCloseTotal = 0;
-  let dayGainAmount = 0;
-
-  items.forEach((item) => {
-    const quote = quoteBySymbol.get(item.ticker.toUpperCase());
-    const effectivePrice = resolvePositionPrice(item, quote);
-    const positionInvested = item.shares * item.costBasis;
-    const positionCurrent = item.shares * effectivePrice;
-
-    invested += positionInvested;
-    current += positionCurrent;
-
-    if (quote?.previousClose && quote.previousClose > 0) {
-      previousCloseTotal += item.shares * quote.previousClose;
-      dayGainAmount += item.shares * (effectivePrice - quote.previousClose);
-    }
+const toRowMap = (rows: RefreshedPositionViewModel[]): Map<string, RefreshedPositionViewModel> => {
+  const map = new Map<string, RefreshedPositionViewModel>();
+  rows.forEach((row) => {
+    map.set(row.id, row);
   });
+  return map;
+};
 
-  const gainAmount = current - invested;
-  const gainPercent = invested > 0 ? (gainAmount / invested) * 100 : 0;
-  const dayGainPercent = previousCloseTotal > 0
-    ? (dayGainAmount / previousCloseTotal) * 100
-    : 0;
+export interface InvestmentsSummary {
+  investedUSD: number;
+  currentValueUSD: number;
+  pnlTotalUSD: number;
+  pnlTotalPct: number;
+  pnlDailyUSD: number;
+  pnlMonthUSD: number;
+}
+
+export interface InvestmentTableRow extends RefreshedPositionViewModel {
+  isRefreshing: boolean;
+  pnlDailyText: string;
+  pnlMonthText: string;
+  pnlTotalText: string;
+}
+
+export interface UseInvestmentsPageModelOptions {}
+
+export interface UseInvestmentsPageModelResult {
+  rows: InvestmentTableRow[];
+  summary: InvestmentsSummary;
+  error: string | null;
+  isLoading: boolean;
+  isRefreshingAll: boolean;
+  hasPositions: boolean;
+  isEditorOpen: boolean;
+  editingPositionId: string | null;
+  expandedRowId: string | null;
+  assetTypeInput: "stock" | "crypto";
+  tickerInput: string;
+  usdSpentInput: string;
+  buyPriceInput: string;
+  isFormValid: boolean;
+  showValidation: boolean;
+  derivedAmountLabel: string;
+  handleOpenCreate: () => void;
+  handleOpenEdit: (id: string) => void;
+  handleCloseEditor: () => void;
+  handleToggleRowExpand: (id: string) => void;
+  handleRefreshAll: () => Promise<void>;
+  handleRefreshRow: (id: string) => Promise<void>;
+  handleDelete: (id: string) => Promise<void>;
+  handleSubmit: () => Promise<void>;
+  setAssetTypeInput: (value: "stock" | "crypto") => void;
+  setTickerInput: (value: string) => void;
+  setUsdSpentInput: (value: string) => void;
+  setBuyPriceInput: (value: string) => void;
+}
+
+const buildSummary = (rows: RefreshedPositionViewModel[]): InvestmentsSummary => {
+  const investedUSD = rows.reduce((acc, row) => acc + row.investedUSD, 0);
+  const currentValueUSD = rows.reduce((acc, row) => acc + row.currentValueUSD, 0);
+  const pnlTotalUSD = rows.reduce((acc, row) => acc + row.pnlTotalUSD, 0);
+  const pnlDailyUSD = rows.reduce((acc, row) => acc + row.pnlDailyUSD, 0);
+  const pnlMonthUSD = rows.reduce((acc, row) => acc + row.pnlMonthUSD, 0);
+  const pnlTotalPct = investedUSD > 0 ? (pnlTotalUSD / investedUSD) * 100 : 0;
 
   return {
-    invested,
-    current,
-    currentArs: current * usdRate,
-    gainAmount,
-    gainPercent,
-    dayGainAmount,
-    dayGainPercent,
+    investedUSD,
+    currentValueUSD,
+    pnlTotalUSD,
+    pnlTotalPct,
+    pnlDailyUSD,
+    pnlMonthUSD,
   };
 };
 
 export const useInvestmentsPageModel = (
-  options: UseInvestmentsPageModelOptions = {},
+  _options: UseInvestmentsPageModelOptions = {},
 ): UseInvestmentsPageModelResult => {
-  const { onAddClick } = options;
-  const { items, isLoading, error, create, remove } = useInvestments();
+  const {
+    positions,
+    isLoading,
+    error,
+    addPosition,
+    editPosition,
+    deletePosition,
+  } = useInvestments();
+
+  const [rows, setRows] = useState<RefreshedPositionViewModel[]>([]);
+  const [refreshingIds, setRefreshingIds] = useState<Set<string>>(() => new Set<string>());
+  const [isRefreshingAll, setIsRefreshingAll] = useState<boolean>(false);
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
+  const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
+  const [assetTypeInput, setAssetTypeInput] = useState<"stock" | "crypto">("stock");
   const [tickerInput, setTickerInput] = useState<string>("");
-  const [nameInput, setNameInput] = useState<string>("");
-  const [sharesInput, setSharesInput] = useState<string>("");
-  const [costBasisInput, setCostBasisInput] = useState<string>("");
-  const [currentPriceInput, setCurrentPriceInput] = useState<string>("");
-  const [isManualPriceEnabled, setIsManualPriceEnabled] = useState<boolean>(false);
+  const [usdSpentInput, setUsdSpentInput] = useState<string>("");
+  const [buyPriceInput, setBuyPriceInput] = useState<string>("");
   const [showValidation, setShowValidation] = useState<boolean>(false);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
-  const normalizedTickerInput = normalizeTicker(tickerInput);
+  const mergeRows = useCallback(
+    (
+      currentRows: RefreshedPositionViewModel[],
+      incomingRows: RefreshedPositionViewModel[],
+      allPositions: InvestmentPositionItem[],
+    ): RefreshedPositionViewModel[] => {
+      const orderMap = new Map<string, number>();
+      allPositions.forEach((item, index) => {
+        orderMap.set(item.id, index);
+      });
 
-  const trackedSymbols = useMemo(() => {
-    const symbolSet = new Set<string>();
-    items.forEach((item) => symbolSet.add(item.ticker.toUpperCase()));
-    if (isEditorOpen && normalizedTickerInput) {
-      symbolSet.add(normalizedTickerInput);
-    }
-    return Array.from(symbolSet);
-  }, [isEditorOpen, items, normalizedTickerInput]);
+      const map = toRowMap(currentRows);
+      incomingRows.forEach((item) => {
+        map.set(item.id, item);
+      });
 
-  const {
-    asOf,
-    error: marketError,
-    isLoading: isMarketLoading,
-    isRefreshing: isMarketRefreshing,
-    lastUpdatedAt,
-    quoteBySymbol,
-    refresh,
-    unavailableBySymbol,
-  } = useMarketQuotes({
-    symbols: trackedSymbols,
-  });
+      const validRows = Array.from(map.values()).filter((row) => orderMap.has(row.id));
+      validRows.sort((left, right) => {
+        return (orderMap.get(left.id) ?? 0) - (orderMap.get(right.id) ?? 0);
+      });
 
-  const shares = parsePositiveNumber(sharesInput);
-  const costBasis = parsePositiveNumber(costBasisInput);
-  const currentPrice = parsePositiveNumber(currentPriceInput);
-  const isTickerValid = normalizedTickerInput.length > 0;
-  const isNameValid = nameInput.trim().length > 0;
-  const requiresManualPrice = isManualPriceEnabled || (
-    normalizedTickerInput.length > 0 &&
-    unavailableBySymbol.has(normalizedTickerInput) &&
-    !quoteBySymbol.has(normalizedTickerInput)
+      return validRows;
+    },
+    [],
   );
-  const isFormValid = (
-    isTickerValid &&
-    isNameValid &&
-    shares > 0 &&
-    costBasis > 0 &&
-    (!requiresManualPrice || currentPrice > 0)
+
+  const runRefresh = useCallback(
+    async (targetPositions: InvestmentPositionItem[], force: boolean): Promise<void> => {
+      if (targetPositions.length === 0) {
+        return;
+      }
+
+      setRefreshingIds((current) => {
+        const next = new Set(current);
+        targetPositions.forEach((item) => next.add(item.id));
+        return next;
+      });
+
+      try {
+        const refreshed = await refreshPositions(targetPositions, { force });
+        setRows((current) => mergeRows(current, refreshed, positions));
+      } finally {
+        setRefreshingIds((current) => {
+          const next = new Set(current);
+          targetPositions.forEach((item) => next.delete(item.id));
+          return next;
+        });
+      }
+    },
+    [mergeRows, positions],
   );
 
   useEffect(() => {
-    if (
-      normalizedTickerInput.length > 0 &&
-      unavailableBySymbol.has(normalizedTickerInput) &&
-      !quoteBySymbol.has(normalizedTickerInput)
-    ) {
-      setIsManualPriceEnabled(true);
-    }
-  }, [normalizedTickerInput, quoteBySymbol, unavailableBySymbol]);
+    const positionIds = new Set(positions.map((item) => item.id));
+    setRows((current) => current.filter((row) => positionIds.has(row.id)));
 
-  const summary = useMemo<InvestmentsSummary>(
-    () => calculatePortfolioSummary(items, quoteBySymbol, getUsdRate()),
-    [items, quoteBySymbol],
-  );
-
-  const quoteUpdatedAtLabel = asOf ? formatDateTimeLabel(asOf) : null;
-
-  const cardItems = useMemo<InvestmentStockCardItem[]>(() => {
-    return items.map((item) => {
-      const quote = quoteBySymbol.get(item.ticker.toUpperCase());
-      const unavailableReason = unavailableBySymbol.get(item.ticker.toUpperCase()) ?? null;
-      const isManual = item.priceSource === "manual" && Boolean(item.manualPrice);
-      const isUnavailable = !isManual && !quote;
-      const effectivePrice = resolvePositionPrice(item, quote);
-      const invested = item.shares * item.costBasis;
-      const current = item.shares * effectivePrice;
-      const gainAmount = current - invested;
-      const gainPercent = invested > 0 ? (gainAmount / invested) * 100 : 0;
-      const change = getChangePresentation(gainPercent);
-
-      return {
-        id: item.id,
-        priceSource: isManual ? "manual" : "market",
-        priceSourceLabel: isManual ? "Manual" : "Mercado",
-        quoteStatusLabel: isManual
-          ? "Precio manual"
-          : (quote ? "En vivo" : "Sin cotización"),
-        quoteUpdatedAtLabel: !isManual && quote ? quoteUpdatedAtLabel : null,
-        unavailableReason,
-        isUnavailable,
-        stock: {
-          ticker: item.ticker,
-          name: item.name,
-          exchange: item.exchange,
-          changeText: change.text,
-          changeColor: change.color,
-          changeBg: change.bg,
-          row1: [
-            { label: "Precio Actual", value: formatCurrency(effectivePrice, { currency: "USD", locale: "en-US" }) },
-            { label: "Cantidad", value: `${item.shares.toFixed(2)} acc.` },
-            { label: "Valor Total", value: formatCurrency(current, { currency: "USD", locale: "en-US" }) },
-          ],
-          row2: [
-            { label: "Costo Promedio", value: formatCurrency(item.costBasis, { currency: "USD", locale: "en-US" }) },
-            { label: "Invertido", value: formatCurrency(invested, { currency: "USD", locale: "en-US" }) },
-            {
-              label: gainAmount >= 0 ? "Ganancia" : "Pérdida",
-              value: `${gainAmount >= 0 ? "+" : "-"}${formatCurrency(Math.abs(gainAmount), { currency: "USD", locale: "en-US" })}`,
-              valueColor: gainAmount >= 0 ? "text-[#10B981]" : "text-[#DC2626]",
-            },
-          ],
-        },
-      };
-    });
-  }, [items, quoteBySymbol, quoteUpdatedAtLabel, unavailableBySymbol]);
-
-  const handleHeaderAction = () => {
-    if (isEditorOpen) {
-      setIsEditorOpen(false);
-      setTickerInput("");
-      setNameInput("");
-      setSharesInput("");
-      setCostBasisInput("");
-      setCurrentPriceInput("");
-      setIsManualPriceEnabled(false);
-      setShowValidation(false);
-    } else {
-      setIsEditorOpen(true);
-      setShowValidation(false);
-      setIsManualPriceEnabled(false);
+    if (positions.length === 0) {
+      return;
     }
 
-    onAddClick?.();
+    const visiblePositions = positions.slice(0, VISIBLE_POSITIONS_BATCH);
+    const backgroundPositions = positions.slice(VISIBLE_POSITIONS_BATCH);
+
+    void runRefresh(visiblePositions, false);
+
+    if (backgroundPositions.length > 0) {
+      void runRefresh(backgroundPositions, false);
+    }
+  }, [positions, runRefresh]);
+
+  const summary = useMemo<InvestmentsSummary>(() => buildSummary(rows), [rows]);
+
+  const currentEditingPosition = useMemo(() => {
+    if (!editingPositionId) {
+      return null;
+    }
+
+    return positions.find((item) => item.id === editingPositionId) ?? null;
+  }, [editingPositionId, positions]);
+
+  const usdSpent = parsePositiveNumber(usdSpentInput);
+  const buyPrice = parsePositiveNumber(buyPriceInput);
+  const derivedAmount = usdSpent > 0 && buyPrice > 0 ? usdSpent / buyPrice : 0;
+
+  const isFormValid =
+    tickerInput.trim().length > 0 &&
+    usdSpent > 0 &&
+    buyPrice > 0;
+
+  const resetEditor = useCallback(() => {
+    setIsEditorOpen(false);
+    setEditingPositionId(null);
+    setAssetTypeInput("stock");
+    setTickerInput("");
+    setUsdSpentInput("");
+    setBuyPriceInput("");
+    setShowValidation(false);
+  }, []);
+
+  const handleOpenCreate = () => {
+    resetEditor();
+    setIsEditorOpen(true);
   };
 
-  const handleCreate = async () => {
+  const handleOpenEdit = (id: string) => {
+    const target = positions.find((item) => item.id === id);
+    if (!target) {
+      return;
+    }
+
+    setIsEditorOpen(true);
+    setEditingPositionId(target.id);
+    setAssetTypeInput(target.assetType);
+    setTickerInput(target.ticker);
+    setUsdSpentInput(target.usd_gastado.toString());
+    setBuyPriceInput(target.buy_price.toString());
+    setShowValidation(false);
+  };
+
+  const handleCloseEditor = () => {
+    resetEditor();
+  };
+
+  const handleSubmit = async () => {
     setShowValidation(true);
     if (!isFormValid) {
       return;
     }
 
-    const editorQuote = quoteBySymbol.get(normalizedTickerInput);
-    const usesManualPrice = requiresManualPrice;
-    const fallbackCurrentPrice = usesManualPrice
-      ? currentPrice
-      : (editorQuote?.price ?? costBasis);
+    const payload = {
+      assetType: assetTypeInput,
+      ticker: tickerInput,
+      usd_gastado: usdSpent,
+      buy_price: buyPrice,
+    } as const;
 
-    const created = await create({
-      ticker: normalizedTickerInput,
-      name: nameInput,
-      shares,
-      costBasis,
-      currentPrice: fallbackCurrentPrice,
-      priceSource: usesManualPrice ? "manual" : "market",
-      manualPrice: usesManualPrice ? currentPrice : undefined,
-    });
-
-    if (!created) {
+    if (currentEditingPosition) {
+      const updated = await editPosition(currentEditingPosition.id, payload);
+      if (updated) {
+        await runRefresh([updated], true);
+        resetEditor();
+      }
       return;
     }
 
-    setIsEditorOpen(false);
-    setTickerInput("");
-    setNameInput("");
-    setSharesInput("");
-    setCostBasisInput("");
-    setCurrentPriceInput("");
-    setIsManualPriceEnabled(false);
-    setShowValidation(false);
+    const created = await addPosition(payload);
+    if (created) {
+      await runRefresh([created], true);
+      resetEditor();
+    }
   };
 
-  const handleRemove = async (id: string): Promise<void> => {
-    await remove(id);
+  const handleDelete = async (id: string): Promise<void> => {
+    const removed = await deletePosition(id);
+    if (!removed) {
+      return;
+    }
+
+    setRows((current) => current.filter((row) => row.id !== id));
+    setExpandedRowId((current) => (current === id ? null : current));
+
+    if (editingPositionId === id) {
+      resetEditor();
+    }
   };
 
-  const marketStatus = useMemo(() => {
-    if (isMarketLoading || isMarketRefreshing) {
-      return {
-        label: "Actualizando...",
-        color: "text-[#2563EB]",
-      };
+  const handleRefreshRow = async (id: string): Promise<void> => {
+    const target = positions.find((item) => item.id === id);
+    if (!target) {
+      return;
     }
 
-    if (marketError && quoteBySymbol.size === 0) {
-      return {
-        label: "Desactualizado",
-        color: "text-[#DC2626]",
-      };
+    await runRefresh([target], true);
+  };
+
+  const handleRefreshAll = async (): Promise<void> => {
+    if (positions.length === 0) {
+      return;
     }
 
-    if (quoteBySymbol.size > 0) {
-      return {
-        label: "En vivo",
-        color: "text-[#10B981]",
-      };
+    setIsRefreshingAll(true);
+    try {
+      await runRefresh(positions, true);
+    } finally {
+      setIsRefreshingAll(false);
     }
+  };
 
-    if (items.length === 0) {
-      return {
-        label: "Sin posiciones",
-        color: "text-[#71717A]",
-      };
-    }
+  const handleToggleRowExpand = (id: string) => {
+    setExpandedRowId((current) => (current === id ? null : id));
+  };
 
-    return {
-      label: "Sin cotización",
-      color: "text-[#D97706]",
-    };
-  }, [isMarketLoading, isMarketRefreshing, items.length, marketError, quoteBySymbol.size]);
-
-  const tickerAvailabilityMessage = useMemo(() => {
-    if (!isEditorOpen || normalizedTickerInput.length === 0) {
-      return null;
-    }
-
-    if (quoteBySymbol.has(normalizedTickerInput)) {
-      return `Cotización en vivo disponible para ${normalizedTickerInput}.`;
-    }
-
-    const unavailableReason = unavailableBySymbol.get(normalizedTickerInput);
-    if (unavailableReason) {
-      return "Ticker no disponible actualmente. Puedes ingresar precio manual.";
-    }
-
-    if (marketError) {
-      return "No pudimos validar este ticker en este momento.";
-    }
-
-    return "Validando ticker...";
-  }, [
-    isEditorOpen,
-    marketError,
-    normalizedTickerInput,
-    quoteBySymbol,
-    unavailableBySymbol,
-  ]);
+  const rowsWithUiState = useMemo<InvestmentTableRow[]>(() => {
+    return rows.map((row) => ({
+      ...row,
+      isRefreshing: refreshingIds.has(row.id),
+      pnlDailyText: formatPctText(row.pnlDailyPct),
+      pnlMonthText: formatPctText(row.pnlMonthPct),
+      pnlTotalText: formatPctText(row.pnlTotalPct),
+    }));
+  }, [refreshingIds, rows]);
 
   return {
-    cardItems,
-    currentPriceInput,
-    costBasisInput,
-    error: error ?? marketError,
-    handleCreate,
-    handleHeaderAction,
-    handleRefreshQuotes: refresh,
-    handleRemove,
-    isEditorOpen,
-    isFormValid,
-    isLoading: isLoading || isMarketLoading,
-    isManualPriceEnabled,
-    isMarketRefreshing,
-    isTickerUnavailable: (
-      normalizedTickerInput.length > 0 &&
-      unavailableBySymbol.has(normalizedTickerInput) &&
-      !quoteBySymbol.has(normalizedTickerInput)
-    ),
-    marketLastUpdatedLabel: lastUpdatedAt ? formatDateTimeLabel(lastUpdatedAt) : "Sin actualización",
-    marketStatusColor: marketStatus.color,
-    marketStatusLabel: marketStatus.label,
-    nameInput,
-    setCostBasisInput,
-    setCurrentPriceInput,
-    setIsManualPriceEnabled,
-    setNameInput,
-    setSharesInput,
-    setTickerInput,
-    sharesInput,
-    showValidation,
+    rows: rowsWithUiState,
     summary,
-    summaryChange: getChangePresentation(summary.gainPercent),
-    tickerAvailabilityMessage,
+    error,
+    isLoading,
+    isRefreshingAll,
+    hasPositions: positions.length > 0,
+    isEditorOpen,
+    editingPositionId,
+    expandedRowId,
+    assetTypeInput,
     tickerInput,
+    usdSpentInput,
+    buyPriceInput,
+    isFormValid,
+    showValidation,
+    derivedAmountLabel: derivedAmount > 0
+      ? `${derivedAmount.toFixed(8)}`
+      : "0",
+    handleOpenCreate,
+    handleOpenEdit,
+    handleCloseEditor,
+    handleToggleRowExpand,
+    handleRefreshAll,
+    handleRefreshRow,
+    handleDelete,
+    handleSubmit,
+    setAssetTypeInput,
+    setTickerInput,
+    setUsdSpentInput,
+    setBuyPriceInput,
   };
 };
