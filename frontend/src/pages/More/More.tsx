@@ -7,7 +7,6 @@ import {
 } from "@/modules/more";
 
 export interface MoreProps {
-  avatarInitials?: string;
   headerTitle?: string;
   gridRows?: GridOption[][];
   navItems?: NavItem[];
@@ -17,7 +16,6 @@ export interface MoreProps {
 }
 
 export function More({
-  avatarInitials = "JS",
   headerTitle = "Más",
   gridRows,
   navItems,

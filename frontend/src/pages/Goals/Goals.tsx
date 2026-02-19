@@ -9,7 +9,6 @@ import {
 } from "@/modules/goals";
 
 export interface GoalsProps {
-  avatarInitials?: string;
   headerTitle?: string;
   summaryTitle?: string;
   totalLabel?: string;
@@ -40,7 +39,6 @@ export interface GoalsProps {
 }
 
 export function Goals({
-  avatarInitials = "JS",
   headerTitle = "Metas",
   summaryTitle = "RESUMEN DE AHORRO",
   totalLabel = "Total Ahorrado",
