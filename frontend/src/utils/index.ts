@@ -1,4 +1,5 @@
 export { formatCurrency } from "./formatCurrency";
+export { navigateToPath } from "./navigation";
 export { getPercentWidthClass } from "./percentWidthClass";
 
 export {

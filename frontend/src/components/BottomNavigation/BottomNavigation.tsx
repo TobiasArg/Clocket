@@ -1,4 +1,5 @@
 import type { NavItem } from "@/types";
+import { navigateToPath } from "@/utils";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
 export interface BottomNavigationProps {
@@ -21,19 +22,6 @@ export function BottomNavigation({
     }
 
     return currentPath === to;
-  };
-
-  const navigateToPath = (to: string): void => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (window.location.pathname === to) {
-      return;
-    }
-
-    window.history.pushState(null, "", to);
-    window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
   return (

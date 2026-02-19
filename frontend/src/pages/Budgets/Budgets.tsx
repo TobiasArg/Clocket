@@ -1,3 +1,4 @@
+import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { NavItem } from "@/modules/budgets";
 import { PhosphorIcon } from "@/components";
 import {
@@ -53,13 +54,7 @@ export function Budgets({
   emptyHint = "Agrega un budget para empezar a organizar tus gastos.",
   emptyActionLabel = "Crear budget",
   errorLabel = "No pudimos cargar los budgets. Intenta nuevamente.",
-  navItems = [
-    { icon: "house", label: "Inicio", to: "/home" },
-    { icon: "wallet", label: "Presupuestos", active: true, to: "/budgets" },
-    { icon: "chart-bar", label: "Estadísticas", to: "/statistics" },
-    { icon: "trend-up", label: "Inversiones", to: "/investments" },
-    { icon: "dots-three", label: "Más", to: "/more" },
-  ],
+  navItems = DEFAULT_NAV_ITEMS,
   onAddClick,
   onBudgetClick,
   onNavItemClick,

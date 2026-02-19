@@ -1,3 +1,4 @@
+import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { NavItem } from "@/modules/investments";
 import {
   Avatar,
@@ -61,13 +62,7 @@ export function Investments({
   emptyHint = "Agrega tu primera posición para seguir tu portfolio.",
   errorLabel = "No pudimos cargar inversiones. Intenta nuevamente.",
   deleteActionLabel = "Eliminar",
-  navItems = [
-    { icon: "house", label: "Inicio", to: "/home" },
-    { icon: "wallet", label: "Presupuestos", to: "/budgets" },
-    { icon: "chart-bar", label: "Estadísticas", to: "/statistics" },
-    { icon: "trend-up", label: "Inversiones", active: true, to: "/investments" },
-    { icon: "dots-three", label: "Más", to: "/more" },
-  ],
+  navItems = DEFAULT_NAV_ITEMS,
   onAddClick,
   onStockClick,
   onNavItemClick,

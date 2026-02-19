@@ -1,3 +1,4 @@
+import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { GoalColorKey, NavItem } from "@/modules/goals";
 import {
   BottomNavigation,
@@ -61,13 +62,7 @@ export function Goals({
   emptyTitle = "No hay metas",
   emptyHint = "Agrega una meta para empezar a ahorrar con foco.",
   errorLabel = "No pudimos cargar las metas. Intenta nuevamente.",
-  navItems = [
-    { icon: "house", label: "Inicio", to: "/home" },
-    { icon: "wallet", label: "Presupuestos", to: "/budgets" },
-    { icon: "chart-bar", label: "Estadísticas", to: "/statistics" },
-    { icon: "trend-up", label: "Inversiones", to: "/investments" },
-    { icon: "dots-three", label: "Más", active: true, to: "/more" },
-  ],
+  navItems = DEFAULT_NAV_ITEMS,
   onBackClick,
   onAddClick,
   onGoalClick,

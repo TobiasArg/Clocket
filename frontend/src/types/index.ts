@@ -7,12 +7,7 @@ export interface NavItem {
   to?: string;
 }
 
-export interface SidebarNavItem {
-  icon: string;
-  label: string;
-  active?: boolean;
-  to?: string;
-}
+export type SidebarNavItem = NavItem;
 
 // === Transacciones ===
 
