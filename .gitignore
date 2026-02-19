@@ -8,7 +8,10 @@ dist/
 
 # Env files
 .env
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local
 
 # OS files
 .DS_Store
-

@@ -81,6 +81,18 @@ const requestAlphaVantage = async (params) => {
       const payload = response.data;
 
       if (payload && typeof payload === "object") {
+        if (
+          typeof payload.Information === "string" &&
+          payload.Information.trim().length > 0
+        ) {
+          throw new AlphaVantageClientError("Alpha Vantage rate limit exceeded.", {
+            code: "THROTTLED",
+            status: 429,
+            retryable: false,
+            details: payload.Information,
+          });
+        }
+
         if (typeof payload.Note === "string" && payload.Note.trim().length > 0) {
           throw new AlphaVantageClientError("Alpha Vantage rate limit exceeded.", {
             code: "THROTTLED",
