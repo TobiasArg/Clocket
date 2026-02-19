@@ -50,9 +50,22 @@ const parsePositiveNumber = (value: unknown): number | null => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
 
-const parseOptionalNumber = (value: unknown): number | null => {
+const parseOptionalFiniteNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseOptionalPositiveNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
 
 const normalizeTicker = (value: unknown): string => String(value ?? "").trim().toUpperCase();
@@ -88,9 +101,9 @@ const normalizeQuotePayload = (value: unknown): MarketQuoteApiResult => {
     currentPrice,
     source,
     asOf: typeof payload.asOf === "string" ? payload.asOf : new Date().toISOString(),
-    bid: parseOptionalNumber(payload.bid),
-    ask: parseOptionalNumber(payload.ask),
-    dailyPctFromProvider: parseOptionalNumber(payload.dailyPctFromProvider),
+    bid: parseOptionalPositiveNumber(payload.bid),
+    ask: parseOptionalPositiveNumber(payload.ask),
+    dailyPctFromProvider: parseOptionalFiniteNumber(payload.dailyPctFromProvider),
     lastRefreshed: typeof payload.lastRefreshed === "string" ? payload.lastRefreshed : null,
     timezone: typeof payload.timezone === "string" ? payload.timezone : null,
   };

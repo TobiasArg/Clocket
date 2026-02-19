@@ -121,4 +121,44 @@ describe("refreshPositions", () => {
     expect(rows[0].refreshError).toBe("Rate limited");
     expect(rows[0].staleWarning).toContain("Rate limit");
   });
+
+  it("deduplicates refresh calls by asset key when multiple positions share ticker", async () => {
+    const repository = new LocalStorageInvestmentsPortfolioRepository();
+    const first = await repository.addPosition({
+      assetType: "stock",
+      ticker: "AAPL",
+      usd_gastado: 1000,
+      buy_price: 100,
+    });
+    const second = await repository.addPosition({
+      assetType: "stock",
+      ticker: "aapl",
+      usd_gastado: 500,
+      buy_price: 250,
+    });
+
+    vi.mocked(fetchStockQuote).mockResolvedValue({
+      assetType: "stock",
+      ticker: "AAPL",
+      currentPrice: 120,
+      source: "GLOBAL_QUOTE",
+      asOf: "2026-02-19T10:00:00.000Z",
+      bid: null,
+      ask: null,
+      dailyPctFromProvider: null,
+      lastRefreshed: "2026-02-19",
+      timezone: null,
+    });
+
+    const rows = await refreshPositions([first, second], {
+      repository,
+      force: true,
+      now: new Date("2026-02-19T10:00:00.000Z"),
+    });
+
+    expect(fetchStockQuote).toHaveBeenCalledTimes(1);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].currentPrice).toBe(120);
+    expect(rows[1].currentPrice).toBe(120);
+  });
 });

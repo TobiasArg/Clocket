@@ -177,11 +177,12 @@ export const useInvestmentsPageModel = (
     const visiblePositions = positions.slice(0, VISIBLE_POSITIONS_BATCH);
     const backgroundPositions = positions.slice(VISIBLE_POSITIONS_BATCH);
 
-    void runRefresh(visiblePositions, false);
-
-    if (backgroundPositions.length > 0) {
-      void runRefresh(backgroundPositions, false);
-    }
+    void (async () => {
+      await runRefresh(visiblePositions, false);
+      if (backgroundPositions.length > 0) {
+        await runRefresh(backgroundPositions, false);
+      }
+    })();
   }, [positions, runRefresh]);
 
   const summary = useMemo<InvestmentsSummary>(() => buildSummary(rows), [rows]);

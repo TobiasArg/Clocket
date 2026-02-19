@@ -3,6 +3,7 @@ import axios from "axios";
 const ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query";
 const REQUEST_TIMEOUT_MS = 12_000;
 const MAX_RETRIES = 1;
+const MIN_REQUEST_INTERVAL_MS = 1_100;
 const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
 const wait = (ms) => new Promise((resolve) => {
@@ -14,9 +15,22 @@ const parsePositiveNumber = (value) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
 
-const parseOptionalNumber = (value) => {
+const parseOptionalFiniteNumber = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseOptionalPositiveNumber = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
 
 const normalizePercent = (value) => {
@@ -25,7 +39,7 @@ const normalizePercent = (value) => {
   }
 
   const sanitized = value.replace("%", "").trim();
-  return parseOptionalNumber(sanitized);
+  return parseOptionalFiniteNumber(sanitized);
 };
 
 const isTransientAxiosError = (error) => {
@@ -72,12 +86,37 @@ const alphaVantageClient = axios.create({
   timeout: REQUEST_TIMEOUT_MS,
 });
 
+let lastProviderRequestAt = 0;
+let providerQueue = Promise.resolve();
+
+const scheduleProviderRequest = async (execute) => {
+  const run = async () => {
+    const elapsed = Date.now() - lastProviderRequestAt;
+    if (elapsed < MIN_REQUEST_INTERVAL_MS) {
+      await wait(MIN_REQUEST_INTERVAL_MS - elapsed);
+    }
+
+    lastProviderRequestAt = Date.now();
+    return execute();
+  };
+
+  const pending = providerQueue.then(run, run);
+  providerQueue = pending.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return pending;
+};
+
 const requestAlphaVantage = async (params) => {
   let attempt = 0;
 
   while (attempt <= MAX_RETRIES) {
     try {
-      const response = await alphaVantageClient.get("", { params });
+      const response = await scheduleProviderRequest(() => {
+        return alphaVantageClient.get("", { params });
+      });
       const payload = response.data;
 
       if (payload && typeof payload === "object") {
@@ -168,9 +207,10 @@ export const fetchStockQuote = async (ticker, apiKey) => {
 
   const currentPrice = parsePositiveNumber(quote["05. price"]);
   if (currentPrice === null) {
+    const hasAnyField = Object.keys(quote).length > 0;
     throw new AlphaVantageClientError("Global Quote price is invalid.", {
-      code: "PARSE_ERROR",
-      status: 502,
+      code: hasAnyField ? "PARSE_ERROR" : "INVALID_SYMBOL",
+      status: hasAnyField ? 502 : 422,
       details: toErrorDetails(quote),
     });
   }
@@ -201,17 +241,18 @@ export const fetchCryptoRate = async (ticker, apiKey) => {
 
   const rate = payload?.["Realtime Currency Exchange Rate"];
   if (!rate || typeof rate !== "object") {
-    throw new AlphaVantageClientError("Exchange rate payload is missing.", {
-      code: "PARSE_ERROR",
-      status: 502,
+    throw new AlphaVantageClientError("Exchange rate payload is missing or symbol is invalid.", {
+      code: "INVALID_SYMBOL",
+      status: 422,
     });
   }
 
   const currentPrice = parsePositiveNumber(rate["5. Exchange Rate"]);
   if (currentPrice === null) {
+    const hasAnyField = Object.keys(rate).length > 0;
     throw new AlphaVantageClientError("Exchange rate price is invalid.", {
-      code: "PARSE_ERROR",
-      status: 502,
+      code: hasAnyField ? "PARSE_ERROR" : "INVALID_SYMBOL",
+      status: hasAnyField ? 502 : 422,
       details: toErrorDetails(rate),
     });
   }
@@ -228,7 +269,7 @@ export const fetchCryptoRate = async (ticker, apiKey) => {
     timezone: typeof rate["7. Time Zone"] === "string"
       ? rate["7. Time Zone"]
       : null,
-    bid: parseOptionalNumber(rate["8. Bid Price"]),
-    ask: parseOptionalNumber(rate["9. Ask Price"]),
+    bid: parseOptionalPositiveNumber(rate["8. Bid Price"]),
+    ask: parseOptionalPositiveNumber(rate["9. Ask Price"]),
   };
 };
