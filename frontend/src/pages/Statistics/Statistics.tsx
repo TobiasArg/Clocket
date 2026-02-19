@@ -48,7 +48,7 @@ export interface StatisticsProps {
 
 export function Statistics({
   avatarInitials = "JS",
-  headerTitle = "Statistics",
+  headerTitle = "Estadísticas",
   periodLabel,
   balanceTitle = "Flujo",
   balanceLegend = [
@@ -76,9 +76,9 @@ export function Statistics({
   emptyLabel = "No hay movimientos este mes.",
   errorLabel = "No pudimos cargar estadísticas. Intenta nuevamente.",
   navItems = [
-    { icon: "house", label: "Home", to: "/home" },
-    { icon: "wallet", label: "Budgets", to: "/budgets" },
-    { icon: "chart-bar", label: "Statistics", active: true, to: "/statistics" },
+    { icon: "house", label: "Inicio", to: "/home" },
+    { icon: "wallet", label: "Presupuestos", to: "/budgets" },
+    { icon: "chart-bar", label: "Estadísticas", active: true, to: "/statistics" },
     { icon: "trend-up", label: "Inversiones", to: "/investments" },
     { icon: "dots-three", label: "Más", to: "/more" },
   ],

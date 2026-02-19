@@ -42,7 +42,7 @@ export function Investments({
   avatarInitials = "JS",
   avatarBg = "bg-[#10B981]",
   headerTitle = "Inversiones",
-  addButtonBg = "bg-[#10B981]",
+  addButtonBg = "bg-[#F4F4F5]",
   summaryTitle = "Resumen del Portfolio",
   totalLabel = "Valor Total",
   totalArsLabel = "Equivalente ARS",
@@ -134,8 +134,9 @@ export function Investments({
             <IconBadge
               icon={isEditorOpen ? "x" : "plus"}
               bg={addButtonBg}
-              size="w-[40px] h-[40px]"
-              rounded="rounded-[20px]"
+              iconColor="text-[#3F3F46]"
+              size="w-[44px] h-[44px]"
+              rounded="rounded-full"
             />
           </button>
         </div>
