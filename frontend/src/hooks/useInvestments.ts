@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  investmentsRepository,
-  type CreateInvestmentInput,
-  type InvestmentPositionItem,
-  type InvestmentsRepository,
-  type UpdateInvestmentPatch,
-} from "@/utils";
+import { investmentsRepository } from "@/data/localStorage/investmentsRepository";
+import type {
+  CreateInvestmentInput,
+  InvestmentPositionItem,
+  InvestmentsRepository,
+  UpdateInvestmentPatch,
+} from "@/domain/investments/repository";
 
 export interface UseInvestmentsOptions {
   repository?: InvestmentsRepository;

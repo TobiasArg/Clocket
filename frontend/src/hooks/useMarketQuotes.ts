@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  marketQuotesRepository,
-  type MarketQuote,
-  type MarketQuotesRepository,
-  type MarketQuotesResult,
-} from "@/utils";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { marketQuotesRepository } from "@/data/http/alpacaQuotesClient";
+import type {
+  MarketQuote,
+  MarketQuotesRepository,
+  MarketQuotesResult,
+} from "@/domain/market/quotesRepository";
 
 const DEFAULT_POLLING_MS = 30_000;
 
@@ -70,6 +70,14 @@ export const useMarketQuotes = (
   const [unavailableBySymbol, setUnavailableBySymbol] = useState<Map<string, string>>(
     () => new Map<string, string>(),
   );
+  const activeRequestIdRef = useRef<number>(0);
+  const isMountedRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const applyResult = useCallback((result: MarketQuotesResult) => {
     setAsOf(result.asOf);
@@ -84,7 +92,13 @@ export const useMarketQuotes = (
 
   const fetchQuotes = useCallback(
     async (requestedSymbols: string[], optionsArg: FetchQuotesOptions = {}) => {
+      const requestId = ++activeRequestIdRef.current;
+
       if (requestedSymbols.length === 0) {
+        if (!isMountedRef.current || requestId !== activeRequestIdRef.current) {
+          return;
+        }
+
         setAsOf(null);
         setLastUpdatedAt(null);
         setQuotes([]);
@@ -105,10 +119,22 @@ export const useMarketQuotes = (
 
       try {
         const result = await repository.getQuotes(requestedSymbols);
+        if (!isMountedRef.current || requestId !== activeRequestIdRef.current) {
+          return;
+        }
+
         applyResult(result);
       } catch (fetchError) {
+        if (!isMountedRef.current || requestId !== activeRequestIdRef.current) {
+          return;
+        }
+
         setError(getErrorMessage(fetchError));
       } finally {
+        if (!isMountedRef.current || requestId !== activeRequestIdRef.current) {
+          return;
+        }
+
         setIsLoading(false);
         setIsRefreshing(false);
       }

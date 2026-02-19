@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { InvestmentPositionItem, MarketQuote } from "@/utils";
+import type { InvestmentPositionItem } from "@/domain/investments/repository";
+import type { MarketQuote } from "@/domain/market/quotesRepository";
 import {
   calculatePortfolioSummary,
   resolvePositionPrice,

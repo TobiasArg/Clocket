@@ -1,5 +1,5 @@
 import { CardSection, StockCard, TextBadge } from "@/components";
-import type { InvestmentStockCardItem } from "@/hooks";
+import type { InvestmentStockCardItem } from "@/hooks/useInvestmentsPageModel";
 
 export interface InvestmentListWidgetProps {
   deleteActionLabel: string;

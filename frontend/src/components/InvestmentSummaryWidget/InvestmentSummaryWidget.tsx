@@ -1,6 +1,6 @@
 import { StatDisplay, SummaryPanel, TextBadge } from "@/components";
-import { formatCurrency } from "@/utils";
-import type { InvestmentChangePresentation } from "@/hooks";
+import type { InvestmentChangePresentation } from "@/hooks/useInvestmentsPageModel";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 export interface InvestmentSummaryWidgetProps {
   dayGainAmount: number;

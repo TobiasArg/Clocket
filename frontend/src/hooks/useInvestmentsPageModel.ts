@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { StockCard as StockCardType } from "@/types";
-import {
-  formatCurrency,
-  getUsdRate,
-  type InvestmentPositionItem,
-  type MarketQuote,
-} from "@/utils";
+import { getUsdRate } from "@/domain/currency/transactionCurrency";
+import type { InvestmentPositionItem } from "@/domain/investments/repository";
+import type { MarketQuote } from "@/domain/market/quotesRepository";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { useInvestments } from "./useInvestments";
 import { useMarketQuotes } from "./useMarketQuotes";
 
