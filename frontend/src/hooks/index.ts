@@ -28,11 +28,6 @@ export type {
   UseInvestmentsOptions,
   UseInvestmentsResult,
 } from "./useInvestments";
-export { useMarketQuotes } from "./useMarketQuotes";
-export type {
-  UseMarketQuotesOptions,
-  UseMarketQuotesResult,
-} from "./useMarketQuotes";
 export { useCategories } from "./useCategories";
 export type {
   UseCategoriesOptions,

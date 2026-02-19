@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { StockCard as StockCardType } from "@/types";
 import {
   formatCurrency,
   getUsdRate,
   type InvestmentPositionItem,
-  type MarketQuote,
 } from "@/utils";
 import { useInvestments } from "./useInvestments";
-import { useMarketQuotes } from "./useMarketQuotes";
 
 export interface InvestmentChangePresentation {
   bg: string;
@@ -17,12 +15,8 @@ export interface InvestmentChangePresentation {
 
 export interface InvestmentStockCardItem {
   id: string;
-  isUnavailable: boolean;
-  priceSource: "market" | "manual";
+  priceSource: "stored" | "manual";
   priceSourceLabel: string;
-  quoteStatusLabel: string;
-  quoteUpdatedAtLabel: string | null;
-  unavailableReason: string | null;
   stock: StockCardType;
 }
 
@@ -48,17 +42,11 @@ export interface UseInvestmentsPageModelResult {
   error: string | null;
   handleCreate: () => Promise<void>;
   handleHeaderAction: () => void;
-  handleRefreshQuotes: () => Promise<void>;
   handleRemove: (id: string) => Promise<void>;
   isEditorOpen: boolean;
   isFormValid: boolean;
   isLoading: boolean;
   isManualPriceEnabled: boolean;
-  isMarketRefreshing: boolean;
-  isTickerUnavailable: boolean;
-  marketLastUpdatedLabel: string;
-  marketStatusColor: string;
-  marketStatusLabel: string;
   nameInput: string;
   setCostBasisInput: (value: string) => void;
   setCurrentPriceInput: (value: string) => void;
@@ -70,7 +58,6 @@ export interface UseInvestmentsPageModelResult {
   showValidation: boolean;
   summary: InvestmentsSummary;
   summaryChange: InvestmentChangePresentation;
-  tickerAvailabilityMessage: string | null;
   tickerInput: string;
 }
 
@@ -80,21 +67,6 @@ const parsePositiveNumber = (value: string): number => {
 };
 
 const normalizeTicker = (value: string): string => value.trim().toUpperCase();
-
-const formatDateTimeLabel = (valueIso: string): string => {
-  const date = new Date(valueIso);
-  if (Number.isNaN(date.getTime())) {
-    return "Sin actualización";
-  }
-
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
-};
 
 const getChangePresentation = (value: number): InvestmentChangePresentation => {
   if (value >= 0) {
@@ -114,14 +86,9 @@ const getChangePresentation = (value: number): InvestmentChangePresentation => {
 
 export const resolvePositionPrice = (
   position: InvestmentPositionItem,
-  quote?: MarketQuote,
 ): number => {
   if (position.priceSource === "manual" && position.manualPrice && position.manualPrice > 0) {
     return position.manualPrice;
-  }
-
-  if (quote && quote.price > 0) {
-    return quote.price;
   }
 
   return position.currentPrice;
@@ -129,35 +96,25 @@ export const resolvePositionPrice = (
 
 export const calculatePortfolioSummary = (
   items: InvestmentPositionItem[],
-  quoteBySymbol: Map<string, MarketQuote>,
   usdRate: number = getUsdRate(),
 ): InvestmentsSummary => {
   let invested = 0;
   let current = 0;
-  let previousCloseTotal = 0;
-  let dayGainAmount = 0;
 
   items.forEach((item) => {
-    const quote = quoteBySymbol.get(item.ticker.toUpperCase());
-    const effectivePrice = resolvePositionPrice(item, quote);
+    const effectivePrice = resolvePositionPrice(item);
     const positionInvested = item.shares * item.costBasis;
     const positionCurrent = item.shares * effectivePrice;
     const usesMarketPrice = !(item.priceSource === "manual" && item.manualPrice && item.manualPrice > 0);
 
     invested += positionInvested;
     current += positionCurrent;
-
-    if (usesMarketPrice && quote?.previousClose && quote.previousClose > 0) {
-      previousCloseTotal += item.shares * quote.previousClose;
-      dayGainAmount += item.shares * (effectivePrice - quote.previousClose);
-    }
   });
 
   const gainAmount = current - invested;
   const gainPercent = invested > 0 ? (gainAmount / invested) * 100 : 0;
-  const dayGainPercent = previousCloseTotal > 0
-    ? (dayGainAmount / previousCloseTotal) * 100
-    : 0;
+  const dayGainAmount = 0;
+  const dayGainPercent = 0;
 
   return {
     invested,
@@ -187,38 +144,12 @@ export const useInvestmentsPageModel = (
 
   const normalizedTickerInput = normalizeTicker(tickerInput);
 
-  const trackedSymbols = useMemo(() => {
-    const symbolSet = new Set<string>();
-    items.forEach((item) => symbolSet.add(item.ticker.toUpperCase()));
-    if (isEditorOpen && normalizedTickerInput) {
-      symbolSet.add(normalizedTickerInput);
-    }
-    return Array.from(symbolSet);
-  }, [isEditorOpen, items, normalizedTickerInput]);
-
-  const {
-    asOf,
-    error: marketError,
-    isLoading: isMarketLoading,
-    isRefreshing: isMarketRefreshing,
-    lastUpdatedAt,
-    quoteBySymbol,
-    refresh,
-    unavailableBySymbol,
-  } = useMarketQuotes({
-    symbols: trackedSymbols,
-  });
-
   const shares = parsePositiveNumber(sharesInput);
   const costBasis = parsePositiveNumber(costBasisInput);
   const currentPrice = parsePositiveNumber(currentPriceInput);
   const isTickerValid = normalizedTickerInput.length > 0;
   const isNameValid = nameInput.trim().length > 0;
-  const requiresManualPrice = isManualPriceEnabled || (
-    normalizedTickerInput.length > 0 &&
-    unavailableBySymbol.has(normalizedTickerInput) &&
-    !quoteBySymbol.has(normalizedTickerInput)
-  );
+  const requiresManualPrice = isManualPriceEnabled;
   const isFormValid = (
     isTickerValid &&
     isNameValid &&
@@ -227,31 +158,15 @@ export const useInvestmentsPageModel = (
     (!requiresManualPrice || currentPrice > 0)
   );
 
-  useEffect(() => {
-    if (
-      normalizedTickerInput.length > 0 &&
-      unavailableBySymbol.has(normalizedTickerInput) &&
-      !quoteBySymbol.has(normalizedTickerInput)
-    ) {
-      setIsManualPriceEnabled(true);
-    }
-  }, [normalizedTickerInput, quoteBySymbol, unavailableBySymbol]);
-
-  const usdRate = getUsdRate();
   const summary = useMemo<InvestmentsSummary>(
-    () => calculatePortfolioSummary(items, quoteBySymbol, usdRate),
-    [items, quoteBySymbol, usdRate],
+    () => calculatePortfolioSummary(items, getUsdRate()),
+    [items],
   );
-
-  const quoteUpdatedAtLabel = asOf ? formatDateTimeLabel(asOf) : null;
 
   const cardItems = useMemo<InvestmentStockCardItem[]>(() => {
     return items.map((item) => {
-      const quote = quoteBySymbol.get(item.ticker.toUpperCase());
-      const unavailableReason = unavailableBySymbol.get(item.ticker.toUpperCase()) ?? null;
       const isManual = item.priceSource === "manual" && Boolean(item.manualPrice);
-      const isUnavailable = !isManual && !quote;
-      const effectivePrice = resolvePositionPrice(item, quote);
+      const effectivePrice = resolvePositionPrice(item);
       const invested = item.shares * item.costBasis;
       const current = item.shares * effectivePrice;
       const gainAmount = current - invested;
@@ -260,14 +175,8 @@ export const useInvestmentsPageModel = (
 
       return {
         id: item.id,
-        priceSource: isManual ? "manual" : "market",
-        priceSourceLabel: isManual ? "Manual" : "Mercado",
-        quoteStatusLabel: isManual
-          ? "Precio manual"
-          : (quote ? "En vivo" : "Sin cotización"),
-        quoteUpdatedAtLabel: !isManual && quote ? quoteUpdatedAtLabel : null,
-        unavailableReason,
-        isUnavailable,
+        priceSource: isManual ? "manual" : "stored",
+        priceSourceLabel: isManual ? "Manual" : "Registrado",
         stock: {
           ticker: item.ticker,
           name: item.name,
@@ -292,7 +201,7 @@ export const useInvestmentsPageModel = (
         },
       };
     });
-  }, [items, quoteBySymbol, quoteUpdatedAtLabel, unavailableBySymbol]);
+  }, [items]);
 
   const handleHeaderAction = () => {
     if (isEditorOpen) {
@@ -319,11 +228,10 @@ export const useInvestmentsPageModel = (
       return;
     }
 
-    const editorQuote = quoteBySymbol.get(normalizedTickerInput);
     const usesManualPrice = requiresManualPrice;
     const fallbackCurrentPrice = usesManualPrice
       ? currentPrice
-      : (editorQuote?.price ?? costBasis);
+      : costBasis;
 
     const created = await create({
       ticker: normalizedTickerInput,
@@ -353,91 +261,18 @@ export const useInvestmentsPageModel = (
     await remove(id);
   };
 
-  const marketStatus = useMemo(() => {
-    if (isMarketLoading || isMarketRefreshing) {
-      return {
-        label: "Actualizando...",
-        color: "text-[#2563EB]",
-      };
-    }
-
-    if (marketError && quoteBySymbol.size === 0) {
-      return {
-        label: "Desactualizado",
-        color: "text-[#DC2626]",
-      };
-    }
-
-    if (quoteBySymbol.size > 0) {
-      return {
-        label: "En vivo",
-        color: "text-[#10B981]",
-      };
-    }
-
-    if (items.length === 0) {
-      return {
-        label: "Sin posiciones",
-        color: "text-[#71717A]",
-      };
-    }
-
-    return {
-      label: "Sin cotización",
-      color: "text-[#D97706]",
-    };
-  }, [isMarketLoading, isMarketRefreshing, items.length, marketError, quoteBySymbol.size]);
-
-  const tickerAvailabilityMessage = useMemo(() => {
-    if (!isEditorOpen || normalizedTickerInput.length === 0) {
-      return null;
-    }
-
-    if (quoteBySymbol.has(normalizedTickerInput)) {
-      return `Cotización en vivo disponible para ${normalizedTickerInput}.`;
-    }
-
-    const unavailableReason = unavailableBySymbol.get(normalizedTickerInput);
-    if (unavailableReason) {
-      return "Ticker no disponible actualmente. Puedes ingresar precio manual.";
-    }
-
-    if (marketError) {
-      return "No pudimos validar este ticker en este momento.";
-    }
-
-    return "Validando ticker...";
-  }, [
-    isEditorOpen,
-    marketError,
-    normalizedTickerInput,
-    quoteBySymbol,
-    unavailableBySymbol,
-  ]);
-
   return {
     cardItems,
     currentPriceInput,
     costBasisInput,
-    dayGainChange: getChangePresentation(summary.dayGainPercent),
-    error: error ?? marketError,
+    error,
     handleCreate,
     handleHeaderAction,
-    handleRefreshQuotes: refresh,
     handleRemove,
     isEditorOpen,
     isFormValid,
-    isLoading: isLoading || isMarketLoading,
+    isLoading,
     isManualPriceEnabled,
-    isMarketRefreshing,
-    isTickerUnavailable: (
-      normalizedTickerInput.length > 0 &&
-      unavailableBySymbol.has(normalizedTickerInput) &&
-      !quoteBySymbol.has(normalizedTickerInput)
-    ),
-    marketLastUpdatedLabel: lastUpdatedAt ? formatDateTimeLabel(lastUpdatedAt) : "Sin actualización",
-    marketStatusColor: marketStatus.color,
-    marketStatusLabel: marketStatus.label,
     nameInput,
     setCostBasisInput,
     setCurrentPriceInput,
@@ -449,7 +284,6 @@ export const useInvestmentsPageModel = (
     showValidation,
     summary,
     summaryChange: getChangePresentation(summary.gainPercent),
-    tickerAvailabilityMessage,
     tickerInput,
   };
 };
