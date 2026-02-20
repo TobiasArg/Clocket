@@ -1,5 +1,5 @@
 import type { BudgetCategoryOption } from "@/hooks";
-import { ActionButton } from "@/components";
+import { ActionButton, PhosphorIcon } from "@/components";
 
 export interface BudgetQuickAddWidgetProps {
   amountErrorLabel: string;
@@ -13,6 +13,7 @@ export interface BudgetQuickAddWidgetProps {
   isLoading: boolean;
   isOpen: boolean;
   limitAmountInput: string;
+  onBackClick?: () => void;
   onAmountChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onSubmit: () => void;
@@ -34,6 +35,7 @@ export function BudgetQuickAddWidget({
   isLoading,
   isOpen,
   limitAmountInput,
+  onBackClick,
   onAmountChange,
   onCategoryChange,
   onSubmit,
@@ -55,9 +57,21 @@ export function BudgetQuickAddWidget({
           onSubmit();
         }}
       >
-        <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
-          {title}
-        </span>
+        <div className="flex min-w-0 items-center gap-2">
+          {onBackClick && (
+            <button
+              type="button"
+              onClick={onBackClick}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#D4D4D8] bg-white text-[#3F3F46]"
+              aria-label="Volver"
+            >
+              <PhosphorIcon name="arrow-left" className="text-[#3F3F46]" />
+            </button>
+          )}
+          <span className="block min-w-0 truncate text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+            {title}
+          </span>
+        </div>
 
         <label className="flex flex-col gap-1">
           <span className="text-xs font-medium text-[#52525B]">{categoryLabel}</span>

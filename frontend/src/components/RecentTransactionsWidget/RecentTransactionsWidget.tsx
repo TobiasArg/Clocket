@@ -36,8 +36,8 @@ export function RecentTransactionsWidget({
   return (
     <CardSection
       title={title}
-      titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
-      className="rounded-[24px] bg-[#F4F4F5] p-4"
+      titleClassName="text-lg font-bold text-[#18181B] font-['Outfit']"
+      gap="gap-3"
       action={(
         <button
           type="button"
@@ -63,7 +63,7 @@ export function RecentTransactionsWidget({
         <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>
       )}
 
-      {transactions.map((transaction, index) => (
+      {transactions.map((transaction) => (
         <ListItemRow
           key={transaction.key}
           left={<IconBadge icon={transaction.icon} bg={transaction.iconBg} />}
@@ -78,8 +78,8 @@ export function RecentTransactionsWidget({
               {transaction.amount}
             </span>
           )}
-          showBorder={index < transactions.length - 1}
-          padding="py-4"
+          className="bg-[#F4F4F5] rounded-2xl"
+          padding="p-4"
         />
       ))}
     </CardSection>

@@ -30,21 +30,23 @@ export function BudgetSummaryWidget({
       bg="bg-[#F4F4F5]"
       rounded="rounded-2xl"
       className="mx-5 border border-[#E4E4E7]"
-      titleClassName="text-[11px] font-semibold text-[#71717A] tracking-[1.5px]"
+      titleClassName="block truncate text-[11px] font-semibold text-[#71717A] tracking-[1.5px]"
     >
-      <div className="flex justify-between w-full">
+      <div className="flex w-full justify-between gap-3">
         <StatDisplay
           label={totalSpentLabel}
           value={formatCurrency(totalSpent)}
-          labelClassName="text-xs font-medium text-[#71717A]"
-          valueClassName="text-[30px] font-bold text-[#18181B] font-['Outfit']"
+          labelClassName="text-[11px] font-medium text-[#71717A]"
+          valueClassName="text-[clamp(1.25rem,6vw,1.9rem)] leading-none font-bold text-[#18181B] font-['Outfit']"
+          className="max-w-[48%]"
         />
         <StatDisplay
           label={totalBudgetLabel}
           value={formatCurrency(totalBudget)}
           align="end"
-          labelClassName="text-xs font-medium text-[#71717A]"
-          valueClassName="text-[30px] font-bold text-[#18181B] font-['Outfit']"
+          labelClassName="text-[11px] font-medium text-[#71717A]"
+          valueClassName="text-[clamp(1.25rem,6vw,1.9rem)] leading-none font-bold text-[#18181B] font-['Outfit']"
+          className="max-w-[48%]"
         />
       </div>
       <ProgressSection
@@ -52,10 +54,10 @@ export function BudgetSummaryWidget({
         barColor="bg-[#059669]"
         trackColor="bg-[#E4E4E7]"
         leftLabel={`${rawProgress}% ${progressLabel}`}
-        leftLabelClassName="text-xs font-medium text-[#059669]"
+        leftLabelClassName="block max-w-full truncate text-[11px] font-medium text-[#059669]"
       />
       {overspentAmount > 0 && (
-        <span className="text-xs font-medium text-[#B91C1C]">
+        <span className="block truncate text-[11px] font-medium text-[#B91C1C]">
           Excedido por {formatCurrency(overspentAmount)}
         </span>
       )}

@@ -13,6 +13,7 @@ import {
 } from "@/utils";
 
 export interface TransactionsMonthGroup {
+  key: string;
   title: string;
   total: string;
   totalColor: string;
@@ -140,6 +141,21 @@ const getAbsoluteAmountFromValue = (value: string): string => {
   }
 
   return absolute > 0 ? absolute.toString() : "";
+};
+
+const dedupeTransactionsById = (items: TransactionItem[]): TransactionItem[] => {
+  const seen = new Set<string>();
+  const unique: TransactionItem[] = [];
+
+  for (const item of items) {
+    if (seen.has(item.id)) {
+      continue;
+    }
+    seen.add(item.id);
+    unique.push(item);
+  }
+
+  return unique;
 };
 
 export const useTransactionsPageModel = (
@@ -308,6 +324,7 @@ export const useTransactionsPageModel = (
     return Array.from(grouped.values())
       .sort((left, right) => right.sortTime - left.sortTime)
       .map((group) => ({
+        key: `${new Date(group.sortTime).getFullYear()}-${String(new Date(group.sortTime).getMonth() + 1).padStart(2, "0")}`,
         title: group.title,
         total: formatTotalAmount(group.total),
         totalColor:
@@ -316,7 +333,7 @@ export const useTransactionsPageModel = (
             : group.total > 0
               ? "text-[#16A34A]"
               : "text-black",
-        transactions: [...group.transactions].sort((left, right) => {
+        transactions: dedupeTransactionsById(group.transactions).sort((left, right) => {
           const leftTime = getTransactionDateForMonthBalance(left)?.getTime() ?? 0;
           const rightTime = getTransactionDateForMonthBalance(right)?.getTime() ?? 0;
           return rightTime - leftTime;

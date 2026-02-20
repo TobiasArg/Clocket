@@ -29,8 +29,8 @@ export function InstallmentPlansWidget({
   return (
     <CardSection
       title={title}
-      titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
-      className="rounded-[24px] bg-[#F4F4F5] p-4"
+      titleClassName="text-lg font-bold text-[#18181B] font-['Outfit']"
+      gap="gap-3"
       action={(
         <button
           type="button"

@@ -87,21 +87,21 @@ export function BudgetListWidget({
   return (
     <CardSection
       title={sectionTitle}
-      titleClassName="text-lg font-bold text-black font-['Outfit']"
+      titleClassName="block min-w-0 truncate text-[clamp(1.05rem,4.4vw,1.2rem)] font-bold text-black font-['Outfit']"
       className="px-5"
     >
       {showLoading && (
-        <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+        <span className="block text-sm font-medium text-[#71717A]">{loadingLabel}</span>
       )}
 
       {!showLoading && errorMessage && (
-        <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+        <span className="block text-sm font-medium text-[#71717A]">{errorLabel}</span>
       )}
 
       {!showLoading && !errorMessage && items.length === 0 && (
         <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-          <span className="block text-sm font-semibold text-black font-['Outfit']">{emptyTitle}</span>
-          <span className="block text-xs font-medium text-[#71717A] mt-1">{emptyHint}</span>
+          <span className="block truncate text-sm font-semibold text-black font-['Outfit']">{emptyTitle}</span>
+          <span className="mt-1 block text-xs font-medium text-[#71717A]">{emptyHint}</span>
           {onEmptyAction && (
             <button
               type="button"
@@ -145,10 +145,10 @@ export function BudgetListWidget({
                   rounded="rounded-[20px]"
                 />
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="block truncate text-base font-semibold text-[#18181B] font-['Outfit']">
+                  <span className="block truncate text-[clamp(0.95rem,3.8vw,1.05rem)] font-semibold text-[#18181B] font-['Outfit']">
                     {budget.name}
                   </span>
-                  <span className="block truncate text-xs font-normal text-[#71717A]">
+                  <span className="block truncate text-[11px] font-normal text-[#71717A]">
                     Meta: {formatMonthLabel(budget.month)}
                   </span>
                 </div>
@@ -168,11 +168,11 @@ export function BudgetListWidget({
               trackColor="bg-[#E4E4E7]"
               leftLabel={formatCurrency(spentAmount)}
               rightLabel={formatCurrency(budget.limitAmount)}
-              leftLabelClassName="text-sm font-semibold text-[#18181B] font-['Outfit']"
-              rightLabelClassName="text-sm font-normal text-[#71717A]"
+              leftLabelClassName="block max-w-[48%] truncate text-sm font-semibold text-[#18181B] font-['Outfit']"
+              rightLabelClassName="block max-w-[48%] truncate text-right text-sm font-normal text-[#71717A]"
             />
             {isOverBudget && (
-              <span className="text-xs font-semibold text-[#B91C1C]">
+              <span className="block truncate text-xs font-semibold text-[#B91C1C]">
                 Excedido por {formatCurrency(overspentAmount)}
               </span>
             )}

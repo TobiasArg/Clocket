@@ -17,6 +17,9 @@ import {
 } from "./portfolioMetrics";
 
 const DAILY_REFRESH_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+const THROTTLED_COOLDOWN_MS = 30 * 60 * 1000;
+const INVALID_SYMBOL_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+const TRANSIENT_ERROR_COOLDOWN_MS = 5 * 60 * 1000;
 
 export interface RefreshedPositionViewModel extends PositionMetrics {
   id: string;
@@ -50,6 +53,14 @@ interface RefreshRuntime {
   refsCache: Map<string, Promise<AssetRefs>>;
   assetRefreshCache: Map<string, Promise<AssetRefreshState>>;
 }
+
+interface AssetRecentFailure {
+  code: string;
+  timestampMs: number;
+  staleWarning: string;
+}
+
+const assetRecentFailureCache = new Map<string, AssetRecentFailure>();
 
 const buildAssetCacheKey = (
   assetType: InvestmentPositionItem["assetType"],
@@ -87,6 +98,36 @@ const toStaleFallback = (
     currentPrice: fallbackPrice,
     lastUpdatedTimestamp: null,
   };
+};
+
+const resolveFailureCooldownMs = (code: string): number => {
+  if (code === "THROTTLED") {
+    return THROTTLED_COOLDOWN_MS;
+  }
+
+  if (code === "INVALID_SYMBOL") {
+    return INVALID_SYMBOL_COOLDOWN_MS;
+  }
+
+  return TRANSIENT_ERROR_COOLDOWN_MS;
+};
+
+const getActiveRecentFailure = (
+  assetKey: string,
+  nowMs: number,
+): AssetRecentFailure | null => {
+  const recent = assetRecentFailureCache.get(assetKey);
+  if (!recent) {
+    return null;
+  }
+
+  const cooldownMs = resolveFailureCooldownMs(recent.code);
+  if (nowMs - recent.timestampMs > cooldownMs) {
+    assetRecentFailureCache.delete(assetKey);
+    return null;
+  }
+
+  return recent;
 };
 
 const getLatestSnapshot = (
@@ -153,9 +194,12 @@ const refreshAssetIfNeeded = (
     let staleWarning: string | null = null;
     let refreshError: string | null = null;
 
-    const shouldRefresh = shouldRefreshByUtcDay(latestSnapshot, runtime.now);
+    const shouldRefresh = runtime.force || shouldRefreshByUtcDay(latestSnapshot, runtime.now);
+    const activeRecentFailure = runtime.force
+      ? null
+      : getActiveRecentFailure(assetKey, runtime.now.getTime());
 
-    if (shouldRefresh) {
+    if (shouldRefresh && !activeRecentFailure) {
       try {
         const quote = position.assetType === "crypto"
           ? await fetchCryptoRate(position.ticker)
@@ -191,6 +235,7 @@ const refreshAssetIfNeeded = (
         currentPrice = snapshot.price;
         lastUpdatedTimestamp = snapshot.timestamp;
         fallbackPrice = snapshot.price;
+        assetRecentFailureCache.delete(assetKey);
       } catch (error) {
         const fallback = toStaleFallback(fallbackPrice, latestSnapshot);
         currentPrice = fallback.currentPrice;
@@ -199,14 +244,32 @@ const refreshAssetIfNeeded = (
         if (error instanceof MarketQuoteApiError) {
           refreshError = error.message;
           staleWarning = error.staleWarning;
+          assetRecentFailureCache.set(assetKey, {
+            code: error.code,
+            timestampMs: runtime.now.getTime(),
+            staleWarning: error.staleWarning,
+          });
         } else if (error instanceof Error) {
           refreshError = error.message;
           staleWarning = "No se pudo actualizar. Manteniendo último precio guardado.";
+          assetRecentFailureCache.set(assetKey, {
+            code: "UNKNOWN",
+            timestampMs: runtime.now.getTime(),
+            staleWarning,
+          });
         } else {
           refreshError = "No se pudo actualizar la cotización.";
           staleWarning = "No se pudo actualizar. Manteniendo último precio guardado.";
+          assetRecentFailureCache.set(assetKey, {
+            code: "UNKNOWN",
+            timestampMs: runtime.now.getTime(),
+            staleWarning,
+          });
         }
       }
+    } else if (shouldRefresh && activeRecentFailure) {
+      staleWarning = activeRecentFailure.staleWarning;
+      refreshError = "Reintento pausado para evitar exceso de requests.";
     }
 
     return {

@@ -26,6 +26,21 @@ export interface UseTransactionsResult {
 const FALLBACK_ERROR_MESSAGE =
   "We couldn’t complete that transaction action. Please try again.";
 
+const dedupeTransactionsById = (items: TransactionItem[]): TransactionItem[] => {
+  const seen = new Set<string>();
+  const unique: TransactionItem[] = [];
+
+  for (const item of items) {
+    if (seen.has(item.id)) {
+      continue;
+    }
+    seen.add(item.id);
+    unique.push(item);
+  }
+
+  return unique;
+};
+
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -54,7 +69,7 @@ export const useTransactions = (
 
     try {
       const nextItems = await repository.list();
-      setItems(nextItems);
+      setItems(dedupeTransactionsById(nextItems));
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
@@ -75,7 +90,7 @@ export const useTransactions = (
 
       try {
         const created = await repository.create(input);
-        setItems((current) => [...current, created]);
+        setItems((current) => dedupeTransactionsById([...current, created]));
         return created;
       } catch (createError) {
         setError(getErrorMessage(createError));

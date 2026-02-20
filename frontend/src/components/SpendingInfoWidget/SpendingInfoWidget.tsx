@@ -27,11 +27,11 @@ export function SpendingInfoWidget({
   return (
     <CardSection
       title={title}
-      titleClassName="text-2xl font-extrabold text-black font-['Outfit']"
-      className="rounded-[24px] bg-[#F4F4F5] p-4"
+      titleClassName="text-lg font-bold text-[#18181B] font-['Outfit']"
+      className="rounded-2xl bg-[#F4F4F5] border border-[#E4E4E7] p-4"
       action={(
         <div className="flex flex-col items-end">
-          <span className="text-xl font-light text-[#71717A] font-['Outfit']">
+          <span className="text-lg font-semibold text-[#18181B] font-['Outfit']">
             {total}
           </span>
           <span className="text-[11px] font-medium text-[#A1A1AA]">

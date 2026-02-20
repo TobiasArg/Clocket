@@ -77,7 +77,7 @@ export function TransactionsMonthListWidget({
       {!hasError &&
         monthGroups.map((month, monthIndex) => (
           <CardSection
-            key={month.title}
+            key={month.key}
             title={month.title}
             titleClassName="text-lg font-bold text-black font-['Outfit']"
             action={(
