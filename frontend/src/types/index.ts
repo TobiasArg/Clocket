@@ -305,7 +305,15 @@ export interface AppSettings {
   currency: "USD" | "EUR";
   language: "es" | "en";
   notificationsEnabled: boolean;
-  theme: "light";
+  theme: "light" | "dark";
+  profile: {
+    name: string;
+    email: string;
+    avatarIcon: string;
+  };
+  security: {
+    pinHash: string | null;
+  };
 }
 
 // === Cuentas ===

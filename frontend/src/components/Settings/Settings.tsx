@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
-import type { SettingsSection } from "@/types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { AppSettings, SettingsSection } from "@/types";
 import {
-  ActionButton,
   IconBadge,
   ListItemRow,
   PageHeader,
@@ -9,12 +8,25 @@ import {
   SettingsGroup,
 } from "@/components";
 import { useAppSettings } from "@/hooks";
+import { applyTheme } from "@/utils";
+import { CurrencyPopup } from "./popups/CurrencyPopup";
+import { EditProfilePopup } from "./popups/EditProfilePopup";
+import { ExportDataPopup } from "./popups/ExportDataPopup";
+import { NotificationsPopup } from "./popups/NotificationsPopup";
+import { SecurityPopup } from "./popups/SecurityPopup";
+import { ThemePopup } from "./popups/ThemePopup";
+
+type SettingsItemKey =
+  | "edit-profile"
+  | "currency"
+  | "notifications"
+  | "theme"
+  | "export"
+  | "security";
 
 export interface SettingsProps {
   headerTitle?: string;
   sections?: SettingsSection[];
-  logoutIcon?: string;
-  logoutLabel?: string;
   loadingLabel?: string;
   errorLabel?: string;
   savedLabel?: string;
@@ -23,18 +35,33 @@ export interface SettingsProps {
   onLogout?: () => void;
 }
 
-const getSectionsFromSettings = (settings: {
-  currency: "USD" | "EUR";
-  language: "es" | "en";
-  notificationsEnabled: boolean;
-  theme: "light";
-}): SettingsSection[] => {
+const DEFAULT_SETTINGS: AppSettings = {
+  currency: "USD",
+  language: "es",
+  notificationsEnabled: true,
+  theme: "light",
+  profile: {
+    name: "Usuario",
+    email: "usuario@email.com",
+    avatarIcon: "user",
+  },
+  security: {
+    pinHash: null,
+  },
+};
+
+const getSectionsFromSettings = (settings: AppSettings): SettingsSection[] => {
+  const themeLabel = settings.theme === "dark" ? "Oscuro" : "Claro";
+
   return [
     {
       title: "PERFIL Y CUENTA",
       items: [
-        { icon: "user", name: "Editar Perfil", description: "Nombre, foto, información personal" },
-        { icon: "credit-card", name: "Cuentas y Tarjetas", description: "Gestionar efectivo, tarjetas, cuentas" },
+        {
+          icon: settings.profile.avatarIcon,
+          name: "Editar Perfil",
+          description: `${settings.profile.name} · ${settings.profile.email}`,
+        },
       ],
     },
     {
@@ -46,133 +73,159 @@ const getSectionsFromSettings = (settings: {
           description: settings.currency === "USD" ? "USD - Dólar estadounidense" : "EUR - Euro",
         },
         {
-          icon: "translate",
-          name: "Idioma",
-          description: settings.language === "es" ? "Español" : "English",
-        },
-        {
           icon: "bell",
           name: "Notificaciones",
           description: settings.notificationsEnabled ? "Activadas" : "Pausadas",
         },
-        { icon: "moon", name: "Tema", description: "Claro" },
+        {
+          icon: "moon",
+          name: "Tema",
+          description: themeLabel,
+        },
       ],
     },
     {
       title: "DATOS Y PRIVACIDAD",
       items: [
-        { icon: "export", name: "Exportar Datos", description: "Descargar en CSV, PDF, Excel" },
-        { icon: "cloud-arrow-up", name: "Backup y Sincronización", description: "iCloud, Google Drive" },
-        { icon: "lock", name: "Seguridad", description: "PIN, Face ID, Touch ID" },
-      ],
-    },
-    {
-      title: "SOPORTE",
-      items: [
-        { icon: "question", name: "Ayuda y FAQ", description: "Preguntas frecuentes, tutoriales" },
-        { icon: "file-text", name: "Términos y Privacidad", description: "Políticas y condiciones de uso" },
+        {
+          icon: "export",
+          name: "Exportar Datos",
+          description: "Descargar backup JSON y CSV",
+        },
+        {
+          icon: "lock",
+          name: "Seguridad",
+          description: settings.security.pinHash ? "PIN activo" : "PIN inactivo",
+        },
       ],
     },
   ];
 };
 
+const getItemKey = (sectionIndex: number, itemIndex: number): SettingsItemKey | null => {
+  const matrix: SettingsItemKey[][] = [
+    ["edit-profile"],
+    ["currency", "notifications", "theme"],
+    ["export", "security"],
+  ];
+
+  return matrix[sectionIndex]?.[itemIndex] ?? null;
+};
+
 export function Settings({
   headerTitle = "Settings",
   sections,
-  logoutIcon = "sign-out",
-  logoutLabel = "Cerrar Sesión",
   loadingLabel = "Cargando configuración...",
   errorLabel = "No pudimos cargar configuración. Intenta nuevamente.",
   savedLabel = "Guardado",
   onBackClick,
   onItemClick,
-  onLogout,
 }: SettingsProps) {
-  const { settings, isLoading, error, update, reset } = useAppSettings();
+  const { settings, isLoading, error, update } = useAppSettings();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [openPopup, setOpenPopup] = useState<SettingsItemKey | null>(null);
+  const popupHistoryActiveRef = useRef(false);
 
-  const resolvedSettings = settings ?? {
-    currency: "USD" as const,
-    language: "es" as const,
-    notificationsEnabled: true,
-    theme: "light" as const,
-  };
+  const resolvedSettings = settings ?? DEFAULT_SETTINGS;
 
   const resolvedSections = useMemo(() => {
     return sections ?? getSectionsFromSettings(resolvedSettings);
   }, [resolvedSettings, sections]);
 
-  const handleItemClick = async (sectionIndex: number, itemIndex: number): Promise<void> => {
+  const closePopup = (): void => {
+    if (openPopup && popupHistoryActiveRef.current) {
+      window.history.back();
+      return;
+    }
+
+    setOpenPopup(null);
+  };
+
+  useEffect(() => {
+    if (!openPopup) {
+      return;
+    }
+
+    window.history.pushState({ settingsPopup: true }, "");
+    popupHistoryActiveRef.current = true;
+
+    const onPopState = (): void => {
+      if (!popupHistoryActiveRef.current) {
+        return;
+      }
+
+      popupHistoryActiveRef.current = false;
+      setOpenPopup(null);
+    };
+
+    window.addEventListener("popstate", onPopState);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, [openPopup]);
+
+  const handleHeaderBack = (): void => {
+    if (openPopup) {
+      closePopup();
+      return;
+    }
+
+    onBackClick?.();
+  };
+
+  const updateSettings = async (
+    patch: Parameters<typeof update>[0],
+    message: string = savedLabel,
+  ): Promise<void> => {
+    const updated = await update(patch);
+    if (!updated) {
+      return;
+    }
+
+    if (patch.theme) {
+      applyTheme(patch.theme);
+    }
+
+    setStatusMessage(message);
+    closePopup();
+  };
+
+  const handleItemClick = (sectionIndex: number, itemIndex: number): void => {
     onItemClick?.(sectionIndex, itemIndex);
 
     if (sections) {
       return;
     }
 
-    const item = resolvedSections[sectionIndex]?.items[itemIndex];
-    if (!item) {
+    const itemKey = getItemKey(sectionIndex, itemIndex);
+    if (!itemKey) {
       return;
     }
 
-    if (item.name === "Moneda") {
-      const updated = await update({
-        currency: resolvedSettings.currency === "USD" ? "EUR" : "USD",
-      });
-      if (updated) {
-        setStatusMessage(savedLabel);
-      }
-      return;
-    }
-
-    if (item.name === "Idioma") {
-      const updated = await update({
-        language: resolvedSettings.language === "es" ? "en" : "es",
-      });
-      if (updated) {
-        setStatusMessage(savedLabel);
-      }
-      return;
-    }
-
-    if (item.name === "Notificaciones") {
-      const updated = await update({
-        notificationsEnabled: !resolvedSettings.notificationsEnabled,
-      });
-      if (updated) {
-        setStatusMessage(savedLabel);
-      }
-    }
-  };
-
-  const handleReset = async (): Promise<void> => {
-    const resetSettings = await reset();
-    if (resetSettings) {
-      setStatusMessage(savedLabel);
-    }
-
-    onLogout?.();
+    setOpenPopup(itemKey);
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
-      <PageHeader title={headerTitle} onBackClick={onBackClick} />
+    <div className="flex h-full w-full flex-col bg-[var(--panel-bg)] text-[var(--text-primary)]">
+      <PageHeader title={headerTitle} onBackClick={handleHeaderBack} />
       <div className="flex-1 overflow-auto">
         <div className="flex flex-col gap-6 px-5 py-2">
           {statusMessage && (
-            <div className="rounded-2xl bg-[#F4F4F5] px-4 py-2">
-              <span className="text-xs font-medium text-[#71717A]">{statusMessage}</span>
+            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-2">
+              <span className="text-xs font-medium text-[var(--text-secondary)]">{statusMessage}</span>
             </div>
           )}
 
           {isLoading && !settings && (
-            <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-              <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
             </div>
           )}
 
           {!isLoading && error && (
-            <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-              <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
             </div>
           )}
 
@@ -181,44 +234,84 @@ export function Settings({
               {section.items.map((item, itemIndex) => (
                 <ListItemRow
                   key={item.name}
-                  left={
+                  left={(
                     <IconBadge
                       icon={item.icon}
                       size="w-[36px] h-[36px]"
                       rounded="rounded-[10px]"
                     />
-                  }
+                  )}
                   title={item.name}
                   subtitle={item.description}
-                  titleClassName="text-[15px] font-semibold text-black font-['Outfit']"
-                  subtitleClassName="text-xs font-medium text-[#71717A] truncate"
-                  right={<PhosphorIcon name="caret-right" className="text-[#A1A1AA] shrink-0" />}
+                  titleClassName="text-[15px] font-semibold text-[var(--text-primary)] font-['Outfit']"
+                  subtitleClassName="truncate text-xs font-medium text-[var(--text-secondary)]"
+                  right={<PhosphorIcon name="caret-right" className="shrink-0 text-[#A1A1AA]" />}
                   onClick={() => {
-                    void handleItemClick(sectionIndex, itemIndex);
+                    handleItemClick(sectionIndex, itemIndex);
                   }}
                   showBorder={itemIndex < section.items.length - 1}
-                  borderColor="border-[#E4E4E7]"
+                  borderColor="border-[var(--surface-border)]"
                   padding="p-4"
                 />
               ))}
             </SettingsGroup>
           ))}
-
-          <ActionButton
-            icon={logoutIcon}
-            label={logoutLabel}
-            iconColor="text-[#DC2626]"
-            labelColor="text-[#DC2626]"
-            bg="bg-[#FEE2E2]"
-            rounded="rounded-2xl"
-            padding="p-4"
-            onClick={() => {
-              void handleReset();
-            }}
-            className="w-full"
-          />
         </div>
       </div>
+
+      <EditProfilePopup
+        isOpen={openPopup === "edit-profile"}
+        profile={resolvedSettings.profile}
+        onClose={closePopup}
+        onSave={async (profile) => {
+          await updateSettings({ profile });
+        }}
+      />
+
+      <CurrencyPopup
+        isOpen={openPopup === "currency"}
+        currentCurrency={resolvedSettings.currency}
+        onClose={closePopup}
+        onSave={async (currency) => {
+          await updateSettings({ currency });
+        }}
+      />
+
+      <NotificationsPopup
+        isOpen={openPopup === "notifications"}
+        enabled={resolvedSettings.notificationsEnabled}
+        onClose={closePopup}
+        onSave={async (enabled) => {
+          await updateSettings({ notificationsEnabled: enabled });
+        }}
+      />
+
+      <ThemePopup
+        isOpen={openPopup === "theme"}
+        currentTheme={resolvedSettings.theme}
+        onClose={closePopup}
+        onSave={async (theme) => {
+          await updateSettings({ theme });
+        }}
+      />
+
+      <ExportDataPopup
+        isOpen={openPopup === "export"}
+        onClose={closePopup}
+        onExportSuccess={(message) => {
+          setStatusMessage(message);
+          closePopup();
+        }}
+      />
+
+      <SecurityPopup
+        isOpen={openPopup === "security"}
+        pinHash={resolvedSettings.security.pinHash}
+        onClose={closePopup}
+        onSavePinHash={async (pinHash) => {
+          await updateSettings({ security: { pinHash } });
+        }}
+      />
     </div>
   );
 }

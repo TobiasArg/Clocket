@@ -7,6 +7,10 @@ export interface UpdateAppSettingsPatch {
   language?: AppSettings["language"];
   notificationsEnabled?: boolean;
   theme?: AppSettings["theme"];
+  profile?: Partial<AppSettings["profile"]>;
+  security?: {
+    pinHash?: string | null;
+  };
 }
 
 export interface AppSettingsRepository {

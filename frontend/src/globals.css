@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+:root {
+  --app-bg: #e4e4e7;
+  --panel-bg: #ffffff;
+  --surface-muted: #f4f4f5;
+  --surface-border: #e4e4e7;
+  --text-primary: #111827;
+  --text-secondary: #71717a;
+}
+
+:root[data-theme="dark"] {
+  --app-bg: #09090b;
+  --panel-bg: #18181b;
+  --surface-muted: #27272a;
+  --surface-border: #3f3f46;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+}
+
 @layer base {
   button,
   a[href],
@@ -15,5 +33,15 @@
 
 body {
   margin: 0;
-  background: #f7f7fb;
+  background: var(--app-bg);
+  color: var(--text-primary);
+}
+
+.app-root-shell {
+  background: var(--app-bg);
+}
+
+.app-device-shell {
+  background: var(--panel-bg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
 }

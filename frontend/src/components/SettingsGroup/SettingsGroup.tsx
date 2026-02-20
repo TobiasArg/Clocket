@@ -9,14 +9,14 @@ export interface SettingsGroupProps {
 
 export function SettingsGroup({
   title,
-  titleClassName = "text-[11px] font-semibold text-[#71717A] tracking-[1px] mb-1",
+  titleClassName = "mb-1 text-[11px] font-semibold tracking-[1px] text-[var(--text-secondary)]",
   children,
   className = "",
 }: SettingsGroupProps) {
   return (
     <div className={`flex flex-col ${className}`}>
       <span className={titleClassName}>{title}</span>
-      <div className="flex flex-col bg-[#F4F4F5] rounded-2xl overflow-hidden">
+      <div className="flex flex-col overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)]">
         {children}
       </div>
     </div>

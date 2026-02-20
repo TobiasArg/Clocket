@@ -1,6 +1,9 @@
 export { formatCurrency } from "./formatCurrency";
 export { navigateToPath } from "./navigation";
 export { getPercentWidthClass } from "./percentWidthClass";
+export { buildExportSnapshot, buildTransactionsCsv, downloadJsonExport, downloadTransactionsCsvExport } from "./settingsExport";
+export { hashPin, isValidPin, verifyPin } from "./securityPin";
+export { APP_SETTINGS_STORAGE_KEY, applyTheme, getStoredTheme, initializeThemeFromStorage, resolveStoredTheme } from "./theme";
 
 export {
   DEFAULT_USD_RATE,
