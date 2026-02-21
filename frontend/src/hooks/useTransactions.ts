@@ -43,8 +43,8 @@ const dedupeTransactionsById = (items: TransactionItem[]): TransactionItem[] => 
   return unique;
 };
 
-const parseSignedAmount = (value: string): number => {
-  const normalized = value.replace(/[^0-9+.-]/g, "");
+const parseSignedAmount = (value: unknown): number => {
+  const normalized = String(value ?? "").replace(/[^0-9+.-]/g, "");
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
@@ -60,8 +60,16 @@ const formatSignedAmount = (value: number, currency: "ARS" | "USD"): string => {
 };
 
 const convertAmountFromArs = (amountInArs: number, currency: "ARS" | "USD"): number => {
+  if (!Number.isFinite(amountInArs)) {
+    return 0;
+  }
+
   if (currency === "USD") {
-    return amountInArs / getUsdRate();
+    const usdRate = getUsdRate();
+    if (!Number.isFinite(usdRate) || usdRate <= 0) {
+      return 0;
+    }
+    return amountInArs / usdRate;
   }
 
   return amountInArs;

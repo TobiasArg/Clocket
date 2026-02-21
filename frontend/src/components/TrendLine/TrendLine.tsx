@@ -1,3 +1,4 @@
+import { useAppSettings } from "@/hooks";
 import { memo, useEffect, useRef, useState } from "react";
 
 export interface TrendLinePoint {
@@ -33,7 +34,6 @@ export const TrendLine = memo(function TrendLine({
   lineColor,
   points = DEFAULT_POINTS,
   tickColor,
-  yDomain = ["dataMin - 5", "dataMax + 5"],
 }: TrendLineProps) {
   const { settings } = useAppSettings();
   const isDark = settings?.theme === "dark";
@@ -106,17 +106,17 @@ export const TrendLine = memo(function TrendLine({
             return (
               <>
                 {gridY.map((y) => (
-                  <line key={y} x1={padding.left} y1={y} x2={padding.left + chartWidth} y2={y} stroke={gridColor} strokeWidth="1" />
+                  <line key={y} x1={padding.left} y1={y} x2={padding.left + chartWidth} y2={y} stroke={resolvedGridColor} strokeWidth="1" />
                 ))}
-                <path d={path} fill="none" stroke={lineColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                <path d={path} fill="none" stroke={resolvedLineColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
                 {points.map((point, index) => (
                   <g key={`${point.label}-${index}`}>
-                    <circle cx={mapX(index)} cy={mapY(point.value)} r="2.5" fill={dotColor} />
+                    <circle cx={mapX(index)} cy={mapY(point.value)} r="2.5" fill={resolvedDotColor} />
                     <text
                       x={mapX(index)}
                       y={82}
                       textAnchor="middle"
-                      fill={tickColor}
+                      fill={resolvedTickColor}
                       fontSize="10"
                       fontWeight="600"
                     >

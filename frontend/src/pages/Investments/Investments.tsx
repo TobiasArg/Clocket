@@ -88,7 +88,7 @@ export function Investments({
 
   return (
     <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
-      <div className="border-b border-[#E5E7EB] bg-[var(--panel-bg)]">
+      <div className="border-b border-[var(--surface-border)] bg-[var(--panel-bg)]">
         <PageHeader
           title={headerTitle}
           avatarInitials={avatarInitials}
@@ -104,7 +104,7 @@ export function Investments({
         onTouchMove={handlePullTouchMove}
         onTouchEnd={handlePullTouchEnd}
         onTouchCancel={handlePullTouchCancel}
-        className="flex-1 overflow-auto bg-[#F3F4F6] overscroll-contain"
+        className="flex-1 overflow-auto bg-[var(--surface-muted)] overscroll-contain"
       >
         <div
           className="flex flex-col gap-3 px-5 py-3 transition-transform duration-300 ease-out will-change-transform"
@@ -133,7 +133,7 @@ export function Investments({
               <button
                 type="button"
                 onClick={dismissUiMessage}
-                className="text-xs font-semibold text-[#6B7280]"
+                className="text-xs font-semibold text-[var(--text-secondary)]"
                 aria-label="Cerrar mensaje"
               >
                 Cerrar

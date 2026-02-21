@@ -152,14 +152,12 @@ export function CategoriesListWidget({
                           type="button"
                           onClick={() => onDeleteConfirmCategoryIdChange?.(null)}
                           className="rounded-lg bg-[var(--surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)]"
-                          className="rounded-lg bg-[var(--surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)]"
                         >
                           {deleteCancelLabel}
                         </button>
                         <button
                           type="button"
                           onClick={() => onDeleteCategory?.(category)}
-                          className="rounded-lg bg-[var(--surface-border)] px-3 py-1.5 text-xs font-medium text-[var(--text-primary)]"
                           className="rounded-lg bg-[var(--surface-border)] px-3 py-1.5 text-xs font-medium text-[var(--text-primary)]"
                         >
                           {deleteConfirmLabel}
