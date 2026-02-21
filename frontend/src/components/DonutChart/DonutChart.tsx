@@ -29,15 +29,15 @@ export const DonutChart = memo(function DonutChart({
   showLegend = true,
   size = "w-[100px] h-[100px]",
   bgFill = "#F4F4F5",
-  centerValueClassName = "text-sm font-bold text-black font-['Outfit']",
-  centerLabelClassName = "text-[9px] font-medium text-[#71717A]",
-  legendNameClassName = "text-[13px] font-medium text-black",
-  legendValueClassName = "text-xs font-medium text-[#71717A]",
+  centerValueClassName = "text-sm font-bold text-[var(--text-primary)] font-['Outfit']",
+  centerLabelClassName = "text-[9px] font-medium text-[var(--text-secondary)]",
+  legendNameClassName = "text-[13px] font-medium text-[var(--text-primary)]",
+  legendValueClassName = "text-xs font-medium text-[var(--text-secondary)]",
   className = "",
 }: DonutChartProps) {
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
 
-  const centerBgClassName = bgFill === "#FFFFFF" ? "bg-white" : "bg-[#F4F4F5]";
+  const centerBgClassName = bgFill === "#FFFFFF" ? "bg-[var(--panel-bg)]" : "bg-[var(--surface-muted)]";
   const innerRadius = chartType === "pie" ? "0%" : "58%";
   const isLegendBottom = legendPosition === "bottom";
 
@@ -104,7 +104,7 @@ export const DonutChart = memo(function DonutChart({
             )}
             {centerLabel && <span className={centerLabelClassName}>{centerLabel}</span>}
             {selectedSegment?.name && (
-              <span className="mt-0.5 max-w-[85%] truncate text-center text-[10px] font-semibold text-[#3F3F46]">
+              <span className="mt-0.5 max-w-[85%] truncate text-center text-[10px] font-semibold text-[var(--text-secondary)]">
                 {selectedSegment.name}
               </span>
             )}

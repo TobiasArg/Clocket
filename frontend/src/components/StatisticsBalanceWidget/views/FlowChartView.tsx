@@ -72,11 +72,11 @@ export const FlowChartView = memo(function FlowChartView({
   }, [flowDays, onSelectDay]);
 
   if (!hasFlowData) {
-    return <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>;
+    return <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>;
   }
 
   return (
-    <div className="h-[210px] w-full rounded-xl bg-white/70 px-2 py-2">
+    <div className="h-[210px] w-full rounded-xl bg-[var(--panel-bg)]/70 px-2 py-2">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart key={animationKey} data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
           <XAxis

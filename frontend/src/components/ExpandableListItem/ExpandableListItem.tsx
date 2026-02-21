@@ -17,8 +17,8 @@ export function ExpandableListItem({
   left,
   title,
   subtitle,
-  titleClassName = "text-base font-semibold text-black font-['Outfit']",
-  subtitleClassName = "text-xs font-medium text-[#71717A]",
+  titleClassName = "text-base font-semibold text-[var(--text-primary)] font-['Outfit']",
+  subtitleClassName = "text-xs font-medium text-[var(--text-secondary)]",
   isExpanded = false,
   onToggle,
   children,
@@ -38,7 +38,7 @@ export function ExpandableListItem({
         </div>
         <PhosphorIcon
           name={isExpanded ? "caret-down" : "caret-right"}
-          className="text-[#71717A]"
+          className="text-[var(--text-secondary)]"
         />
       </button>
       {isExpanded && children}

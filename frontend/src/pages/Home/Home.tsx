@@ -114,20 +114,20 @@ export function Home({
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
           <Avatar initials={avatarInitials} size="w-[44px] h-[44px]" />
           <div className="flex flex-col">
-            <span className="text-[13px] font-normal text-[#71717A]">{greeting}</span>
-            <span className="text-lg font-bold text-black font-['Outfit']">{userName}</span>
+            <span className="text-[13px] font-normal text-[var(--text-secondary)]">{greeting}</span>
+            <span className="text-lg font-bold text-[var(--text-primary)] font-['Outfit']">{userName}</span>
           </div>
         </div>
         <button type="button" onClick={onMenuClick} aria-label="Menu">
           <IconBadge
             icon="list"
-            bg="bg-[#F4F4F5]"
-            iconColor="text-black"
+            bg="bg-[var(--surface-muted)]"
+            iconColor="text-[var(--text-primary)]"
             size="w-[44px] h-[44px]"
             rounded="rounded-full"
           />

@@ -52,29 +52,29 @@ export function CategoriesListWidget({
   return (
     <>
       {statusMessage && (
-        <div className="rounded-2xl bg-[#F4F4F5] px-4 py-3">
-          <span className="text-sm font-medium text-[#71717A]">{statusMessage}</span>
+        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-3">
+          <span className="text-sm font-medium text-[var(--text-secondary)]">{statusMessage}</span>
         </div>
       )}
 
       {isLoading && categories.length === 0 && (
-        <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-          <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+          <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
         </div>
       )}
 
       {!isLoading && hasError && (
-        <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-          <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+          <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
         </div>
       )}
 
       {!isLoading && categories.length === 0 && (
-        <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-          <span className="block text-sm font-semibold text-black font-['Outfit']">
+        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+          <span className="block text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">
             {emptyTitle}
           </span>
-          <span className="block text-xs font-medium text-[#71717A] mt-1">
+          <span className="block text-xs font-medium text-[var(--text-secondary)] mt-1">
             {emptyHint}
           </span>
         </div>
@@ -105,8 +105,8 @@ export function CategoriesListWidget({
             )}
             title={category.name}
             subtitle={`${subcategoryCount} subcategorías`}
-            titleClassName="text-base font-semibold text-black font-['Outfit']"
-            subtitleClassName="text-xs font-medium text-[#71717A]"
+            titleClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
+            subtitleClassName="text-xs font-medium text-[var(--text-secondary)]"
             isExpanded={expandedIndex === index}
             onToggle={() => onToggle?.(index)}
           >
@@ -115,9 +115,9 @@ export function CategoriesListWidget({
                 subcategoryList.map((sub, subIndex) => (
                   <div
                     key={sub}
-                    className={`py-3 ${subIndex < subcategoryList.length - 1 ? "border-b border-[#F4F4F5]" : ""}`}
+                    className={`py-3 ${subIndex < subcategoryList.length - 1 ? "border-b border-[var(--surface-border)]" : ""}`}
                   >
-                    <span className="text-sm font-medium text-[#52525B]">{sub}</span>
+                    <span className="text-sm font-medium text-[var(--text-secondary)]">{sub}</span>
                   </div>
                 ))
               ) : (
@@ -129,7 +129,7 @@ export function CategoriesListWidget({
               {!isUsingExternalCategories && categoryId && (
                 <div className="pt-2 flex flex-col gap-2">
                   {usageCount > 0 && (
-                    <span className="text-[11px] font-medium text-[#71717A]">
+                    <span className="text-[11px] font-medium text-[var(--text-secondary)]">
                       {inUseLabelPrefix} {usageCount} {usageCount === 1 ? "transacción" : "transacciones"}.
                     </span>
                   )}
@@ -138,26 +138,26 @@ export function CategoriesListWidget({
                     <button
                       type="button"
                       onClick={() => onDeleteConfirmCategoryIdChange?.(categoryId)}
-                      className="w-fit text-xs font-medium text-[#71717A]"
+                      className="w-fit text-xs font-medium text-[var(--text-secondary)]"
                     >
                       {deleteActionLabel}
                     </button>
                   ) : (
-                    <div className="rounded-xl bg-white px-3 py-3 flex flex-col gap-2 max-w-[280px]">
-                      <span className="text-xs font-semibold text-black">{deleteConfirmTitle}</span>
-                      <span className="text-xs font-medium text-[#71717A]">{deleteConfirmHint}</span>
+                    <div className="rounded-xl bg-[var(--panel-bg)] px-3 py-3 flex flex-col gap-2 max-w-[280px]">
+                      <span className="text-xs font-semibold text-[var(--text-primary)]">{deleteConfirmTitle}</span>
+                      <span className="text-xs font-medium text-[var(--text-secondary)]">{deleteConfirmHint}</span>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => onDeleteConfirmCategoryIdChange?.(null)}
-                          className="px-3 py-1.5 rounded-lg bg-[#F4F4F5] text-xs font-medium text-[#52525B]"
+                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-muted)] text-xs font-medium text-[var(--text-secondary)]"
                         >
                           {deleteCancelLabel}
                         </button>
                         <button
                           type="button"
                           onClick={() => onDeleteCategory?.(category)}
-                          className="px-3 py-1.5 rounded-lg bg-[#E4E4E7] text-xs font-medium text-[#18181B]"
+                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-border)] text-xs font-medium text-[var(--text-primary)]"
                         >
                           {deleteConfirmLabel}
                         </button>

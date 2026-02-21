@@ -107,8 +107,8 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
       return (
         <Suspense
           fallback={(
-            <div className="flex h-full w-full items-center justify-center bg-white px-5">
-              <span className="text-sm font-medium text-[#71717A]">
+            <div className="flex h-full w-full items-center justify-center bg-[var(--panel-bg)] px-5">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">
                 Cargando estadísticas...
               </span>
             </div>

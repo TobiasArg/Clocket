@@ -45,29 +45,29 @@ export function TransactionsMonthListWidget({
       {isLoading && monthGroups.length === 0 && (
         <CardSection
           title={loadingLabel}
-          titleClassName="text-sm font-semibold text-[#71717A]"
+          titleClassName="text-sm font-semibold text-[var(--text-secondary)]"
           gap="gap-3"
         >
-          <div className="animate-pulse h-[68px] rounded-2xl bg-[#F4F4F5]" />
-          <div className="animate-pulse h-[68px] rounded-2xl bg-[#F4F4F5]" />
+          <div className="animate-pulse h-[68px] rounded-2xl bg-[var(--surface-muted)]" />
+          <div className="animate-pulse h-[68px] rounded-2xl bg-[var(--surface-muted)]" />
         </CardSection>
       )}
 
       {!isLoading && hasError && (
         <CardSection gap="gap-2">
-          <div className="rounded-2xl bg-[#F4F4F5] px-4 py-3">
-            <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+          <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-3">
+            <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
           </div>
         </CardSection>
       )}
 
       {!isLoading && !hasError && monthGroups.length === 0 && (
         <CardSection gap="gap-2">
-          <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-            <span className="block text-sm font-semibold text-black font-['Outfit']">
+          <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+            <span className="block text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">
               {emptyTitle}
             </span>
-            <span className="block text-xs font-medium text-[#71717A] mt-1">
+            <span className="block text-xs font-medium text-[var(--text-secondary)] mt-1">
               {emptyHint}
             </span>
           </div>
@@ -79,7 +79,7 @@ export function TransactionsMonthListWidget({
           <CardSection
             key={month.key}
             title={month.title}
-            titleClassName="text-lg font-bold text-black font-['Outfit']"
+            titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
             action={(
               <span className={`text-base font-semibold font-['Outfit'] ${month.totalColor}`}>
                 {month.total}

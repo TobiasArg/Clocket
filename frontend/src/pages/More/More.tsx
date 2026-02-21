@@ -29,7 +29,7 @@ export function More({
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#FAFAFA]">
+    <div className="flex flex-col h-full w-full bg-[var(--surface-muted)]">
       <PageHeader
         title={headerTitle}
         onBackClick={onCloseClick}

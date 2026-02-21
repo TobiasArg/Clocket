@@ -30,7 +30,7 @@ export function ProgressCard({
   rightLabel,
   leftLabelClassName,
   rightLabelClassName,
-  bg = "bg-[#F4F4F5]",
+  bg = "bg-[var(--surface-muted)]",
   rounded = "rounded-[20px]",
   padding = "p-5",
   onClick,

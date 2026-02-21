@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCurrency } from "./useCurrency";
 import {
+  getUsdRate,
   TRANSACTIONS_CHANGED_EVENT,
   transactionsRepository,
   type CreateTransactionInput,
@@ -41,6 +43,30 @@ const dedupeTransactionsById = (items: TransactionItem[]): TransactionItem[] => 
   return unique;
 };
 
+const parseSignedAmount = (value: string): number => {
+  const normalized = value.replace(/[^0-9+.-]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const formatSignedAmount = (value: number, currency: "ARS" | "USD"): string => {
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  const absolute = Math.abs(value).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const prefix = currency === "USD" ? "$" : "ARS ";
+  return `${sign}${prefix}${absolute}`;
+};
+
+const convertAmountFromArs = (amountInArs: number, currency: "ARS" | "USD"): number => {
+  if (currency === "USD") {
+    return amountInArs / getUsdRate();
+  }
+
+  return amountInArs;
+};
+
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -52,14 +78,29 @@ const getErrorMessage = (error: unknown): string => {
 export const useTransactions = (
   options: UseTransactionsOptions = {},
 ): UseTransactionsResult => {
+  const { currency } = useCurrency();
   const repository = useMemo(
     () => options.repository ?? transactionsRepository,
     [options.repository],
   );
 
-  const [items, setItems] = useState<TransactionItem[]>([]);
+  const [rawItems, setRawItems] = useState<TransactionItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const items = useMemo(() => {
+    const unique = dedupeTransactionsById(rawItems);
+
+    return unique.map((item) => {
+      const rawAmount = parseSignedAmount(item.amount);
+      const convertedAmount = convertAmountFromArs(rawAmount, currency);
+
+      return {
+        ...item,
+        amount: formatSignedAmount(convertedAmount, currency),
+      };
+    });
+  }, [currency, rawItems]);
 
   const refreshTransactions = useCallback(async (showLoading: boolean) => {
     if (showLoading) {
@@ -69,7 +110,7 @@ export const useTransactions = (
 
     try {
       const nextItems = await repository.list();
-      setItems(dedupeTransactionsById(nextItems));
+      setRawItems(dedupeTransactionsById(nextItems));
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
@@ -90,7 +131,7 @@ export const useTransactions = (
 
       try {
         const created = await repository.create(input);
-        setItems((current) => dedupeTransactionsById([...current, created]));
+        setRawItems((current) => dedupeTransactionsById([...current, created]));
         return created;
       } catch (createError) {
         setError(getErrorMessage(createError));
@@ -116,7 +157,7 @@ export const useTransactions = (
           return null;
         }
 
-        setItems((current) =>
+        setRawItems((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
         return updated;
@@ -138,7 +179,7 @@ export const useTransactions = (
       try {
         const removed = await repository.remove(id);
         if (removed) {
-          setItems((current) => current.filter((item) => item.id !== id));
+          setRawItems((current) => current.filter((item) => item.id !== id));
         }
         return removed;
       } catch (removeError) {
@@ -157,7 +198,7 @@ export const useTransactions = (
 
     try {
       await repository.clearAll();
-      setItems([]);
+      setRawItems([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {

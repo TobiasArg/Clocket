@@ -29,28 +29,28 @@ export function InstallmentPlansWidget({
   return (
     <CardSection
       title={title}
-      titleClassName="text-lg font-bold text-[#18181B] font-['Outfit']"
+      titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
       gap="gap-3"
       action={(
         <button
           type="button"
           onClick={onViewAll}
-          className="text-sm font-medium text-[#71717A]"
+          className="text-sm font-medium text-[var(--text-secondary)]"
         >
           {viewAllLabel}
         </button>
       )}
     >
       {isLoading && cuotas.length === 0 && (
-        <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
       )}
 
       {!isLoading && hasError && (
-        <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
       )}
 
       {!isLoading && !hasError && showEmpty && (
-        <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>
       )}
 
       {cuotas.map((cuota) => (
@@ -59,11 +59,11 @@ export function InstallmentPlansWidget({
           left={<></>}
           title={cuota.name}
           subtitle={cuota.progressLabel}
-          titleClassName="text-base font-semibold text-black font-['Outfit']"
-          subtitleClassName="text-[13px] font-medium text-[#71717A]"
-          right={<span className="text-xl font-bold text-black font-['Outfit']">{cuota.amount}</span>}
+          titleClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
+          subtitleClassName="text-[13px] font-medium text-[var(--text-secondary)]"
+          right={<span className="text-xl font-bold text-[var(--text-primary)] font-['Outfit']">{cuota.amount}</span>}
           padding="p-4"
-          className="bg-[#F4F4F5] rounded-2xl"
+          className="bg-[var(--surface-muted)] rounded-2xl"
           gap="gap-0"
         />
       ))}

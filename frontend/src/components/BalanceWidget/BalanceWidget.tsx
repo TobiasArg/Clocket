@@ -24,7 +24,7 @@ export function BalanceWidget({
   slides,
 }: BalanceWidgetProps) {
   return (
-    <div className="rounded-2xl bg-[#F4F4F5] border border-[#E4E4E7] p-4">
+    <div className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4">
       <div
         className="flex overflow-x-auto snap-x snap-mandatory"
         onScroll={(event) => {

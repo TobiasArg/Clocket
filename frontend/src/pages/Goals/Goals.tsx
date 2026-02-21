@@ -100,7 +100,7 @@ export function Goals({
   } = useGoalsPageModel({ onAddClick });
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}

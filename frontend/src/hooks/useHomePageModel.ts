@@ -87,7 +87,7 @@ const getAmountColor = (amount: string, amountColor?: string): string => {
     return "text-[#DC2626]";
   }
 
-  return amountColor ?? "text-black";
+  return amountColor ?? "text-[var(--text-primary)]";
 };
 
 export const useHomePageModel = (

@@ -11,8 +11,8 @@ export interface MetricGridProps {
 
 export function MetricGrid({
   metrics,
-  labelClassName = "text-[11px] font-normal text-[#71717A]",
-  valueClassName = "text-base font-semibold font-['Outfit'] text-[#18181B]",
+  labelClassName = "text-[11px] font-normal text-[var(--text-secondary)]",
+  valueClassName = "text-base font-semibold font-['Outfit'] text-[var(--text-primary)]",
   className = "",
 }: MetricGridProps) {
   return (

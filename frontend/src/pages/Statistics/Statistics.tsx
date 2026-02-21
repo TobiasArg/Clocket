@@ -72,7 +72,7 @@ export function Statistics({
   savingsValue,
   savingsGoalLabel = "Meta",
   savingsGoalValue,
-  savingsBg = "bg-[#F4F4F5]",
+  savingsBg = "bg-[var(--surface-muted)]",
   loadingLabel = "Cargando estadísticas...",
   emptyLabel = "No hay movimientos este mes.",
   errorLabel = "No pudimos cargar estadísticas. Intenta nuevamente.",
@@ -152,22 +152,22 @@ export function Statistics({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
       <div className="relative pr-[120px]" ref={scopeMenuContainerRef}>
         <PageHeader title={headerTitle} avatarInitials={avatarInitials} />
         <button
           type="button"
           onClick={handlePeriodButtonClick}
-          className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 bg-[#F4F4F5] rounded-xl px-3 py-2"
+          className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 bg-[var(--surface-muted)] rounded-xl px-3 py-2"
           aria-label="Seleccionar periodo"
           aria-expanded={isScopeMenuOpen}
           aria-haspopup="menu"
         >
-          <span className="block max-w-[84px] truncate text-[13px] font-semibold text-black">{resolvedPeriodLabel}</span>
-          <PhosphorIcon name="caret-down" className="text-black" size="text-[16px]" />
+          <span className="block max-w-[84px] truncate text-[13px] font-semibold text-[var(--text-primary)]">{resolvedPeriodLabel}</span>
+          <PhosphorIcon name="caret-down" className="text-[var(--text-primary)]" size="text-[16px]" />
         </button>
         {isScopeMenuOpen && (
-          <div className="absolute right-5 top-[calc(50%+28px)] z-30 min-w-[132px] rounded-xl border border-[#E4E4E7] bg-white p-1.5 shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
+          <div className="absolute right-5 top-[calc(50%+28px)] z-30 min-w-[132px] rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] p-1.5 shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
             {scopeOptions.map((option) => {
               const isActive = option.value === scope;
               return (
@@ -176,14 +176,14 @@ export function Statistics({
                   type="button"
                   onClick={() => handleScopeChange(option.value)}
                   className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold transition ${
-                    isActive ? "bg-[#F4F4F5] text-black" : "text-[#3F3F46] hover:bg-[#F4F4F5]"
+                    isActive ? "bg-[var(--surface-muted)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
                   }`}
                   role="menuitemradio"
                   aria-checked={isActive}
                 >
                   <span>{option.label}</span>
                   {isActive && (
-                    <PhosphorIcon name="check" className="text-black" size="text-[14px]" />
+                    <PhosphorIcon name="check" className="text-[var(--text-primary)]" size="text-[14px]" />
                   )}
                 </button>
               );
@@ -195,14 +195,14 @@ export function Statistics({
       <div className="flex-1 overflow-auto px-5 py-2 pb-5">
         <div className="flex flex-col gap-5">
           {isLoading && monthlyTransactionsCount === 0 && (
-            <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-              <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
             </div>
           )}
 
           {!isLoading && hasError && (
-            <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-              <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
             </div>
           )}
 

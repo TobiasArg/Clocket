@@ -16,9 +16,9 @@ export function MoreOptionsWidget({
     <OptionGrid
       rows={rows}
       onOptionClick={onOptionClick}
-      buttonBg="bg-white border border-[#E4E4E7]"
-      iconColor="text-[#3F3F46]"
-      labelClassName="text-base font-semibold text-[#27272A] font-['Outfit']"
+      buttonBg="bg-[var(--panel-bg)] border border-[var(--surface-border)]"
+      iconColor="text-[var(--text-secondary)]"
+      labelClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
       className={className}
     />
   );

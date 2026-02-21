@@ -82,7 +82,7 @@ export function InvestmentQuickAddWidget({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-h-[88vh] max-w-[560px] overflow-auto rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+        className="relative w-full max-h-[88vh] max-w-[560px] overflow-auto rounded-2xl bg-[var(--panel-bg)] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
       >
         <div className="mb-4 flex items-center justify-between">
           <span className="text-lg font-semibold text-[#111827] font-['Outfit']">

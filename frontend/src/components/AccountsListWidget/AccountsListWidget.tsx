@@ -37,23 +37,23 @@ export function AccountsListWidget({
 }: AccountsListWidgetProps) {
   return (
     <CardSection
-      titleClassName="text-base font-bold text-black font-['Outfit']"
-      className="rounded-2xl bg-[#F4F4F5] p-4"
+      titleClassName="text-base font-bold text-[var(--text-primary)] font-['Outfit']"
+      className="rounded-2xl bg-[var(--surface-muted)] p-4"
     >
       {isLoading && accounts.length === 0 && (
-        <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
       )}
 
       {!isLoading && hasError && (
-        <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
       )}
 
       {!isLoading && !hasError && accounts.length === 0 && (
-        <div className="rounded-2xl bg-white px-4 py-4">
-          <span className="block text-sm font-semibold text-black font-['Outfit']">
+        <div className="rounded-2xl bg-[var(--panel-bg)] px-4 py-4">
+          <span className="block text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">
             {emptyTitle}
           </span>
-          <span className="block text-xs font-medium text-[#71717A] mt-1">
+          <span className="block text-xs font-medium text-[var(--text-secondary)] mt-1">
             {emptyHint}
           </span>
         </div>

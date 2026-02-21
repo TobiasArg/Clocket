@@ -27,21 +27,21 @@ export function GoalsListWidget({
   return (
     <CardSection
       title={sectionTitle}
-      titleClassName="text-lg font-bold text-black font-['Outfit']"
+      titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
       className="p-5"
     >
       {isLoading && items.length === 0 && (
-        <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
       )}
 
       {!isLoading && hasError && (
-        <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
       )}
 
       {!isLoading && !hasError && items.length === 0 && (
-        <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-          <span className="block text-sm font-semibold text-black font-['Outfit']">{emptyTitle}</span>
-          <span className="block text-xs font-medium text-[#71717A] mt-1">{emptyHint}</span>
+        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+          <span className="block text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">{emptyTitle}</span>
+          <span className="block text-xs font-medium text-[var(--text-secondary)] mt-1">{emptyHint}</span>
         </div>
       )}
 
@@ -50,7 +50,7 @@ export function GoalsListWidget({
           key={goal.id}
           type="button"
           onClick={() => onOpenGoal?.(goal.id)}
-          className="w-full text-left flex flex-col gap-4 bg-[#F4F4F5] rounded-[20px] p-5"
+          className="w-full text-left flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5"
         >
           <div className="flex min-w-0 items-center justify-between w-full gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -62,10 +62,10 @@ export function GoalsListWidget({
                 iconSize="text-2xl"
               />
               <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="block truncate text-base font-semibold text-black font-['Outfit']">
+                <span className="block truncate text-base font-semibold text-[var(--text-primary)] font-['Outfit']">
                   {goal.title}
                 </span>
-                <span className="block truncate text-xs font-normal text-[#71717A]">
+                <span className="block truncate text-xs font-normal text-[var(--text-secondary)]">
                   Límite: {goal.deadlineLabel}
                 </span>
               </div>
@@ -82,11 +82,11 @@ export function GoalsListWidget({
           <ProgressSection
             percent={goal.percent}
             barColor={goal.barColor}
-            trackColor="bg-[#E4E4E7]"
+            trackColor="bg-[var(--surface-border)]"
             leftLabel={goal.savedAmountLabel}
             rightLabel={goal.targetAmountLabel}
-            leftLabelClassName="text-sm font-semibold text-black font-['Outfit']"
-            rightLabelClassName="text-sm font-normal text-[#71717A]"
+            leftLabelClassName="text-sm font-semibold text-[var(--text-primary)] font-['Outfit']"
+            rightLabelClassName="text-sm font-normal text-[var(--text-secondary)]"
           />
         </button>
       ))}

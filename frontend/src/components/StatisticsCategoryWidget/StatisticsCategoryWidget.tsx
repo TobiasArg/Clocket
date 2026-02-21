@@ -35,16 +35,16 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
   return (
     <CardSection
       title={categoryTitle}
-      titleClassName="text-base font-bold text-black font-['Outfit']"
-      className="bg-[#F4F4F5] rounded-[20px] p-5"
+      titleClassName="text-base font-bold text-[var(--text-primary)] font-['Outfit']"
+      className="bg-[var(--surface-muted)] rounded-[20px] p-5"
     >
       {!hasSegments ? (
-        <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>
       ) : (
         <div className="flex flex-col gap-3">
           {showMetaText && (
-            <span className="text-[11px] font-medium text-[#71717A]">
-              {categoryTotalLabel}: <span className="font-semibold text-[#27272A]">{categoryTotal}</span>
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+              {categoryTotalLabel}: <span className="font-semibold text-[var(--text-primary)]">{categoryTotal}</span>
             </span>
           )}
           <DonutChart
@@ -57,7 +57,7 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
             showLegend={showLegend}
             legendPosition={chartType === "pie" ? "bottom" : "right"}
             size={chartSize}
-            legendValueClassName="text-[11px] font-semibold text-[#3F3F46]"
+            legendValueClassName="text-[11px] font-semibold text-[var(--text-secondary)]"
           />
         </div>
       )}

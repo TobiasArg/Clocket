@@ -87,26 +87,26 @@ export function BudgetListWidget({
   return (
     <CardSection
       title={sectionTitle}
-      titleClassName="block min-w-0 truncate text-[clamp(1.05rem,4.4vw,1.2rem)] font-bold text-black font-['Outfit']"
+      titleClassName="block min-w-0 truncate text-[clamp(1.05rem,4.4vw,1.2rem)] font-bold text-[var(--text-primary)] font-['Outfit']"
       className="px-5"
     >
       {showLoading && (
-        <span className="block text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+        <span className="block text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
       )}
 
       {!showLoading && errorMessage && (
-        <span className="block text-sm font-medium text-[#71717A]">{errorLabel}</span>
+        <span className="block text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
       )}
 
       {!showLoading && !errorMessage && items.length === 0 && (
-        <div className="rounded-2xl bg-[#F4F4F5] px-4 py-4">
-          <span className="block truncate text-sm font-semibold text-black font-['Outfit']">{emptyTitle}</span>
-          <span className="mt-1 block text-xs font-medium text-[#71717A]">{emptyHint}</span>
+        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+          <span className="block truncate text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">{emptyTitle}</span>
+          <span className="mt-1 block text-xs font-medium text-[var(--text-secondary)]">{emptyHint}</span>
           {onEmptyAction && (
             <button
               type="button"
               onClick={onEmptyAction}
-              className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#18181B] px-3 py-2 text-xs font-semibold text-white"
+              className="mt-3 inline-flex items-center justify-center rounded-xl bg-[var(--text-primary)] px-3 py-2 text-xs font-semibold text-[var(--panel-bg)]"
             >
               {emptyActionLabel}
             </button>
@@ -134,21 +134,21 @@ export function BudgetListWidget({
             key={budget.id}
             type="button"
             onClick={() => onBudgetClick?.(budget.id)}
-            className="flex flex-col gap-4 bg-[#F4F4F5] rounded-[20px] p-5 text-left"
+            className="flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5 text-left"
           >
             <div className="flex min-w-0 items-center justify-between w-full gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <IconBadge
                   icon={categoryMeta?.icon ?? "tag"}
-                  bg={categoryMeta?.iconBg ?? "bg-[#18181B]"}
+                  bg={categoryMeta?.iconBg ?? "bg-[var(--text-primary)]"}
                   size="w-[40px] h-[40px]"
                   rounded="rounded-[20px]"
                 />
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="block truncate text-[clamp(0.95rem,3.8vw,1.05rem)] font-semibold text-[#18181B] font-['Outfit']">
+                  <span className="block truncate text-[clamp(0.95rem,3.8vw,1.05rem)] font-semibold text-[var(--text-primary)] font-['Outfit']">
                     {budget.name}
                   </span>
-                  <span className="block truncate text-[11px] font-normal text-[#71717A]">
+                  <span className="block truncate text-[11px] font-normal text-[var(--text-secondary)]">
                     Meta: {formatMonthLabel(budget.month)}
                   </span>
                 </div>
@@ -165,11 +165,11 @@ export function BudgetListWidget({
             <ProgressSection
               percent={percent}
               barColor={colorSet.barColor}
-              trackColor="bg-[#E4E4E7]"
+              trackColor="bg-[var(--surface-border)]"
               leftLabel={formatCurrency(spentAmount)}
               rightLabel={formatCurrency(budget.limitAmount)}
-              leftLabelClassName="block max-w-[48%] truncate text-sm font-semibold text-[#18181B] font-['Outfit']"
-              rightLabelClassName="block max-w-[48%] truncate text-right text-sm font-normal text-[#71717A]"
+              leftLabelClassName="block max-w-[48%] truncate text-sm font-semibold text-[var(--text-primary)] font-['Outfit']"
+              rightLabelClassName="block max-w-[48%] truncate text-right text-sm font-normal text-[var(--text-secondary)]"
             />
             {isOverBudget && (
               <span className="block truncate text-xs font-semibold text-[#B91C1C]">

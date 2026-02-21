@@ -84,12 +84,12 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
     (view: StatisticsChartView) => {
       const flowDays = flowByView[view] ?? [];
       if (!loadedViews[view]) {
-        return <div className="h-[210px] w-full rounded-xl bg-white/70" />;
+        return <div className="h-[210px] w-full rounded-xl bg-[var(--panel-bg)]/70" />;
       }
 
       const ViewComponent = FLOW_VIEW_COMPONENTS[view];
       return (
-        <Suspense fallback={<div className="h-[210px] w-full rounded-xl bg-white/70" />}>
+        <Suspense fallback={<div className="h-[210px] w-full rounded-xl bg-[var(--panel-bg)]/70" />}>
           <ViewComponent
             animationKey={`${chartAnimationKey}-${view}`}
             flowDays={flowDays}
@@ -105,11 +105,11 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
     <>
       <CardSection
         title={balanceTitle}
-        titleClassName="text-base font-bold text-black font-['Outfit']"
-        className="bg-[#F4F4F5] rounded-[20px] p-5"
+        titleClassName="text-base font-bold text-[var(--text-primary)] font-['Outfit']"
+        className="bg-[var(--surface-muted)] rounded-[20px] p-5"
       >
         {!hasFlowData ? (
-          <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>
+          <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>
         ) : (
           <StatisticsViewCarousel
             activeView={activeView}

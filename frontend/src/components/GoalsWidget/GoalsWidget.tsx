@@ -16,11 +16,11 @@ export function GoalsWidget({
   return (
     <CardSection
       title={title}
-      titleClassName="text-lg font-bold text-[#18181B] font-['Outfit']"
+      titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
       gap="gap-3"
     >
       {goals.length === 0 ? (
-        <span className="text-sm font-medium text-[#71717A]">No hay metas activas.</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">No hay metas activas.</span>
       ) : (
         <div className="flex gap-3 overflow-x-auto">
           {goals.map((goal) => (
@@ -28,7 +28,7 @@ export function GoalsWidget({
               key={goal.id}
               type="button"
               onClick={() => onGoalClick?.(goal.id)}
-              className="flex flex-col gap-3 rounded-[20px] bg-white p-4 min-w-[140px] text-left"
+              className="flex flex-col gap-3 rounded-[20px] bg-[var(--panel-bg)] p-4 min-w-[140px] text-left"
             >
               {/*
                 Icon color is derived from the goal token so dashboard cards always
@@ -42,10 +42,10 @@ export function GoalsWidget({
                 rounded="rounded-[12px]"
               />
               <div className="flex flex-col gap-1">
-                <span className="text-base font-bold font-['Outfit'] text-black">
+                <span className="text-base font-bold font-['Outfit'] text-[var(--text-primary)]">
                   {goal.name}
                 </span>
-                <span className="text-2xl font-light font-['Outfit'] text-[#71717A]">
+                <span className="text-2xl font-light font-['Outfit'] text-[var(--text-secondary)]">
                   {`${goal.progressPercent}%`}
                 </span>
               </div>

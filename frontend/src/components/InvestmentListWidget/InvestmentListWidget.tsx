@@ -45,7 +45,7 @@ export function InvestmentListWidget({
     return (
       <div className="flex flex-col gap-2">
         {sectionHeader}
-        <div className="rounded-2xl border border-dashed border-[#D1D5DB] bg-white p-5">
+        <div className="rounded-2xl border border-dashed border-[#D1D5DB] bg-[var(--panel-bg)] p-5">
           <span className="block text-sm font-semibold text-[#111827]">No hay posiciones</span>
           <span className="mt-1 block text-xs font-medium text-[#6B7280]">
             Agregá una entrada para comenzar a trackear tu portfolio.

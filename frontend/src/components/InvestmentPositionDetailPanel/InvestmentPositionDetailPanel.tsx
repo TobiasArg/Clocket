@@ -1,6 +1,7 @@
 import { TrendLine } from "@/components/TrendLine/TrendLine";
 import type { InvestmentTableRow, PositionEntryRow } from "@/hooks/useInvestmentsPageModel";
-import { formatCurrency } from "@/utils/formatCurrency";
+import { useCurrency } from "@/hooks";
+import { formatCurrency, getUsdRate } from "@/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface InvestmentPositionDetailPanelProps {
@@ -17,10 +18,6 @@ export interface InvestmentPositionDetailPanelProps {
 
 const moneyTone = (value: number): string => {
   return value >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
-};
-
-const signedMoney = (value: number): string => {
-  return `${value >= 0 ? "+" : "-"}${formatCurrency(Math.abs(value), { currency: "USD", locale: "en-US" })}`;
 };
 
 const SWIPE_CLOSE_THRESHOLD = 92;
@@ -40,6 +37,12 @@ export function InvestmentPositionDetailPanel({
   onDeleteEntry,
   onRequestDelete,
 }: InvestmentPositionDetailPanelProps) {
+  const { currency } = useCurrency();
+  const usdRate = getUsdRate();
+  const fromUsd = (value: number): number => (currency === "ARS" ? value * usdRate : value);
+  const signedMoney = (value: number): string => {
+    return `${value >= 0 ? "+" : "-"}${formatCurrency(Math.abs(fromUsd(value)))}`;
+  };
   const panelRef = useRef<HTMLDivElement | null>(null);
   const touchStartYRef = useRef<number | null>(null);
   const isTrackingRef = useRef<boolean>(false);
@@ -172,7 +175,7 @@ export function InvestmentPositionDetailPanel({
           onTouchCancel={handleTouchCancel}
           role="dialog"
           aria-modal="true"
-          className="relative w-full max-h-[88vh] overflow-auto rounded-t-3xl bg-white p-5 shadow-[0_10px_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out md:max-w-3xl md:rounded-3xl"
+          className="relative w-full max-h-[88vh] overflow-auto rounded-t-3xl bg-[var(--panel-bg)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out md:max-w-3xl md:rounded-3xl"
           style={{ transform: `translateY(${panelOffset}px)` }}
         >
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[#D1D5DB] md:hidden" />
@@ -185,21 +188,21 @@ export function InvestmentPositionDetailPanel({
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <section className="rounded-2xl border border-[#E5E7EB] bg-[#FAFAFA] p-4">
+            <section className="rounded-2xl border border-[#E5E7EB] bg-[var(--surface-muted)] p-4">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Resumen</span>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <span className="text-[#6B7280]">Invertido</span>
-                <span className="text-right font-semibold text-[#111827]">{formatCurrency(row.investedUSD, { currency: "USD", locale: "en-US" })}</span>
+                <span className="text-right font-semibold text-[#111827]">{formatCurrency(fromUsd(row.investedUSD))}</span>
                 <span className="text-[#6B7280]">Valor actual</span>
-                <span className="text-right font-semibold text-[#111827]">{formatCurrency(row.currentValueUSD, { currency: "USD", locale: "en-US" })}</span>
+                <span className="text-right font-semibold text-[#111827]">{formatCurrency(fromUsd(row.currentValueUSD))}</span>
                 <span className="text-[#6B7280]">Amount</span>
                 <span className="text-right font-semibold text-[#111827]">{row.amount.toFixed(8)}</span>
                 <span className="text-[#6B7280]">Precio de entrada</span>
-                <span className="text-right font-semibold text-[#111827]">{formatCurrency(row.buyPrice, { currency: "USD", locale: "en-US" })}</span>
+                <span className="text-right font-semibold text-[#111827]">{formatCurrency(fromUsd(row.buyPrice))}</span>
               </div>
             </section>
 
-            <section className="rounded-2xl border border-[#E5E7EB] bg-[#FAFAFA] p-4">
+            <section className="rounded-2xl border border-[#E5E7EB] bg-[var(--surface-muted)] p-4">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Performance</span>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <span className="text-[#6B7280]">PnL total</span>
@@ -214,9 +217,9 @@ export function InvestmentPositionDetailPanel({
             </section>
           </div>
 
-          <section className="mt-4 rounded-2xl border border-[#E5E7EB] bg-[#FAFAFA] p-4">
+          <section className="mt-4 rounded-2xl border border-[#E5E7EB] bg-[var(--surface-muted)] p-4">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Historial de valor</span>
-            <div className="mt-3 rounded-xl bg-white p-2">
+            <div className="mt-3 rounded-xl bg-[var(--panel-bg)] p-2">
               {row.hasHistoricalData ? (
                 <TrendLine
                   className="h-[180px]"
@@ -234,7 +237,7 @@ export function InvestmentPositionDetailPanel({
             </div>
           </section>
 
-          <section className="mt-4 rounded-2xl border border-[#E5E7EB] bg-[#FAFAFA] p-4">
+          <section className="mt-4 rounded-2xl border border-[#E5E7EB] bg-[var(--surface-muted)] p-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Entradas</span>
               <span className="text-xs font-semibold text-[#6B7280]">{entries.length}</span>
@@ -246,7 +249,7 @@ export function InvestmentPositionDetailPanel({
               )}
 
               {!isEntriesLoading && entries.length === 0 && (
-                <div className="rounded-xl border border-dashed border-[#D1D5DB] bg-white px-3 py-2">
+                <div className="rounded-xl border border-dashed border-[#D1D5DB] bg-[var(--panel-bg)] px-3 py-2">
                   <span className="text-xs font-medium text-[#6B7280]">Todavía no hay movimientos para esta posición.</span>
                 </div>
               )}
@@ -254,20 +257,20 @@ export function InvestmentPositionDetailPanel({
               {!isEntriesLoading && entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="rounded-xl border border-[#E5E7EB] bg-white px-3 py-2"
+                  className="rounded-xl border border-[#E5E7EB] bg-[var(--panel-bg)] px-3 py-2"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-[#111827]">{entry.entryTypeLabel}</span>
                     <span className="text-[11px] font-medium text-[#6B7280]">{entry.createdAtLabel}</span>
                   </div>
                   <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                    <span className="text-[#6B7280]">USD</span>
+                    <span className="text-[#6B7280]">{currency}</span>
                     <span className="text-right font-semibold text-[#111827]">
-                      {formatCurrency(entry.usdSpent, { currency: "USD", locale: "en-US" })}
+                      {formatCurrency(fromUsd(entry.usdSpent))}
                     </span>
                     <span className="text-[#6B7280]">Precio</span>
                     <span className="text-right font-semibold text-[#111827]">
-                      {formatCurrency(entry.buyPrice, { currency: "USD", locale: "en-US" })}
+                      {formatCurrency(fromUsd(entry.buyPrice))}
                     </span>
                     <span className="text-[#6B7280]">Amount</span>
                     <span className="text-right font-semibold text-[#111827]">{entry.amount.toFixed(8)}</span>

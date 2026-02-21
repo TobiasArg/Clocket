@@ -4,7 +4,7 @@ export interface DividerProps {
 }
 
 export function Divider({
-  color = "bg-[#F4F4F5]",
+  color = "bg-[var(--surface-muted)]",
   className = "",
 }: DividerProps) {
   return <div className={`w-full h-px ${color} ${className}`} />;

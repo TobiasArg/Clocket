@@ -16,12 +16,12 @@ export interface OptionGridProps {
 export function OptionGrid({
   rows,
   onOptionClick,
-  buttonBg = "bg-black",
+  buttonBg = "bg-[var(--text-primary)]",
   buttonRounded = "rounded-3xl",
   buttonHeight = "h-[160px]",
   iconSize = "text-[40px]",
-  iconColor = "text-white",
-  labelClassName = "text-base font-semibold text-white font-['Outfit']",
+  iconColor = "text-[var(--panel-bg)]",
+  labelClassName = "text-base font-semibold text-[var(--panel-bg)] font-['Outfit']",
   className = "",
 }: OptionGridProps) {
   const navigateToPath = (to: string): void => {

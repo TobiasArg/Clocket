@@ -153,7 +153,7 @@ export function Transactions({
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
@@ -163,8 +163,8 @@ export function Transactions({
       <div className="flex-1 overflow-auto px-5 py-2">
         <div className="flex flex-col gap-6">
           {showSaved && (
-            <div className="rounded-2xl bg-[#F4F4F5] px-4 py-2">
-              <span className="text-xs font-medium text-[#71717A]">{savedLabel}</span>
+            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-2">
+              <span className="text-xs font-medium text-[var(--text-secondary)]">{savedLabel}</span>
             </div>
           )}
 

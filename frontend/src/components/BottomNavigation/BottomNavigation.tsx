@@ -10,7 +10,7 @@ export interface BottomNavigationProps {
 
 export function BottomNavigation({
   items,
-  activeColor = "text-black",
+  activeColor = "text-[var(--text-primary)]",
   onItemClick,
 }: BottomNavigationProps) {
   const currentPath =
@@ -25,8 +25,8 @@ export function BottomNavigation({
   };
 
   return (
-    <div className="border-t border-[#F4F4F5]">
-      <div className="flex items-center h-[80px] px-4 bg-white">
+    <div className="border-t border-[var(--surface-border)]">
+      <div className="flex items-center h-[80px] px-4 bg-[var(--panel-bg)]">
         {items.map((item, i) => {
           const isActive = item.to ? isPathActive(item.to) : Boolean(item.active);
           const baseClassName =

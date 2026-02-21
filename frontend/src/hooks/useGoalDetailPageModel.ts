@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useCurrency } from "./useCurrency";
 import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
@@ -114,6 +115,7 @@ export const useGoalDetailPageModel = (
   options: UseGoalDetailPageModelOptions,
 ): UseGoalDetailPageModelResult => {
   const { goalId } = options;
+  const { currency: appCurrency } = useCurrency();
   const { items: goals, remove: removeGoal } = useGoals();
   const { items: accounts } = useAccounts();
   const { items: categories, create: createCategory } = useCategories();
@@ -152,7 +154,7 @@ export const useGoalDetailPageModel = (
   const [entryDateInput, setEntryDateInput] = useState<string>(toIsoDate(new Date()));
   const [entryNoteInput, setEntryNoteInput] = useState<string>("");
   const [selectedEntryAccountId, setSelectedEntryAccountId] = useState<string>("");
-  const [selectedEntryCurrency, setSelectedEntryCurrency] = useState<TransactionInputCurrency>("ARS");
+  const [selectedEntryCurrency, setSelectedEntryCurrency] = useState<TransactionInputCurrency>(appCurrency);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [deleteResolution, setDeleteResolution] = useState<GoalDeleteResolution>("delete_entries");
   const [redirectGoalId, setRedirectGoalId] = useState<string>("");

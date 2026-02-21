@@ -65,7 +65,7 @@ export function SettingsModalShell({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-[var(--surface-muted)] p-2 text-[var(--text-secondary)] transition hover:bg-[#EAEAF0]"
+            className="rounded-xl bg-[var(--surface-muted)] p-2 text-[var(--text-secondary)] transition hover:bg-[var(--surface-border)]"
             aria-label="Cerrar"
           >
             <PhosphorIcon name="x" size="text-[16px]" />

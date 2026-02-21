@@ -51,7 +51,7 @@ export function BudgetQuickAddWidget({
   return (
     <div className="px-5">
       <form
-        className="flex flex-col gap-3 bg-[#F4F4F5] rounded-2xl p-4"
+        className="flex flex-col gap-3 bg-[var(--surface-muted)] rounded-2xl p-4"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -62,23 +62,23 @@ export function BudgetQuickAddWidget({
             <button
               type="button"
               onClick={onBackClick}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#D4D4D8] bg-white text-[#3F3F46]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#D4D4D8] bg-[var(--panel-bg)] text-[var(--text-secondary)]"
               aria-label="Volver"
             >
-              <PhosphorIcon name="arrow-left" className="text-[#3F3F46]" />
+              <PhosphorIcon name="arrow-left" className="text-[var(--text-secondary)]" />
             </button>
           )}
-          <span className="block min-w-0 truncate text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+          <span className="block min-w-0 truncate text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">
             {title}
           </span>
         </div>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{categoryLabel}</span>
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{categoryLabel}</span>
           <select
             value={selectedCategoryId}
             onChange={(event) => onCategoryChange(event.target.value)}
-            className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
           >
             <option value="">Selecciona una categoría</option>
             {categories.map((category) => (
@@ -88,14 +88,14 @@ export function BudgetQuickAddWidget({
             ))}
           </select>
           {showValidation && !isCategoryValid && (
-            <span className="text-[11px] font-medium text-[#71717A]">
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
               {categoryErrorLabel}
             </span>
           )}
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{amountLabel}</span>
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{amountLabel}</span>
           <input
             type="number"
             min="0.01"
@@ -103,10 +103,10 @@ export function BudgetQuickAddWidget({
             value={limitAmountInput}
             onChange={(event) => onAmountChange(event.target.value)}
             placeholder="0.00"
-            className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
           />
           {showValidation && !isAmountValid && (
-            <span className="text-[11px] font-medium text-[#71717A]">
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
               {amountErrorLabel}
             </span>
           )}
@@ -116,9 +116,9 @@ export function BudgetQuickAddWidget({
           type="submit"
           icon="plus"
           label={isLoading ? "Guardando..." : submitLabel}
-          iconColor="text-[#18181B]"
-          labelColor="text-[#18181B]"
-          bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#D4D4D8]"}
+          iconColor="text-[var(--text-primary)]"
+          labelColor="text-[var(--text-primary)]"
+          bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-border)]"}
           padding="px-4 py-3"
           className={isFormValid && !isLoading ? "" : "opacity-60"}
           disabled={!isFormValid || isLoading}

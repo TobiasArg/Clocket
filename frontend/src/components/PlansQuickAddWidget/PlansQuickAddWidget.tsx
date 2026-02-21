@@ -81,28 +81,28 @@ export function PlansQuickAddWidget({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[20px] p-4 bg-[#F4F4F5]">
-      <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+    <div className="flex flex-col gap-3 rounded-[20px] p-4 bg-[var(--surface-muted)]">
+      <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">
         {title}
       </span>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{nameLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{nameLabel}</span>
         <input
           type="text"
           value={nameInput}
           onChange={(event) => onNameChange?.(event.target.value)}
           placeholder={namePlaceholder}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{currencyLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{currencyLabel}</span>
         <select
           value={selectedCurrency}
           onChange={(event) => onCurrencyChange?.(event.target.value as TransactionInputCurrency)}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
         >
           <option value="ARS">ARS</option>
           <option value="USD">USD</option>
@@ -110,7 +110,7 @@ export function PlansQuickAddWidget({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">
+        <span className="text-xs font-medium text-[var(--text-secondary)]">
           {totalAmountLabel}
         </span>
         <input
@@ -120,17 +120,17 @@ export function PlansQuickAddWidget({
           value={totalAmountInput}
           onChange={(event) => onTotalAmountChange?.(event.target.value)}
           placeholder={totalAmountPlaceholder}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
         />
         {showValidation && !isTotalAmountValid && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {totalAmountErrorLabel}
           </span>
         )}
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">
+        <span className="text-xs font-medium text-[var(--text-secondary)]">
           {installmentsLabel}
         </span>
         <input
@@ -140,17 +140,17 @@ export function PlansQuickAddWidget({
           value={installmentsCountInput}
           onChange={(event) => onInstallmentsCountChange?.(event.target.value)}
           placeholder={installmentsPlaceholder}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
         />
         {showValidation && !isInstallmentsCountValid && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {installmentsErrorLabel}
           </span>
         )}
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">
+        <span className="text-xs font-medium text-[var(--text-secondary)]">
           {creationDateLabel}
         </span>
         <input
@@ -158,10 +158,10 @@ export function PlansQuickAddWidget({
           max={getCurrentDateInputValue()}
           value={creationDateInput}
           onChange={(event) => onCreationDateChange?.(event.target.value)}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
         />
         {showValidation && !isCreationDateValid && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {creationDateErrorLabel}
           </span>
         )}
@@ -170,9 +170,9 @@ export function PlansQuickAddWidget({
       <ActionButton
         icon="plus"
         label={submitLabel}
-        iconColor="text-[#18181B]"
-        labelColor="text-[#18181B]"
-        bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"}
+        iconColor="text-[var(--text-primary)]"
+        labelColor="text-[var(--text-primary)]"
+        bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
         padding="px-4 py-3"
         className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
         onClick={onSubmit}

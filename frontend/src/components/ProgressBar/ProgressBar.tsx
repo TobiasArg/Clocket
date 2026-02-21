@@ -10,7 +10,7 @@ export interface ProgressBarProps {
 export function ProgressBar({
   percent,
   barColor,
-  trackColor = "bg-[#F4F4F5]",
+  trackColor = "bg-[var(--surface-muted)]",
   height = "h-2",
 }: ProgressBarProps) {
   const widthClassName = getPercentWidthClass(percent);

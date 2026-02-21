@@ -13,10 +13,10 @@ export function AccountsSummaryWidget({
   return (
     <CardSection
       title={summaryTitle}
-      titleClassName="text-base font-bold text-black font-['Outfit']"
-      className="rounded-2xl bg-[#F4F4F5] p-4"
+      titleClassName="text-base font-bold text-[var(--text-primary)] font-['Outfit']"
+      className="rounded-2xl bg-[var(--surface-muted)] p-4"
     >
-      <span className="block text-[clamp(1.5rem,8vw,2rem)] font-bold text-black font-['Outfit']">
+      <span className="block text-[clamp(1.5rem,8vw,2rem)] font-bold text-[var(--text-primary)] font-['Outfit']">
         {formatCurrency(totalBalance)}
       </span>
     </CardSection>

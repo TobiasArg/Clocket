@@ -1,6 +1,7 @@
 import { TrendLine } from "@/components/TrendLine/TrendLine";
 import type { InvestmentTableRow } from "@/hooks/useInvestmentsPageModel";
-import { formatCurrency } from "@/utils/formatCurrency";
+import { useCurrency } from "@/hooks";
+import { formatCurrency, getUsdRate } from "@/utils";
 
 export interface InvestmentPositionItemProps {
   item: InvestmentTableRow;
@@ -12,13 +13,15 @@ const moneyTone = (value: number): string => {
 };
 
 export function InvestmentPositionItem({ item, onOpenDetail }: InvestmentPositionItemProps) {
-  const priceLastUpdated = `${formatCurrency(item.currentPrice, { currency: "USD", locale: "en-US" })} · ${item.lastUpdatedLabel}`;
+  const { currency } = useCurrency();
+  const currentPrice = currency === "ARS" ? item.currentPrice * getUsdRate() : item.currentPrice;
+  const priceLastUpdated = `${formatCurrency(currentPrice)} · ${item.lastUpdatedLabel}`;
 
   return (
     <button
       type="button"
       onClick={() => onOpenDetail(item.id)}
-      className="w-full rounded-2xl border border-[#E5E7EB] bg-white p-4 text-left transition-colors hover:bg-[#FAFAFA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+      className="w-full rounded-2xl border border-[#E5E7EB] bg-[var(--panel-bg)] p-4 text-left transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
       aria-label={`Abrir detalle de ${item.displayName}`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -45,7 +48,7 @@ export function InvestmentPositionItem({ item, onOpenDetail }: InvestmentPositio
             gridColor="rgba(148,163,184,0.18)"
           />
         ) : (
-          <div className="flex h-[70px] items-center justify-center rounded-lg border border-dashed border-[#D1D5DB] bg-white">
+          <div className="flex h-[70px] items-center justify-center rounded-lg border border-dashed border-[#D1D5DB] bg-[var(--panel-bg)]">
             <span className="text-[11px] font-medium text-[#6B7280]">Sin historial suficiente</span>
           </div>
         )}

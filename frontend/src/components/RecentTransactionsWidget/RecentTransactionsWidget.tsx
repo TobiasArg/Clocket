@@ -36,13 +36,13 @@ export function RecentTransactionsWidget({
   return (
     <CardSection
       title={title}
-      titleClassName="text-lg font-bold text-[#18181B] font-['Outfit']"
+      titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
       gap="gap-3"
       action={(
         <button
           type="button"
           onClick={onViewAll}
-          className="text-sm font-medium text-[#71717A]"
+          className="text-sm font-medium text-[var(--text-secondary)]"
         >
           {viewAllLabel}
         </button>
@@ -50,17 +50,17 @@ export function RecentTransactionsWidget({
     >
       {isLoading && transactions.length === 0 && (
         <>
-          <div className="animate-pulse h-[64px] rounded-2xl bg-[#F4F4F5]" />
-          <div className="animate-pulse h-[64px] rounded-2xl bg-[#F4F4F5]" />
+          <div className="animate-pulse h-[64px] rounded-2xl bg-[var(--surface-muted)]" />
+          <div className="animate-pulse h-[64px] rounded-2xl bg-[var(--surface-muted)]" />
         </>
       )}
 
       {!isLoading && hasError && (
-        <span className="text-sm font-medium text-[#71717A]">{errorLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
       )}
 
       {!isLoading && !hasError && showEmpty && (
-        <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>
       )}
 
       {transactions.map((transaction) => (
@@ -69,16 +69,16 @@ export function RecentTransactionsWidget({
           left={<IconBadge icon={transaction.icon} bg={transaction.iconBg} />}
           title={transaction.name}
           subtitle={transaction.date}
-          titleClassName="text-base font-semibold text-black font-['Outfit']"
+          titleClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
           subtitleClassName="text-xs font-normal text-[#A1A1AA]"
           right={(
             <span
-              className={`text-base font-bold font-['Outfit'] ${transaction.amountColor ?? "text-black"}`}
+              className={`text-base font-bold font-['Outfit'] ${transaction.amountColor ?? "text-[var(--text-primary)]"}`}
             >
               {transaction.amount}
             </span>
           )}
-          className="bg-[#F4F4F5] rounded-2xl"
+          className="bg-[var(--surface-muted)] rounded-2xl"
           padding="p-4"
         />
       ))}

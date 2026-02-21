@@ -29,14 +29,14 @@ export function StockCard({
   changeBg,
   row1,
   row2,
-  tickerBg = "bg-[#18181B]",
-  tickerTextColor = "text-white",
-  nameClassName = "text-base font-semibold text-[#18181B] font-['Outfit']",
-  exchangeClassName = "text-xs font-normal text-[#71717A]",
+  tickerBg = "bg-[var(--text-primary)]",
+  tickerTextColor = "text-[var(--panel-bg)]",
+  nameClassName = "text-base font-semibold text-[var(--text-primary)] font-['Outfit']",
+  exchangeClassName = "text-xs font-normal text-[var(--text-secondary)]",
   onClick,
   className = "",
 }: StockCardProps) {
-  const classes = `flex flex-col gap-3 bg-white rounded-2xl p-4 text-left ${className}`;
+  const classes = `flex flex-col gap-3 bg-[var(--panel-bg)] rounded-2xl p-4 text-left ${className}`;
 
   const content = (
     <>
@@ -66,14 +66,14 @@ export function StockCard({
 
       <MetricGrid
         metrics={row1}
-        labelClassName="text-[11px] font-normal text-[#71717A]"
-        valueClassName="text-base font-semibold font-['Outfit'] text-[#18181B]"
+        labelClassName="text-[11px] font-normal text-[var(--text-secondary)]"
+        valueClassName="text-base font-semibold font-['Outfit'] text-[var(--text-primary)]"
       />
 
       <MetricGrid
         metrics={row2}
-        labelClassName="text-[11px] font-normal text-[#71717A]"
-        valueClassName="text-base font-semibold font-['Outfit'] text-[#18181B]"
+        labelClassName="text-[11px] font-normal text-[var(--text-secondary)]"
+        valueClassName="text-base font-semibold font-['Outfit'] text-[var(--text-primary)]"
       />
     </>
   );

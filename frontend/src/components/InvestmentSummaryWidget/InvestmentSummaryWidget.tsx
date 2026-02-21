@@ -1,5 +1,6 @@
 import type { InvestmentsSummary } from "@/hooks/useInvestmentsPageModel";
-import { formatCurrency } from "@/utils/formatCurrency";
+import { useCurrency } from "@/hooks";
+import { formatCurrency, getUsdRate } from "@/utils";
 
 export interface InvestmentSummaryWidgetProps {
   summary: InvestmentsSummary;
@@ -13,28 +14,30 @@ const moneyClassName = (value: number): string => {
   return value >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 };
 
-const signedCurrency = (value: number): string => {
-  return `${value >= 0 ? "+" : "-"}${formatCurrency(Math.abs(value), { currency: "USD", locale: "en-US" })}`;
-};
-
 const signedPct = (value: number): string => {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 };
 
 export function InvestmentSummaryWidget({ summary }: InvestmentSummaryWidgetProps) {
+  const { currency } = useCurrency();
   const totalPositions = Math.max(summary.totalPositions, 0);
   const stocksPct = totalPositions > 0 ? (summary.stocksCount / totalPositions) * 100 : 0;
   const cryptoPct = totalPositions > 0 ? (summary.cryptoCount / totalPositions) * 100 : 0;
+  const usdRate = getUsdRate();
+  const fromUsd = (value: number): number => (currency === "ARS" ? value * usdRate : value);
+  const signedCurrency = (value: number): string => {
+    return `${value >= 0 ? "+" : "-"}${formatCurrency(Math.abs(fromUsd(value)))}`;
+  };
 
   return (
-    <div className="rounded-2xl border border-[#E5E7EB] bg-white px-4 py-4">
+    <div className="rounded-2xl border border-[#E5E7EB] bg-[var(--panel-bg)] px-4 py-4">
       <div className="min-w-0">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Portfolio</span>
         <p className="truncate text-[28px] font-bold leading-none text-[#111827] font-['Outfit']">
-          {formatCurrency(summary.currentValueUSD, { currency: "USD", locale: "en-US" })}
+          {formatCurrency(fromUsd(summary.currentValueUSD))}
         </p>
         <span className="mt-1 block text-xs font-medium text-[#6B7280]">
-          Invertido {formatCurrency(summary.investedUSD, { currency: "USD", locale: "en-US" })}
+          Invertido {formatCurrency(fromUsd(summary.investedUSD))}
         </span>
       </div>
 

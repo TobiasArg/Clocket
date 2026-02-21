@@ -27,11 +27,11 @@ export function SpendingInfoWidget({
   return (
     <CardSection
       title={title}
-      titleClassName="text-lg font-bold text-[#18181B] font-['Outfit']"
-      className="rounded-2xl bg-[#F4F4F5] border border-[#E4E4E7] p-4"
+      titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
+      className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4"
       action={(
         <div className="flex flex-col items-end">
-          <span className="text-lg font-semibold text-[#18181B] font-['Outfit']">
+          <span className="text-lg font-semibold text-[var(--text-primary)] font-['Outfit']">
             {total}
           </span>
           <span className="text-[11px] font-medium text-[#A1A1AA]">
@@ -43,11 +43,11 @@ export function SpendingInfoWidget({
       )}
     >
       {isLoading && categories.length === 0 && (
-        <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
       )}
 
       {!isLoading && showEmpty && (
-        <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>
       )}
 
       {categories.map((category) => (

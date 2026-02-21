@@ -11,7 +11,7 @@ export interface CardSectionProps {
 
 export function CardSection({
   title,
-  titleClassName = "text-xl font-bold text-black font-['Outfit']",
+  titleClassName = "text-xl font-bold text-[var(--text-primary)] font-['Outfit']",
   action,
   gap = "gap-4",
   children,

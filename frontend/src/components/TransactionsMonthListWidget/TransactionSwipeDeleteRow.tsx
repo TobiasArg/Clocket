@@ -247,7 +247,7 @@ export function TransactionSwipeDeleteRow({
 
       <div
         ref={swipeLayerRef}
-        className="relative z-10 w-full bg-white will-change-transform select-none"
+        className="relative z-10 w-full bg-[var(--panel-bg)] will-change-transform select-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={(event) => {
@@ -266,8 +266,8 @@ export function TransactionSwipeDeleteRow({
           left={<IconBadge icon={transaction.icon} bg={transaction.iconBg} />}
           title={transaction.name}
           subtitle={subtitle}
-          titleClassName="text-[15px] font-semibold text-black font-['Outfit']"
-          subtitleClassName="text-[11px] font-medium text-[#71717A] truncate"
+          titleClassName="text-[15px] font-semibold text-[var(--text-primary)] font-['Outfit']"
+          subtitleClassName="text-[11px] font-medium text-[var(--text-secondary)] truncate"
           right={(
             <div className="flex flex-col gap-0.5 items-end shrink-0">
               <span
@@ -287,11 +287,11 @@ export function TransactionSwipeDeleteRow({
                   {`${deleteActionLabel}...`}
                 </span>
               ) : (
-                <div className="flex items-center gap-1 text-[10px] font-medium text-[#71717A]">
+                <div className="flex items-center gap-1 text-[10px] font-medium text-[var(--text-secondary)]">
                   <PhosphorIcon
                     name="pencil-simple"
                     size="text-[10px]"
-                    className="text-[#71717A]"
+                    className="text-[var(--text-secondary)]"
                   />
                   <span>{editActionLabel}</span>
                 </div>

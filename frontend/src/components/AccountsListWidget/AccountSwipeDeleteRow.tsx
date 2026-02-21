@@ -237,7 +237,7 @@ export function AccountSwipeDeleteRow({
 
       <div
         ref={swipeLayerRef}
-        className="relative z-10 bg-[#F4F4F5] will-change-transform select-none"
+        className="relative z-10 bg-[var(--surface-muted)] will-change-transform select-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={(event) => {
@@ -251,16 +251,16 @@ export function AccountSwipeDeleteRow({
           left={(
             <IconBadge
               icon="wallet"
-              bg="bg-[#18181B]"
-              iconColor="text-white"
+              bg="bg-[var(--text-primary)]"
+              iconColor="text-[var(--panel-bg)]"
               size="w-[40px] h-[40px]"
               rounded="rounded-xl"
             />
           )}
           title={account.name}
           subtitle={`${updatedPrefix} ${UPDATED_FORMATTER.format(new Date(account.updatedAt))}`}
-          titleClassName="text-base font-semibold text-black font-['Outfit']"
-          subtitleClassName="text-xs font-medium text-[#71717A]"
+          titleClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
+          subtitleClassName="text-xs font-medium text-[var(--text-secondary)]"
           right={(
             <div className="flex flex-col items-end gap-0.5">
               <span
@@ -270,7 +270,7 @@ export function AccountSwipeDeleteRow({
               >
                 {formatCurrency(account.balance)}
               </span>
-              <span className="text-[10px] font-medium text-[#71717A]">
+              <span className="text-[10px] font-medium text-[var(--text-secondary)]">
                 {incomeLabel} {formatCurrency(flow.income)} · {expenseLabel} {formatCurrency(flow.expense)}
               </span>
               {isDeleting && (
@@ -281,7 +281,7 @@ export function AccountSwipeDeleteRow({
             </div>
           )}
           showBorder={showBorder}
-          borderColor="border-[#E4E4E7]"
+          borderColor="border-[var(--surface-border)]"
           padding="px-3 py-3.5"
         />
       </div>
