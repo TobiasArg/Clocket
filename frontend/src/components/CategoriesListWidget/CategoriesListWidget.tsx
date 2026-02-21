@@ -111,7 +111,7 @@ export function CategoriesListWidget({
             isExpanded={expandedIndex === index}
             onToggle={() => onToggle?.(index)}
           >
-            <div className="pl-[52px] pb-2 flex flex-col">
+            <div className="flex flex-col pb-2 pl-[52px]">
               {subcategoryList.length > 0 ? (
                 subcategoryList.map((sub, subIndex) => (
                   <div
@@ -128,7 +128,7 @@ export function CategoriesListWidget({
               )}
 
               {!isUsingExternalCategories && categoryId && (
-                <div className="pt-2 flex flex-col gap-2">
+                <div className="flex flex-col gap-2 pt-2">
                   {usageCount > 0 && (
                     <span className="text-[11px] font-medium text-[var(--text-secondary)]">
                       {inUseLabelPrefix} {usageCount} {usageCount === 1 ? "transacción" : "transacciones"}.
@@ -145,6 +145,7 @@ export function CategoriesListWidget({
                     </button>
                   ) : (
                     <div className="rounded-xl bg-[var(--panel-bg)] px-3 py-3 flex flex-col gap-2 max-w-[280px]">
+                    <div className="flex max-w-[280px] flex-col gap-2 rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-3">
                       <span className="text-xs font-semibold text-[var(--text-primary)]">{deleteConfirmTitle}</span>
                       <span className="text-xs font-medium text-[var(--text-secondary)]">{deleteConfirmHint}</span>
                       <div className="flex items-center gap-2">
@@ -152,12 +153,14 @@ export function CategoriesListWidget({
                           type="button"
                           onClick={() => onDeleteConfirmCategoryIdChange?.(null)}
                           className="px-3 py-1.5 rounded-lg bg-[var(--surface-muted)] text-xs font-medium text-[var(--text-secondary)]"
+                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-muted)] text-xs font-medium text-[var(--text-secondary)]"
                         >
                           {deleteCancelLabel}
                         </button>
                         <button
                           type="button"
                           onClick={() => onDeleteCategory?.(category)}
+                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-border)] text-xs font-medium text-[var(--text-primary)]"
                           className="px-3 py-1.5 rounded-lg bg-[var(--surface-border)] text-xs font-medium text-[var(--text-primary)]"
                         >
                           {deleteConfirmLabel}

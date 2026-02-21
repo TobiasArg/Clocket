@@ -31,12 +31,13 @@ export function PageHeader({
           <button
             type="button"
             onClick={onBackClick}
-            className="flex shrink-0 items-center justify-center w-[44px] h-[44px] rounded-full bg-[var(--surface-muted)]"
+            className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full border border-[var(--surface-border)] bg-[var(--surface-muted)]"
             aria-label="Volver"
           >
             <PhosphorIcon name="arrow-left" className="text-[var(--text-primary)]" />
           </button>
         ) : null}
+        <span className="block truncate text-2xl font-bold text-[var(--text-primary)] font-['Outfit']">
         <span className="block truncate text-2xl font-bold text-[var(--text-primary)] font-['Outfit']">
           {title}
         </span>

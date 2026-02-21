@@ -100,7 +100,7 @@ export function Categories({
   });
 
   return (
-    <div className="relative flex h-full w-full flex-col bg-white">
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)] text-[var(--text-primary)]">
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
