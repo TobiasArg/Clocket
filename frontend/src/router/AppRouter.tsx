@@ -1,20 +1,18 @@
 import { Suspense, lazy } from "react";
 import { useAppSettings } from "@/hooks";
-import {
-  Accounts,
-  BudgetDetail,
-  Budgets,
-  Categories,
-  GoalDetail,
-  Goals,
-  Home,
-  HomeDesktop,
-  Investments,
-  More,
-  Plans,
-  Settings,
-  Transactions,
-} from "@/pages";
+import { Accounts } from "@/pages/Accounts/Accounts";
+import { BudgetDetail } from "@/pages/BudgetDetail/BudgetDetail";
+import { Budgets } from "@/pages/Budgets/Budgets";
+import { Categories } from "@/pages/Categories/Categories";
+import { GoalDetail } from "@/pages/Goals/GoalDetail";
+import { Goals } from "@/pages/Goals/Goals";
+import { Home } from "@/pages/Home/Home";
+import { HomeDesktop } from "@/pages/HomeDesktop/HomeDesktop";
+import { Investments } from "@/pages/Investments/Investments";
+import { More } from "@/pages/More/More";
+import { Plans } from "@/pages/Plans/Plans";
+import { Settings } from "@/pages/Settings/Settings";
+import { Transactions } from "@/pages/Transactions/Transactions";
 import {
   type AppPath,
   extractBudgetId,

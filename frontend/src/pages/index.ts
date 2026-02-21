@@ -10,5 +10,4 @@ export { Investments } from "./Investments/Investments";
 export { More } from "./More/More";
 export { Plans } from "./Plans/Plans";
 export { Settings } from "./Settings/Settings";
-export { Statistics } from "./Statistics/Statistics";
 export { Transactions } from "./Transactions/Transactions";
