@@ -46,7 +46,7 @@ export function CategoryQuickAddWidget({
           value={nameInput}
           onChange={(event) => onNameInputChange?.(event.target.value)}
           placeholder={namePlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isCategoryNameValid && (
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">

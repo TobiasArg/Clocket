@@ -48,13 +48,13 @@ export function BottomNavigation({
                 <PhosphorIcon
                   name={item.icon}
                   size="text-2xl"
-                  className={isActive ? activeColor : "text-[#A1A1AA]"}
+                  className={isActive ? activeColor : "text-[var(--text-secondary)]"}
                 />
                 <span
                   className={`text-[10px] ${
                     isActive
                       ? `font-semibold ${activeColor}`
-                      : "font-medium text-[#A1A1AA]"
+                      : "font-medium text-[var(--text-secondary)]"
                   }`}
                 >
                   {item.label}
@@ -74,13 +74,13 @@ export function BottomNavigation({
               <PhosphorIcon
                 name={item.icon}
                 size="text-2xl"
-                className={isActive ? activeColor : "text-[#A1A1AA]"}
+                className={isActive ? activeColor : "text-[var(--text-secondary)]"}
               />
               <span
                 className={`text-[10px] ${
                   isActive
                     ? `font-semibold ${activeColor}`
-                    : "font-medium text-[#A1A1AA]"
+                    : "font-medium text-[var(--text-secondary)]"
                 }`}
               >
                 {item.label}

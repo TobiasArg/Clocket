@@ -91,7 +91,7 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
 
         <div className="flex flex-col gap-3">
           {sections.map((section) => (
-            <div key={section.key} className="rounded-xl bg-[#F9FAFB] px-3 py-2">
+            <div key={section.key} className="rounded-xl bg-[var(--surface-muted)] px-3 py-2">
               <div className="mb-1 flex items-center justify-between">
                 <span className={`text-xs font-semibold ${section.amountClassName}`}>{section.label}</span>
                 <span className={`text-xs font-semibold tabular-nums ${section.amountClassName}`}>

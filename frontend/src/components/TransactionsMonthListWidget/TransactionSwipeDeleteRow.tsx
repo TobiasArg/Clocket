@@ -21,6 +21,10 @@ const SWIPE_TRIGGER_PX = 72;
 const AXIS_LOCK_RATIO = 1.2;
 const SWIPE_MIN_DISTANCE_PX = 6;
 const RESET_TRANSITION_MS = 200;
+const DEFAULT_ICON_OPACITY = 0.5;
+const DEFAULT_ICON_SCALE = 0.92;
+const ICON_REVEAL_OPACITY_DELTA = 0.5;
+const ICON_REVEAL_SCALE_DELTA = 0.12;
 
 type AxisLock = "horizontal" | "vertical" | null;
 
@@ -74,6 +78,7 @@ export function TransactionSwipeDeleteRow({
   const deleteIconRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<DragState>(createInitialDragState());
   const shouldSuppressClickRef = useRef<boolean>(false);
+  const renderedTranslateRef = useRef(0);
 
   const applySwipeProgress = (value: number): void => {
     const progress = Math.min(1, Math.abs(value) / MAX_REVEAL_PX);
@@ -82,12 +87,23 @@ export function TransactionSwipeDeleteRow({
     const revealWidthPx = Math.max(0, Math.abs(value));
 
     if (revealViewportNode) {
-      revealViewportNode.style.width = `${revealWidthPx}px`;
+      const nextWidth = `${revealWidthPx}px`;
+      if (revealViewportNode.style.width !== nextWidth) {
+        revealViewportNode.style.width = nextWidth;
+      }
     }
 
     if (iconNode) {
-      iconNode.style.opacity = `${0.5 + progress * 0.5}`;
-      iconNode.style.transform = `scale(${0.92 + progress * 0.12})`;
+      const nextOpacity = `${DEFAULT_ICON_OPACITY + progress * ICON_REVEAL_OPACITY_DELTA}`;
+      const nextTransform = `scale(${DEFAULT_ICON_SCALE + progress * ICON_REVEAL_SCALE_DELTA})`;
+
+      if (iconNode.style.opacity !== nextOpacity) {
+        iconNode.style.opacity = nextOpacity;
+      }
+
+      if (iconNode.style.transform !== nextTransform) {
+        iconNode.style.transform = nextTransform;
+      }
     }
   };
 
@@ -97,12 +113,20 @@ export function TransactionSwipeDeleteRow({
       return;
     }
 
-    node.style.transition = withTransition
+    const transitionValue = withTransition
       ? `transform ${RESET_TRANSITION_MS}ms ease-out`
       : "none";
-    node.style.transform = `translate3d(${value}px, 0, 0)`;
+    if (node.style.transition !== transitionValue) {
+      node.style.transition = transitionValue;
+    }
+
+    if (renderedTranslateRef.current !== value) {
+      node.style.transform = `translate3d(${value}px, 0, 0)`;
+      renderedTranslateRef.current = value;
+      applySwipeProgress(value);
+    }
+
     dragStateRef.current.translateX = value;
-    applySwipeProgress(value);
   };
 
   const resetSwipePosition = (withTransition: boolean): void => {
@@ -224,10 +248,6 @@ export function TransactionSwipeDeleteRow({
     shouldSuppressClickRef.current = false;
   }, [isDeleting, isInteractionLocked, transaction.id]);
 
-  useEffect(() => {
-    applySwipeProgress(0);
-  }, []);
-
   return (
     <div className="relative overflow-hidden touch-pan-y">
       <div className="pointer-events-none absolute inset-0 z-0 bg-[#DC2626]">
@@ -256,6 +276,9 @@ export function TransactionSwipeDeleteRow({
         onPointerCancel={(event) => {
           finishPointerInteraction(event, true);
         }}
+        onPointerLeave={(event) => {
+          finishPointerInteraction(event, true);
+        }}
         onLostPointerCapture={() => {
           resetSwipePosition(true);
           clearDragState();
@@ -279,11 +302,11 @@ export function TransactionSwipeDeleteRow({
               >
                 {transaction.amount}
               </span>
-              <span className="block max-w-[132px] truncate text-[10px] font-medium text-[#A1A1AA]">
+              <span className="block max-w-[132px] truncate text-[10px] font-medium text-[var(--text-secondary)]">
                 {transaction.meta}
               </span>
               {isDeleting ? (
-                <span className="text-[10px] font-semibold text-[#A1A1AA]">
+                <span className="text-[10px] font-semibold text-[var(--text-secondary)]">
                   {`${deleteActionLabel}...`}
                 </span>
               ) : (

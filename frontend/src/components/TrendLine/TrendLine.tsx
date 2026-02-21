@@ -1,3 +1,4 @@
+import { useAppSettings } from "@/hooks";
 import {
   CartesianGrid,
   Line,
@@ -36,13 +37,20 @@ const DEFAULT_POINTS: TrendLinePoint[] = [
 export const TrendLine = memo(function TrendLine({
   animationKey = "trend",
   className = "",
-  dotColor = "#2563EB",
-  gridColor = "rgba(63,63,70,0.12)",
-  lineColor = "#2563EB",
+  dotColor,
+  gridColor,
+  lineColor,
   points = DEFAULT_POINTS,
-  tickColor = "#71717A",
+  tickColor,
   yDomain = ["dataMin - 5", "dataMax + 5"],
 }: TrendLineProps) {
+  const { settings } = useAppSettings();
+  const isDark = settings?.theme === "dark";
+  const resolvedLineColor = lineColor ?? (isDark ? "#60a5fa" : "#2563eb");
+  const resolvedDotColor = dotColor ?? resolvedLineColor;
+  const resolvedGridColor = gridColor ?? (isDark ? "rgba(255,255,255,0.07)" : "rgba(63,63,70,0.12)");
+  const resolvedTickColor = tickColor ?? (isDark ? "#a1a1aa" : "#71717a");
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isContainerReady, setIsContainerReady] = useState<boolean>(false);
 
@@ -82,22 +90,22 @@ export const TrendLine = memo(function TrendLine({
             data={points}
             margin={{ top: 6, right: 6, left: 6, bottom: 2 }}
           >
-            <CartesianGrid stroke={gridColor} vertical={false} />
+            <CartesianGrid stroke={resolvedGridColor} vertical={false} />
             <XAxis
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: tickColor, fontSize: 10, fontWeight: 600 }}
+              tick={{ fill: resolvedTickColor, fontSize: 10, fontWeight: 600 }}
               dy={4}
             />
             <YAxis hide domain={yDomain} />
             <Line
               type="monotone"
               dataKey="value"
-              stroke={lineColor}
+              stroke={resolvedLineColor}
               strokeWidth={2}
-              dot={{ fill: dotColor, r: 2.5 }}
-              activeDot={{ r: 3.5, fill: dotColor }}
+              dot={{ fill: resolvedDotColor, r: 2.5 }}
+              activeDot={{ r: 3.5, fill: resolvedDotColor }}
               isAnimationActive
               animationDuration={400}
               animationEasing="ease-out"

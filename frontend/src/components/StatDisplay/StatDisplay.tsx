@@ -11,7 +11,7 @@ export interface StatDisplayProps {
 export function StatDisplay({
   label,
   value,
-  labelClassName = "text-xs font-normal text-[#A1A1AA]",
+  labelClassName = "text-xs font-normal text-[var(--text-secondary)]",
   valueClassName = "text-[32px] font-bold text-white font-['Outfit']",
   gap = "gap-1",
   align = "start",

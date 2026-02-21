@@ -84,7 +84,7 @@ export function ThemePopup({
               </span>
               <PhosphorIcon
                 name={isSelected ? "check-circle" : "circle"}
-                className={isSelected ? "text-[var(--panel-bg)]" : "text-[#A1A1AA]"}
+                className={isSelected ? "text-[var(--panel-bg)]" : "text-[var(--text-secondary)]"}
                 size="text-[18px]"
               />
             </button>
@@ -92,7 +92,7 @@ export function ThemePopup({
         })}
 
         {error && (
-          <span className="rounded-lg bg-[#FEF2F2] px-2.5 py-2 text-xs font-semibold text-[#B91C1C]">{error}</span>
+          <span className="rounded-lg bg-[var(--error-bg)] px-2.5 py-2 text-xs font-semibold text-[var(--error-text)]">{error}</span>
         )}
 
         <div className="mt-1 flex items-center justify-end">

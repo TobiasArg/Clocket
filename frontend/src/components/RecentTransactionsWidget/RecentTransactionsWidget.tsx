@@ -70,7 +70,7 @@ export function RecentTransactionsWidget({
           title={transaction.name}
           subtitle={transaction.date}
           titleClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
-          subtitleClassName="text-xs font-normal text-[#A1A1AA]"
+          subtitleClassName="text-xs font-normal text-[var(--text-secondary)]"
           right={(
             <span
               className={`text-base font-bold font-['Outfit'] ${transaction.amountColor ?? "text-[var(--text-primary)]"}`}

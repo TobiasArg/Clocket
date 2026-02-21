@@ -157,7 +157,7 @@ export function HomeDesktop({
                 className="flex items-center gap-2.5 bg-[var(--surface-muted)] rounded-xl px-4 py-3 w-[280px] cursor-text"
               >
                 <PhosphorIcon name="magnifying-glass" className="text-[var(--text-secondary)]" />
-                <span className="text-sm font-normal text-[#A1A1AA]">{searchPlaceholder}</span>
+                <span className="text-sm font-normal text-[var(--text-secondary)]">{searchPlaceholder}</span>
               </div>
               <button type="button" onClick={onNotificationClick} aria-label="Notifications">
                 <IconBadge
@@ -246,9 +246,9 @@ export function HomeDesktop({
           {/* Charts Placeholder */}
           <div className="flex items-center justify-center bg-[var(--surface-muted)] rounded-[20px] h-[280px] p-6">
             <div className="flex flex-col items-center gap-3">
-              <PhosphorIcon name="chart-line-up" className="text-[#A1A1AA]" size="text-[48px]" />
+              <PhosphorIcon name="chart-line-up" className="text-[var(--text-secondary)]" size="text-[48px]" />
               <span className="text-lg font-semibold text-[var(--text-secondary)] font-['Outfit']">{chartsTitle}</span>
-              <span className="text-[13px] font-normal text-[#A1A1AA]">{chartsSubtitle}</span>
+              <span className="text-[13px] font-normal text-[var(--text-secondary)]">{chartsSubtitle}</span>
             </div>
           </div>
 
@@ -279,7 +279,7 @@ export function HomeDesktop({
                     <div className="flex items-center justify-between">
                       <IconBadge
                         icon={goal.icon}
-                        bg={isHL ? "bg-[#27272A]" : "bg-[var(--panel-bg)]"}
+                        bg="bg-[var(--panel-bg)]"
                         iconColor={isHL ? "text-[var(--panel-bg)]" : "text-[var(--text-primary)]"}
                         size="w-[40px] h-[40px]"
                         rounded="rounded-[10px]"

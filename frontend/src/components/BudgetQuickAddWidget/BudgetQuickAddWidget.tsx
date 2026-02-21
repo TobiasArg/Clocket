@@ -62,7 +62,7 @@ export function BudgetQuickAddWidget({
             <button
               type="button"
               onClick={onBackClick}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#D4D4D8] bg-[var(--panel-bg)] text-[var(--text-secondary)]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--surface-border)] bg-[var(--panel-bg)] text-[var(--text-secondary)]"
               aria-label="Volver"
             >
               <PhosphorIcon name="arrow-left" className="text-[var(--text-secondary)]" />
@@ -78,7 +78,7 @@ export function BudgetQuickAddWidget({
           <select
             value={selectedCategoryId}
             onChange={(event) => onCategoryChange(event.target.value)}
-            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           >
             <option value="">Selecciona una categoría</option>
             {categories.map((category) => (
@@ -103,7 +103,7 @@ export function BudgetQuickAddWidget({
             value={limitAmountInput}
             onChange={(event) => onAmountChange(event.target.value)}
             placeholder="0.00"
-            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isAmountValid && (
             <span className="text-[11px] font-medium text-[var(--text-secondary)]">

@@ -60,7 +60,7 @@ export function AccountsQuickAddWidget({
           value={nameInput}
           onChange={(event) => onNameChange?.(event.target.value)}
           placeholder={namePlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isNameValid && (
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">
@@ -77,7 +77,7 @@ export function AccountsQuickAddWidget({
           value={balanceInput}
           onChange={(event) => onBalanceChange?.(event.target.value)}
           placeholder={balancePlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isBalanceValid && (
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">

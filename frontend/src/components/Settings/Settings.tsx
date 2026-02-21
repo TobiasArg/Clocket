@@ -271,7 +271,7 @@ export function Settings({
                     />
                   </button>
                 ) : (
-                  <PhosphorIcon name="caret-right" className="shrink-0 text-[#A1A1AA]" />
+                  <PhosphorIcon name="caret-right" className="shrink-0 text-[var(--text-secondary)]" />
                 );
 
                 return (

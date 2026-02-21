@@ -121,7 +121,7 @@ export function CategoriesListWidget({
                   </div>
                 ))
               ) : (
-                <span className="text-xs font-medium text-[#A1A1AA] py-2">
+                <span className="text-xs font-medium text-[var(--text-secondary)] py-2">
                   Sin subcategorías
                 </span>
               )}

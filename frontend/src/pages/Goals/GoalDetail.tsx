@@ -306,7 +306,7 @@ export function GoalDetail({
                   });
                 }}
                 className={`rounded-xl px-3 py-1.5 text-xs font-semibold ${
-                  canConfirmDelete ? "bg-[#DC2626] text-white" : "bg-[var(--surface-border)] text-[#A1A1AA]"
+                  canConfirmDelete ? "bg-[#DC2626] text-white" : "bg-[var(--surface-border)] text-[var(--text-secondary)]"
                 }`}
               >
                 Confirmar

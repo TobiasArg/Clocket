@@ -93,7 +93,7 @@ export function PlansQuickAddWidget({
           value={nameInput}
           onChange={(event) => onNameChange?.(event.target.value)}
           placeholder={namePlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
       </label>
 
@@ -102,7 +102,7 @@ export function PlansQuickAddWidget({
         <select
           value={selectedCurrency}
           onChange={(event) => onCurrencyChange?.(event.target.value as TransactionInputCurrency)}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         >
           <option value="ARS">ARS</option>
           <option value="USD">USD</option>
@@ -120,7 +120,7 @@ export function PlansQuickAddWidget({
           value={totalAmountInput}
           onChange={(event) => onTotalAmountChange?.(event.target.value)}
           placeholder={totalAmountPlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isTotalAmountValid && (
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">
@@ -140,7 +140,7 @@ export function PlansQuickAddWidget({
           value={installmentsCountInput}
           onChange={(event) => onInstallmentsCountChange?.(event.target.value)}
           placeholder={installmentsPlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isInstallmentsCountValid && (
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">
@@ -158,7 +158,7 @@ export function PlansQuickAddWidget({
           max={getCurrentDateInputValue()}
           value={creationDateInput}
           onChange={(event) => onCreationDateChange?.(event.target.value)}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isCreationDateValid && (
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">

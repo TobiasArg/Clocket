@@ -52,7 +52,6 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
             segments={donutSegments}
             centerValue={showCenterValue ? categoryTotal : undefined}
             centerLabel={categoryTotalLabel}
-            bgFill="#F4F4F5"
             chartType={chartType}
             showLegend={showLegend}
             legendPosition={chartType === "pie" ? "bottom" : "right"}

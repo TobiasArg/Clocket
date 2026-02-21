@@ -101,7 +101,7 @@ export function GoalsQuickAddWidget({
             value={titleInput}
             onChange={(event) => onTitleChange?.(event.target.value)}
             placeholder="Ej. Fondo Emergencia"
-            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isTitleValid && (
             <span className="text-[11px] font-medium text-[var(--text-secondary)]">{quickAddNameErrorLabel}</span>
@@ -115,7 +115,7 @@ export function GoalsQuickAddWidget({
             onChange={(event) => onDescriptionChange?.(event.target.value)}
             placeholder="¿Para qué estás ahorrando?"
             rows={2}
-            className="w-full resize-none bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full resize-none bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isDescriptionValid && (
             <span className="text-[11px] font-medium text-[var(--text-secondary)]">
@@ -133,7 +133,7 @@ export function GoalsQuickAddWidget({
             value={targetAmountInput}
             onChange={(event) => onTargetAmountChange?.(event.target.value)}
             placeholder="0.00"
-            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isTargetValid && (
             <span className="text-[11px] font-medium text-[var(--text-secondary)]">{quickAddTargetErrorLabel}</span>
@@ -146,7 +146,7 @@ export function GoalsQuickAddWidget({
             type="date"
             value={deadlineDateInput}
             onChange={(event) => onDeadlineDateChange?.(event.target.value)}
-            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isDeadlineValid && (
             <span className="text-[11px] font-medium text-[var(--text-secondary)]">{quickAddDeadlineErrorLabel}</span>

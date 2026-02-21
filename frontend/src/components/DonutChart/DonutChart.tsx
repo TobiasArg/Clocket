@@ -1,4 +1,5 @@
 import type { DonutSegment } from "@/types";
+import { useAppSettings } from "@/hooks";
 import { memo, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
@@ -28,16 +29,21 @@ export const DonutChart = memo(function DonutChart({
   legendPosition = "right",
   showLegend = true,
   size = "w-[100px] h-[100px]",
-  bgFill = "#F4F4F5",
+  bgFill,
   centerValueClassName = "text-sm font-bold text-[var(--text-primary)] font-['Outfit']",
   centerLabelClassName = "text-[9px] font-medium text-[var(--text-secondary)]",
   legendNameClassName = "text-[13px] font-medium text-[var(--text-primary)]",
   legendValueClassName = "text-xs font-medium text-[var(--text-secondary)]",
   className = "",
 }: DonutChartProps) {
+  const { settings } = useAppSettings();
+  const isDark = settings?.theme === "dark";
+  const resolvedBgFill = bgFill ?? (isDark ? "#27272a" : "#f4f4f5");
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
 
-  const centerBgClassName = bgFill === "#FFFFFF" ? "bg-[var(--panel-bg)]" : "bg-[var(--surface-muted)]";
+  const centerBgClassName = resolvedBgFill === "#ffffff" || resolvedBgFill === "#FFFFFF"
+    ? "bg-[var(--panel-bg)]"
+    : "bg-[var(--surface-muted)]";
   const innerRadius = chartType === "pie" ? "0%" : "58%";
   const isLegendBottom = legendPosition === "bottom";
 
@@ -76,7 +82,7 @@ export const DonutChart = memo(function DonutChart({
               innerRadius={innerRadius}
               outerRadius="100%"
               paddingAngle={2}
-              stroke={bgFill}
+              stroke={resolvedBgFill}
               strokeWidth={2}
               isAnimationActive
               animationDuration={380}

@@ -148,7 +148,7 @@ export function TransactionEditorWidget({
           value={amountInput}
           onChange={(event) => onAmountChange?.(event.target.value)}
           placeholder={quickAddAmountPlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isAmountValid && (
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">
@@ -162,7 +162,7 @@ export function TransactionEditorWidget({
         <select
           value={selectedCurrency}
           onChange={(event) => onCurrencyChange?.(event.target.value as TransactionInputCurrency)}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         >
           <option value="ARS">ARS</option>
           <option value="USD">USD</option>
@@ -176,7 +176,7 @@ export function TransactionEditorWidget({
           value={descriptionInput}
           onChange={(event) => onDescriptionChange?.(event.target.value)}
           placeholder={quickAddDescriptionPlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isDescriptionValid && (
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">
@@ -190,7 +190,7 @@ export function TransactionEditorWidget({
         <select
           value={selectedAccountId}
           onChange={(event) => onSelectedAccountIdChange?.(event.target.value)}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         >
           <option value="">{uncategorizedAccountLabel}</option>
           {sortedAccounts.map((account) => (
@@ -226,7 +226,7 @@ export function TransactionEditorWidget({
         <select
           value={selectedCategoryId}
           onChange={(event) => onSelectedCategoryIdChange?.(event.target.value)}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         >
           <option value="">{uncategorizedLabel}</option>
           {sortedCategories.map((category) => (

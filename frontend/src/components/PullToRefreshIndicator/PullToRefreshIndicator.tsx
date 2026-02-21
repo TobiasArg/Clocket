@@ -26,7 +26,7 @@ export function PullToRefreshIndicator({ state, progress }: PullToRefreshIndicat
           }}
         >
           <span
-            className="h-5 w-5 animate-spin rounded-full border-2 border-[#D1D5DB] border-t-[#6B7280]"
+            className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--surface-border)] border-t-[var(--text-secondary)]"
             style={{ animationDuration: spinnerDuration }}
           />
         </span>

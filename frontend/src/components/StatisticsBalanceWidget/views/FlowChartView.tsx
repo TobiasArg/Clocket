@@ -1,4 +1,5 @@
 import type { StatisticsFlowDay } from "@/types";
+import { useAppSettings } from "@/hooks";
 import { memo, useCallback, useMemo } from "react";
 import { Bar, BarChart, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
@@ -15,6 +16,11 @@ export const FlowChartView = memo(function FlowChartView({
   flowDays,
   onSelectDay,
 }: FlowChartViewProps) {
+  const { settings } = useAppSettings();
+  const isDark = settings?.theme === "dark";
+  const tickColor = isDark ? "#a1a1aa" : "#71717a";
+  const refLineColor = isDark ? "#3f3f46" : "#d4d4d8";
+
   const { chartData, expenseSeries, hasFlowData } = useMemo(() => {
     const totalsByCategory = new Map<string, { color: string; total: number }>();
     flowDays.forEach((day) => {
@@ -83,10 +89,10 @@ export const FlowChartView = memo(function FlowChartView({
             dataKey="label"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#71717A", fontSize: 10, fontWeight: 600 }}
+            tick={{ fill: tickColor, fontSize: 10, fontWeight: 600 }}
           />
           <YAxis hide />
-          <ReferenceLine y={0} stroke="#D4D4D8" strokeWidth={1} />
+          <ReferenceLine y={0} stroke={refLineColor} strokeWidth={1} />
           <Bar
             dataKey="income"
             fill="#16A34A"

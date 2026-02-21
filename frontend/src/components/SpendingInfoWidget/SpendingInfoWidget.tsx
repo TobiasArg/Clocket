@@ -34,7 +34,7 @@ export function SpendingInfoWidget({
           <span className="text-lg font-semibold text-[var(--text-primary)] font-['Outfit']">
             {total}
           </span>
-          <span className="text-[11px] font-medium text-[#A1A1AA]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {pendingInstallmentsLabel}
             {": "}
             {pendingInstallmentsValue}

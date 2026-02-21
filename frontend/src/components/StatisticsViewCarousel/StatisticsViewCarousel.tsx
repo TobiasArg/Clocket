@@ -97,7 +97,7 @@ export function StatisticsViewCarousel({
               type="button"
               onClick={() => onViewChange(option.id)}
               className={`h-1.5 rounded-full transition ${
-                isActive ? "w-4 bg-[#3F3F46]" : "w-1.5 bg-[#A1A1AA]"
+                isActive ? "w-4 bg-[var(--text-primary)]" : "w-1.5 bg-[var(--text-secondary)]"
               }`}
               aria-label={`Ir a vista ${option.label}`}
             />

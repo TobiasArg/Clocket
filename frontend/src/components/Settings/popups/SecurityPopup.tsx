@@ -112,7 +112,7 @@ export function SecurityPopup({
               inputMode="numeric"
               value={currentPin}
               onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]"
               placeholder="••••"
               maxLength={4}
             />
@@ -128,7 +128,7 @@ export function SecurityPopup({
             inputMode="numeric"
             value={nextPin}
             onChange={(event) => setNextPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-            className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
+            className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]"
             placeholder="••••"
             maxLength={4}
           />
@@ -141,7 +141,7 @@ export function SecurityPopup({
             inputMode="numeric"
             value={confirmPin}
             onChange={(event) => setConfirmPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-            className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
+            className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]"
             placeholder="••••"
             maxLength={4}
           />

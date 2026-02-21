@@ -30,60 +30,60 @@ export function InvestmentSummaryWidget({ summary }: InvestmentSummaryWidgetProp
   };
 
   return (
-    <div className="rounded-2xl border border-[#E5E7EB] bg-[var(--panel-bg)] px-4 py-4">
+    <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-4 py-4">
       <div className="min-w-0">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Portfolio</span>
-        <p className="truncate text-[28px] font-bold leading-none text-[#111827] font-['Outfit']">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Portfolio</span>
+        <p className="truncate text-[28px] font-bold leading-none text-[var(--text-primary)] font-['Outfit']">
           {formatCurrency(fromUsd(summary.currentValueUSD))}
         </p>
-        <span className="mt-1 block text-xs font-medium text-[#6B7280]">
+        <span className="mt-1 block text-xs font-medium text-[var(--text-secondary)]">
           Invertido {formatCurrency(fromUsd(summary.investedUSD))}
         </span>
       </div>
 
-      <div className="mt-3 flex flex-col overflow-hidden rounded-xl border border-[#E5E7EB] bg-[#F9FAFB]">
+      <div className="mt-3 flex flex-col overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)]">
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">PnL total</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">PnL total</span>
           <span className={`text-sm font-bold ${moneyClassName(summary.pnlTotalUSD)}`}>
             {signedCurrency(summary.pnlTotalUSD)}
           </span>
         </div>
-        <div className="h-px bg-[#E5E7EB]" />
+        <div className="h-px bg-[var(--surface-border)]" />
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">PnL total %</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">PnL total %</span>
           <span className={`text-sm font-bold ${pctClassName(summary.pnlTotalPct)}`}>
             {signedPct(summary.pnlTotalPct)}
           </span>
         </div>
-        <div className="h-px bg-[#E5E7EB]" />
+        <div className="h-px bg-[var(--surface-border)]" />
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">PnL diario</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">PnL diario</span>
           <span className={`text-sm font-bold ${moneyClassName(summary.pnlDailyUSD)}`}>
             {signedCurrency(summary.pnlDailyUSD)}
           </span>
         </div>
-        <div className="h-px bg-[#E5E7EB]" />
+        <div className="h-px bg-[var(--surface-border)]" />
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Posiciones</span>
-          <span className="text-sm font-semibold text-[#111827]">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Posiciones</span>
+          <span className="text-sm font-semibold text-[var(--text-primary)]">
             {summary.totalPositions}
           </span>
         </div>
       </div>
 
-      <div className="mt-3 rounded-xl border border-[#E5E7EB] bg-[#FCFCFD] p-2.5">
-        <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-[#E5E7EB]">
+      <div className="mt-3 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-2.5">
+        <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-border)]">
           <span
-            className="h-full bg-[#4B5563]"
+            className="h-full bg-[var(--text-primary)]"
             style={{ width: `${Math.max(0, Math.min(100, stocksPct))}%` }}
           />
           <span
-            className="h-full bg-[#9CA3AF]"
+            className="h-full bg-[var(--text-secondary)]"
             style={{ width: `${Math.max(0, Math.min(100, cryptoPct))}%` }}
           />
         </div>
 
-        <div className="mt-2 flex items-center justify-between text-[11px] font-semibold text-[#6B7280]">
+        <div className="mt-2 flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)]">
           <span>Stock: {summary.stocksCount}</span>
           <span>Crypto: {summary.cryptoCount}</span>
         </div>
