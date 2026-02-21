@@ -24,12 +24,13 @@ export interface UseCategoriesPageModelResult {
   colorOptions: Array<{ key: string; label: string; swatchClass: string }>;
   categoryNameInput: string;
   deleteConfirmCategoryId: string | null;
-  expandedIndex: number | null;
+  handleCloseCategoryDetail: () => void;
   handleCloseQuickAdd: () => void;
   handleCreateCategory: () => Promise<void>;
   handleDeleteCategory: (category: Category) => Promise<void>;
   handleHeaderAction: () => void;
-  handleToggle: (index: number) => void;
+  handleOpenCategory: (index: number) => void;
+  isCategoryDetailOpen: boolean;
   isCategoryNameValid: boolean;
   isColorValid: boolean;
   isFormValid: boolean;
@@ -42,6 +43,8 @@ export interface UseCategoriesPageModelResult {
   resolvedCategories: Category[];
   selectedColorKey: string;
   selectedIcon: string;
+  selectedCategory: Category | null;
+  selectedCategoryUsageCount: number;
   setCategoryNameInput: (value: string) => void;
   setDeleteConfirmCategoryId: (value: string | null) => void;
   setSelectedColorKey: (value: string) => void;
@@ -79,7 +82,7 @@ export const useCategoriesPageModel = (
   const isUsingExternalCategories = Array.isArray(categories);
   const resolvedCategories = categories ?? storedCategories;
 
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
+  const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number | null>(null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState<boolean>(false);
   const [categoryNameInput, setCategoryNameInput] = useState<string>("");
   const [selectedIcon, setSelectedIcon] = useState<string>(DEFAULT_CATEGORY_ICON);
@@ -112,12 +115,30 @@ export const useCategoriesPageModel = (
   const isColorValid = selectedColorClass.trim().length > 0;
   const isFormValid = isCategoryNameValid && isIconValid && isColorValid;
 
+  const selectedCategory = useMemo<Category | null>(() => {
+    if (selectedCategoryIndex === null) {
+      return null;
+    }
+
+    return resolvedCategories[selectedCategoryIndex] ?? null;
+  }, [resolvedCategories, selectedCategoryIndex]);
+
+  const selectedCategoryUsageCount = selectedCategory?.id
+    ? (usageCountByCategoryId.get(selectedCategory.id) ?? 0)
+    : 0;
+  const isCategoryDetailOpen = selectedCategory !== null;
+
   const closeQuickAdd = () => {
     setIsQuickAddOpen(false);
     setCategoryNameInput("");
     setSelectedIcon(DEFAULT_CATEGORY_ICON);
     setSelectedColorKeyState(DEFAULT_CATEGORY_COLOR_KEY);
     setShowValidation(false);
+  };
+
+  const closeCategoryDetail = () => {
+    setSelectedCategoryIndex(null);
+    setDeleteConfirmCategoryId(null);
   };
 
   const setSelectedColorKey = (value: string) => {
@@ -130,6 +151,7 @@ export const useCategoriesPageModel = (
     if (isQuickAddOpen) {
       closeQuickAdd();
     } else {
+      closeCategoryDetail();
       setIsQuickAddOpen(true);
       setShowValidation(false);
     }
@@ -138,15 +160,19 @@ export const useCategoriesPageModel = (
     onAddClick?.();
   };
 
-  const handleToggle = (index: number) => {
-    const isExpanding = expandedIndex !== index;
-    setExpandedIndex(isExpanding ? index : null);
+  const handleOpenCategory = (index: number) => {
+    if (index < 0 || index >= resolvedCategories.length) {
+      return;
+    }
+
+    if (isQuickAddOpen) {
+      closeQuickAdd();
+    }
+
+    setSelectedCategoryIndex(index);
     setStatusMessage(null);
     setDeleteConfirmCategoryId(null);
-
-    if (isExpanding) {
-      onCategoryClick?.(index);
-    }
+    onCategoryClick?.(index);
   };
 
   const handleCreateCategory = async () => {
@@ -192,6 +218,7 @@ export const useCategoriesPageModel = (
       return;
     }
 
+    closeCategoryDetail();
     setStatusMessage(null);
     setDeleteConfirmCategoryId(null);
   };
@@ -204,12 +231,13 @@ export const useCategoriesPageModel = (
       swatchClass: option.iconBgClass,
     })),
     deleteConfirmCategoryId,
-    expandedIndex,
+    handleCloseCategoryDetail: closeCategoryDetail,
     handleCloseQuickAdd: closeQuickAdd,
     handleCreateCategory,
     handleDeleteCategory,
     handleHeaderAction,
-    handleToggle,
+    handleOpenCategory,
+    isCategoryDetailOpen,
     isCategoryNameValid,
     isColorValid,
     isFormValid,
@@ -222,6 +250,8 @@ export const useCategoriesPageModel = (
     resolvedCategories,
     selectedColorKey,
     selectedIcon,
+    selectedCategory,
+    selectedCategoryUsageCount,
     setCategoryNameInput,
     setDeleteConfirmCategoryId,
     setSelectedColorKey,
