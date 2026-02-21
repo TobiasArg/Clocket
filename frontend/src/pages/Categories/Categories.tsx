@@ -69,7 +69,9 @@ export function Categories({
     handleCloseCategoryDetail,
     handleCloseQuickAdd,
     handleCreateCategory,
+    handleCreateSubcategory,
     handleDeleteCategory,
+    handleDeleteSubcategory,
     handleHeaderAction,
     handleOpenCategory,
     isCategoryDetailOpen,
@@ -78,6 +80,7 @@ export function Categories({
     isFormValid,
     isIconValid,
     isLoading,
+    isSubcategoryNameValid,
     isTransactionsLoading,
     isQuickAddOpen,
     isUsingExternalCategories,
@@ -91,8 +94,10 @@ export function Categories({
     setDeleteConfirmCategoryId,
     setSelectedColorKey,
     setSelectedIcon,
+    setSubcategoryNameInput,
     showValidation,
     statusMessage,
+    subcategoryNameInput,
     transactionsError,
   } = useCategoriesPageModel({
     categories,
@@ -134,11 +139,20 @@ export function Categories({
           isOpen={isCategoryDetailOpen}
           category={selectedCategory}
           usageCount={selectedCategoryUsageCount}
+          isLoading={isLoading}
           isTransactionsLoading={isTransactionsLoading}
           isUsingExternalCategories={isUsingExternalCategories}
+          subcategoryNameInput={subcategoryNameInput}
+          isSubcategoryNameValid={isSubcategoryNameValid}
+          onSubcategoryNameInputChange={setSubcategoryNameInput}
+          onAddSubcategory={() => {
+            void handleCreateSubcategory();
+          }}
+          onDeleteSubcategory={(subcategoryName) => {
+            void handleDeleteSubcategory(subcategoryName);
+          }}
           checkingUsageLabel={checkingUsageLabel}
-          inUseDeleteMessage={inUseDeleteMessage}
-          deleteActionLabel={deleteActionLabel}
+          categoryDeleteLabel={deleteActionLabel}
           deleteConfirmCategoryId={deleteConfirmCategoryId}
           onDeleteConfirmCategoryIdChange={setDeleteConfirmCategoryId}
           deleteConfirmTitle={deleteConfirmTitle}

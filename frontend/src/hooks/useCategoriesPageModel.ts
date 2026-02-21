@@ -27,7 +27,9 @@ export interface UseCategoriesPageModelResult {
   handleCloseCategoryDetail: () => void;
   handleCloseQuickAdd: () => void;
   handleCreateCategory: () => Promise<void>;
+  handleCreateSubcategory: () => Promise<void>;
   handleDeleteCategory: (category: Category) => Promise<void>;
+  handleDeleteSubcategory: (subcategoryName: string) => Promise<void>;
   handleHeaderAction: () => void;
   handleOpenCategory: (index: number) => void;
   isCategoryDetailOpen: boolean;
@@ -37,6 +39,7 @@ export interface UseCategoriesPageModelResult {
   isIconValid: boolean;
   isLoading: boolean;
   isQuickAddOpen: boolean;
+  isSubcategoryNameValid: boolean;
   isTransactionsLoading: boolean;
   isUsingExternalCategories: boolean;
   iconOptions: string[];
@@ -49,8 +52,10 @@ export interface UseCategoriesPageModelResult {
   setDeleteConfirmCategoryId: (value: string | null) => void;
   setSelectedColorKey: (value: string) => void;
   setSelectedIcon: (value: string) => void;
+  setSubcategoryNameInput: (value: string) => void;
   showValidation: boolean;
   statusMessage: string | null;
+  subcategoryNameInput: string;
   transactionsError: string | null;
   usageCountByCategoryId: Map<string, number>;
 }
@@ -72,6 +77,7 @@ export const useCategoriesPageModel = (
     isLoading,
     error,
     create,
+    update,
     remove,
   } = useCategories();
   const {
@@ -90,6 +96,7 @@ export const useCategoriesPageModel = (
   const [showValidation, setShowValidation] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [deleteConfirmCategoryId, setDeleteConfirmCategoryId] = useState<string | null>(null);
+  const [subcategoryNameInput, setSubcategoryNameInput] = useState<string>("");
 
   const usageCountByCategoryId = useMemo(() => {
     const map = new Map<string, number>();
@@ -113,6 +120,8 @@ export const useCategoriesPageModel = (
   const isCategoryNameValid = normalizedCategoryName.length > 0;
   const isIconValid = normalizedIcon.length > 0;
   const isColorValid = selectedColorClass.trim().length > 0;
+  const normalizedSubcategoryName = subcategoryNameInput.trim();
+  const isSubcategoryNameValid = normalizedSubcategoryName.length > 0;
   const isFormValid = isCategoryNameValid && isIconValid && isColorValid;
 
   const selectedCategory = useMemo<Category | null>(() => {
@@ -139,6 +148,7 @@ export const useCategoriesPageModel = (
   const closeCategoryDetail = () => {
     setSelectedCategoryIndex(null);
     setDeleteConfirmCategoryId(null);
+    setSubcategoryNameInput("");
   };
 
   const setSelectedColorKey = (value: string) => {
@@ -172,6 +182,7 @@ export const useCategoriesPageModel = (
     setSelectedCategoryIndex(index);
     setStatusMessage(null);
     setDeleteConfirmCategoryId(null);
+    setSubcategoryNameInput("");
     onCategoryClick?.(index);
   };
 
@@ -223,6 +234,68 @@ export const useCategoriesPageModel = (
     setDeleteConfirmCategoryId(null);
   };
 
+  const handleCreateSubcategory = async () => {
+    if (!selectedCategory?.id || isUsingExternalCategories || !isSubcategoryNameValid) {
+      return;
+    }
+
+    const existingSubcategories = Array.isArray(selectedCategory.subcategories)
+      ? selectedCategory.subcategories
+      : [];
+    const isDuplicate = existingSubcategories.some((subcategory) => (
+      subcategory.trim().toLocaleLowerCase("es-ES")
+      === normalizedSubcategoryName.toLocaleLowerCase("es-ES")
+    ));
+
+    if (isDuplicate) {
+      return;
+    }
+
+    const nextSubcategories = [...existingSubcategories, normalizedSubcategoryName];
+    const updated = await update(selectedCategory.id, {
+      subcategories: nextSubcategories,
+      subcategoryCount: nextSubcategories.length,
+    });
+
+    if (!updated) {
+      setStatusMessage(errorLabel);
+      return;
+    }
+
+    setSubcategoryNameInput("");
+    setStatusMessage(null);
+  };
+
+  const handleDeleteSubcategory = async (subcategoryName: string) => {
+    if (!selectedCategory?.id || isUsingExternalCategories) {
+      return;
+    }
+
+    const existingSubcategories = Array.isArray(selectedCategory.subcategories)
+      ? selectedCategory.subcategories
+      : [];
+    const targetSubcategory = subcategoryName.trim().toLocaleLowerCase("es-ES");
+    const nextSubcategories = existingSubcategories.filter((subcategory) => (
+      subcategory.trim().toLocaleLowerCase("es-ES") !== targetSubcategory
+    ));
+
+    if (nextSubcategories.length === existingSubcategories.length) {
+      return;
+    }
+
+    const updated = await update(selectedCategory.id, {
+      subcategories: nextSubcategories,
+      subcategoryCount: nextSubcategories.length,
+    });
+
+    if (!updated) {
+      setStatusMessage(errorLabel);
+      return;
+    }
+
+    setStatusMessage(null);
+  };
+
   return {
     categoryNameInput,
     colorOptions: CATEGORY_COLOR_OPTIONS.map((option) => ({
@@ -234,7 +307,9 @@ export const useCategoriesPageModel = (
     handleCloseCategoryDetail: closeCategoryDetail,
     handleCloseQuickAdd: closeQuickAdd,
     handleCreateCategory,
+    handleCreateSubcategory,
     handleDeleteCategory,
+    handleDeleteSubcategory,
     handleHeaderAction,
     handleOpenCategory,
     isCategoryDetailOpen,
@@ -244,6 +319,7 @@ export const useCategoriesPageModel = (
     isIconValid,
     isLoading,
     isQuickAddOpen,
+    isSubcategoryNameValid,
     isTransactionsLoading,
     isUsingExternalCategories,
     iconOptions: CATEGORY_ICON_OPTIONS,
@@ -256,8 +332,10 @@ export const useCategoriesPageModel = (
     setDeleteConfirmCategoryId,
     setSelectedColorKey,
     setSelectedIcon,
+    setSubcategoryNameInput,
     showValidation,
     statusMessage,
+    subcategoryNameInput,
     transactionsError: error,
     usageCountByCategoryId,
   };
