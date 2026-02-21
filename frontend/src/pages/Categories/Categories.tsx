@@ -10,10 +10,14 @@ export interface CategoriesProps {
   headerTitle?: string;
   categories?: Category[];
   quickAddTitle?: string;
+  quickAddIconLabel?: string;
+  quickAddColorLabel?: string;
   quickAddNameLabel?: string;
   quickAddNamePlaceholder?: string;
   quickAddSubmitLabel?: string;
   quickAddNameErrorLabel?: string;
+  quickAddIconErrorLabel?: string;
+  quickAddColorErrorLabel?: string;
   loadingLabel?: string;
   emptyTitle?: string;
   emptyHint?: string;
@@ -34,10 +38,14 @@ export function Categories({
   headerTitle = "Categorías",
   categories,
   quickAddTitle = "Nueva categoría",
+  quickAddIconLabel = "Ícono",
+  quickAddColorLabel = "Color",
   quickAddNameLabel = "Nombre",
   quickAddNamePlaceholder = "Ej. Salud",
   quickAddSubmitLabel = "Guardar categoría",
   quickAddNameErrorLabel = "Agrega un nombre corto.",
+  quickAddIconErrorLabel = "Selecciona un ícono.",
+  quickAddColorErrorLabel = "Selecciona un color.",
   loadingLabel = "Cargando categorías...",
   emptyTitle = "No hay categorías",
   emptyHint = "Agrega tu primera categoría para organizar tus movimientos.",
@@ -54,20 +62,30 @@ export function Categories({
   onCategoryClick,
 }: CategoriesProps) {
   const {
+    colorOptions,
     categoryNameInput,
     deleteConfirmCategoryId,
     expandedIndex,
+    handleCloseQuickAdd,
     handleCreateCategory,
     handleDeleteCategory,
     handleHeaderAction,
     handleToggle,
     isCategoryNameValid,
+    isColorValid,
+    isFormValid,
+    isIconValid,
     isLoading,
     isQuickAddOpen,
     isUsingExternalCategories,
+    iconOptions,
     resolvedCategories,
+    selectedColorKey,
+    selectedIcon,
     setCategoryNameInput,
     setDeleteConfirmCategoryId,
+    setSelectedColorKey,
+    setSelectedIcon,
     showValidation,
     statusMessage,
     transactionsError,
@@ -82,57 +100,73 @@ export function Categories({
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
+    <div className="relative flex h-full w-full flex-col bg-white">
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
         onActionClick={isUsingExternalCategories ? undefined : handleHeaderAction}
         actionIcon={isQuickAddOpen ? "x" : "plus"}
       />
-      <div className="flex-1 overflow-auto px-5 py-4">
-        <div className="flex flex-col gap-4">
-          <CategoryQuickAddWidget
-            isOpen={isQuickAddOpen && !isUsingExternalCategories}
-            title={quickAddTitle}
-            nameLabel={quickAddNameLabel}
-            namePlaceholder={quickAddNamePlaceholder}
-            submitLabel={quickAddSubmitLabel}
-            nameErrorLabel={quickAddNameErrorLabel}
-            nameInput={categoryNameInput}
-            showValidation={showValidation}
-            isCategoryNameValid={isCategoryNameValid}
-            isLoading={isLoading}
-            onNameInputChange={setCategoryNameInput}
-            onSubmit={() => {
-              void handleCreateCategory();
-            }}
-          />
-
-          <CategoriesListWidget
-            categories={resolvedCategories}
-            statusMessage={statusMessage}
-            isLoading={isLoading}
-            hasError={!isLoading && !isUsingExternalCategories && Boolean(transactionsError)}
-            loadingLabel={loadingLabel}
-            errorLabel={errorLabel}
-            emptyTitle={emptyTitle}
-            emptyHint={emptyHint}
-            expandedIndex={expandedIndex}
-            onToggle={handleToggle}
-            isUsingExternalCategories={isUsingExternalCategories}
-            usageCountByCategoryId={usageCountByCategoryId}
-            deleteActionLabel={deleteActionLabel}
-            deleteConfirmCategoryId={deleteConfirmCategoryId}
-            onDeleteConfirmCategoryIdChange={setDeleteConfirmCategoryId}
-            deleteConfirmTitle={deleteConfirmTitle}
-            deleteConfirmHint={deleteConfirmHint}
-            deleteCancelLabel={deleteCancelLabel}
-            deleteConfirmLabel={deleteConfirmLabel}
-            onDeleteCategory={(category) => {
-              void handleDeleteCategory(category);
-            }}
-          />
+      <div className="relative flex-1 overflow-hidden">
+        <div className={`h-full overflow-auto px-5 py-4 ${isQuickAddOpen ? "pointer-events-none" : ""}`}>
+          <div className="flex flex-col gap-4">
+            <CategoriesListWidget
+              categories={resolvedCategories}
+              statusMessage={statusMessage}
+              isLoading={isLoading}
+              hasError={!isLoading && !isUsingExternalCategories && Boolean(transactionsError)}
+              loadingLabel={loadingLabel}
+              errorLabel={errorLabel}
+              emptyTitle={emptyTitle}
+              emptyHint={emptyHint}
+              expandedIndex={expandedIndex}
+              onToggle={handleToggle}
+              isUsingExternalCategories={isUsingExternalCategories}
+              usageCountByCategoryId={usageCountByCategoryId}
+              deleteActionLabel={deleteActionLabel}
+              deleteConfirmCategoryId={deleteConfirmCategoryId}
+              onDeleteConfirmCategoryIdChange={setDeleteConfirmCategoryId}
+              deleteConfirmTitle={deleteConfirmTitle}
+              deleteConfirmHint={deleteConfirmHint}
+              deleteCancelLabel={deleteCancelLabel}
+              deleteConfirmLabel={deleteConfirmLabel}
+              onDeleteCategory={(category) => {
+                void handleDeleteCategory(category);
+              }}
+            />
+          </div>
         </div>
+
+        <CategoryQuickAddWidget
+          isOpen={isQuickAddOpen && !isUsingExternalCategories}
+          title={quickAddTitle}
+          nameLabel={quickAddNameLabel}
+          namePlaceholder={quickAddNamePlaceholder}
+          submitLabel={quickAddSubmitLabel}
+          nameErrorLabel={quickAddNameErrorLabel}
+          iconLabel={quickAddIconLabel}
+          colorLabel={quickAddColorLabel}
+          iconErrorLabel={quickAddIconErrorLabel}
+          colorErrorLabel={quickAddColorErrorLabel}
+          nameInput={categoryNameInput}
+          selectedIcon={selectedIcon}
+          selectedColorKey={selectedColorKey}
+          iconOptions={iconOptions}
+          colorOptions={colorOptions}
+          showValidation={showValidation}
+          isCategoryNameValid={isCategoryNameValid}
+          isIconValid={isIconValid}
+          isColorValid={isColorValid}
+          isFormValid={isFormValid}
+          isLoading={isLoading}
+          onNameInputChange={setCategoryNameInput}
+          onIconChange={setSelectedIcon}
+          onColorChange={setSelectedColorKey}
+          onRequestClose={handleCloseQuickAdd}
+          onSubmit={() => {
+            void handleCreateCategory();
+          }}
+        />
       </div>
     </div>
   );

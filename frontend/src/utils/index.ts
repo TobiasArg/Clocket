@@ -81,6 +81,14 @@ export { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
 export type { MonthWindow, MonthlyBalance } from "@/domain/transactions/monthlyBalance";
 export type { DateParts } from "@/domain/cuotas/cuotasDateUtils";
 
+export {
+  CATEGORY_COLOR_OPTIONS,
+  CATEGORY_ICON_OPTIONS,
+  DEFAULT_CATEGORY_COLOR_KEY,
+  DEFAULT_CATEGORY_ICON,
+  getCategoryColorOption,
+} from "@/domain/categories/categoryAppearance";
+
 export type {
   AccountItem,
   AccountsRepository,
@@ -107,6 +115,7 @@ export type {
   CreateCategoryInput,
   UpdateCategoryPatch,
 } from "@/domain/categories/repository";
+export type { CategoryColorKey, CategoryColorOption } from "@/domain/categories/categoryAppearance";
 
 export type {
   CreateCuotaInput,

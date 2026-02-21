@@ -25,6 +25,14 @@ export type {
   CreateCategoryInput,
   UpdateCategoryPatch,
 } from "./categories/repository";
+export {
+  CATEGORY_COLOR_OPTIONS,
+  CATEGORY_ICON_OPTIONS,
+  DEFAULT_CATEGORY_COLOR_KEY,
+  DEFAULT_CATEGORY_ICON,
+  getCategoryColorOption,
+} from "./categories/categoryAppearance";
+export type { CategoryColorKey, CategoryColorOption } from "./categories/categoryAppearance";
 
 export {
   compareDateParts,

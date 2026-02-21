@@ -1,9 +1,9 @@
 {
-  "branch": "codex/deep-audit-investments-module",
+  "branch": "codex/categories-form-icon-color-slide",
   "parent": "origin/main",
-  "worktree": "/Users/argtobias/.codex/worktrees/deep-audit-investments-module/clocket-app",
+  "worktree": "/Users/argtobias/.codex/worktrees/categories-form-icon-color-slide/clocket-app",
   "repo_root": "/Users/argtobias/clocket-app",
-  "thread_id": "019c73c0-3c9f-71f1-b9c1-f8d7169fbd19",
-  "task_description": "deep audit investments module",
-  "created_at": "2026-02-19T02:37:36Z"
+  "thread_id": "019c7e99-0149-79a2-bdd2-0b95f03ae2f9",
+  "task_description": "categories form icon color slide",
+  "created_at": "2026-02-21T05:14:29Z"
 }
