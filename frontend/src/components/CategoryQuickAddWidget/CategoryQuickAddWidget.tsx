@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import { ActionButton } from "../ActionButton/ActionButton";
 import { CategoryColorPicker, type CategoryColorPickerOption } from "../CategoryColorPicker/CategoryColorPicker";
 import { CategoryIconPicker } from "../CategoryIconPicker/CategoryIconPicker";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
-const CLOSE_GESTURE_THRESHOLD = 96;
+const CLOSE_GESTURE_THRESHOLD = 68;
 const MAX_DRAG_UP_DISTANCE = 220;
 const CLOSE_ANIMATION_MS = 260;
 
@@ -71,10 +78,12 @@ export function CategoryQuickAddWidget({
   const [isClosing, setIsClosing] = useState<boolean>(false);
   const [isEntered, setIsEntered] = useState<boolean>(false);
 
-  const pointerStartYRef = useRef<number | null>(null);
+  const gestureStartYRef = useRef<number | null>(null);
   const pointerIdRef = useRef<number | null>(null);
   const dragOffsetRef = useRef<number>(0);
   const closeTimeoutRef = useRef<number | null>(null);
+
+  const supportsPointerEvents = typeof window !== "undefined" && "PointerEvent" in window;
 
   const clearCloseTimeout = useCallback(() => {
     if (closeTimeoutRef.current !== null) {
@@ -91,7 +100,7 @@ export function CategoryQuickAddWidget({
     clearCloseTimeout();
     setIsClosing(true);
     setIsDragging(false);
-    pointerStartYRef.current = null;
+    gestureStartYRef.current = null;
     pointerIdRef.current = null;
     dragOffsetRef.current = 0;
     setDragOffset(0);
@@ -105,14 +114,39 @@ export function CategoryQuickAddWidget({
     }, CLOSE_ANIMATION_MS);
   }, [clearCloseTimeout, isClosing, onRequestClose]);
 
-  const finishDragGesture = useCallback(() => {
-    if (pointerStartYRef.current === null) {
+  const startGesture = useCallback((clientY: number) => {
+    if (isClosing) {
+      return;
+    }
+
+    gestureStartYRef.current = clientY;
+    dragOffsetRef.current = 0;
+    setDragOffset(0);
+    setIsDragging(true);
+  }, [isClosing]);
+
+  const updateGesture = useCallback((clientY: number) => {
+    if (gestureStartYRef.current === null || isClosing) {
+      return;
+    }
+
+    const deltaY = clientY - gestureStartYRef.current;
+    const nextOffset = deltaY < 0
+      ? Math.max(deltaY, -MAX_DRAG_UP_DISTANCE)
+      : 0;
+
+    dragOffsetRef.current = nextOffset;
+    setDragOffset(nextOffset);
+  }, [isClosing]);
+
+  const finishGesture = useCallback(() => {
+    if (gestureStartYRef.current === null) {
       return;
     }
 
     const draggedDistance = Math.abs(Math.min(0, dragOffsetRef.current));
     setIsDragging(false);
-    pointerStartYRef.current = null;
+    gestureStartYRef.current = null;
     pointerIdRef.current = null;
 
     if (draggedDistance >= CLOSE_GESTURE_THRESHOLD) {
@@ -125,33 +159,21 @@ export function CategoryQuickAddWidget({
   }, [triggerClose]);
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (isClosing || (event.pointerType === "mouse" && event.button !== 0)) {
+    if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
 
-    pointerStartYRef.current = event.clientY;
     pointerIdRef.current = event.pointerId;
-    dragOffsetRef.current = 0;
-    setDragOffset(0);
-    setIsDragging(true);
+    startGesture(event.clientY);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (
-      isClosing ||
-      pointerStartYRef.current === null ||
-      pointerIdRef.current !== event.pointerId
-    ) {
+    if (pointerIdRef.current !== event.pointerId) {
       return;
     }
 
-    const deltaY = event.clientY - pointerStartYRef.current;
-    const nextOffset = deltaY < 0
-      ? Math.max(deltaY, -MAX_DRAG_UP_DISTANCE)
-      : 0;
-    dragOffsetRef.current = nextOffset;
-    setDragOffset(nextOffset);
+    updateGesture(event.clientY);
   };
 
   const handlePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -159,7 +181,7 @@ export function CategoryQuickAddWidget({
       return;
     }
 
-    finishDragGesture();
+    finishGesture();
   };
 
   const handlePointerCancel = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -167,7 +189,32 @@ export function CategoryQuickAddWidget({
       return;
     }
 
-    finishDragGesture();
+    finishGesture();
+  };
+
+  const handleTouchStart = (event: ReactTouchEvent<HTMLButtonElement>) => {
+    if (event.touches.length !== 1) {
+      return;
+    }
+
+    startGesture(event.touches[0].clientY);
+  };
+
+  const handleTouchMove = (event: ReactTouchEvent<HTMLButtonElement>) => {
+    if (event.touches.length !== 1 || gestureStartYRef.current === null) {
+      return;
+    }
+
+    updateGesture(event.touches[0].clientY);
+    event.preventDefault();
+  };
+
+  const handleTouchEnd = () => {
+    finishGesture();
+  };
+
+  const handleTouchCancel = () => {
+    finishGesture();
   };
 
   useEffect(() => {
@@ -201,7 +248,7 @@ export function CategoryQuickAddWidget({
       window.cancelAnimationFrame(frameId);
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
-      pointerStartYRef.current = null;
+      gestureStartYRef.current = null;
       pointerIdRef.current = null;
     };
   }, [clearCloseTimeout, isOpen, triggerClose]);
@@ -226,7 +273,7 @@ export function CategoryQuickAddWidget({
       <button
         type="button"
         onClick={triggerClose}
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/45"
         style={{
           opacity: backdropOpacity,
           transition: "opacity 220ms ease",
@@ -240,7 +287,7 @@ export function CategoryQuickAddWidget({
             event.preventDefault();
             onSubmit?.();
           }}
-          className="flex h-full flex-col overflow-hidden rounded-b-[28px] border border-[#E4E4E7] bg-white shadow-[0_24px_48px_rgba(0,0,0,0.18)]"
+          className="flex h-full flex-col overflow-hidden rounded-b-[28px] border border-[var(--surface-border)] bg-[var(--panel-bg)] shadow-[0_24px_48px_rgba(0,0,0,0.18)]"
           style={{
             transform: panelTransform,
             opacity: panelOpacity,
@@ -250,21 +297,21 @@ export function CategoryQuickAddWidget({
             willChange: "transform, opacity",
           }}
         >
-          <div className="flex items-center justify-between border-b border-[#F4F4F5] px-4 py-3">
-            <span className="text-[11px] font-semibold tracking-[1px] text-[#71717A]">{title}</span>
+          <div className="flex items-center justify-between border-b border-[var(--surface-border)] px-4 py-3">
+            <span className="text-[11px] font-semibold tracking-[1px] text-[var(--text-secondary)]">{title}</span>
             <button
               type="button"
               onClick={triggerClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#D4D4D8] bg-[#FAFAFA] text-[#52525B]"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--surface-border)] bg-[var(--surface-muted)] text-[var(--text-secondary)]"
               aria-label="Cerrar"
             >
-              <PhosphorIcon name="x" size="text-[15px]" className="text-[#52525B]" />
+              <PhosphorIcon name="x" size="text-[15px]" className="text-[var(--text-secondary)]" />
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-3">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3 rounded-2xl bg-[#F4F4F5] p-3">
+              <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-muted)] p-3">
                 <IconBadge
                   icon={previewIcon}
                   bg={previewColorClass}
@@ -272,22 +319,22 @@ export function CategoryQuickAddWidget({
                   rounded="rounded-xl"
                 />
                 <div className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-black font-['Outfit']">{previewName}</span>
-                  <span className="block text-xs font-medium text-[#71717A]">Categoría</span>
+                  <span className="block truncate font-['Outfit'] text-sm font-semibold text-[var(--text-primary)]">{previewName}</span>
+                  <span className="block text-xs font-medium text-[var(--text-secondary)]">Categoría</span>
                 </div>
               </div>
 
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-[#52525B]">{nameLabel}</span>
+                <span className="text-xs font-medium text-[var(--text-secondary)]">{nameLabel}</span>
                 <input
                   type="text"
                   value={nameInput}
                   onChange={(event) => onNameInputChange?.(event.target.value)}
                   placeholder={namePlaceholder}
-                  className="w-full rounded-xl border border-[#E4E4E7] bg-white px-3 py-2.5 text-sm font-medium text-black outline-none focus:border-[#D4D4D8]"
+                  className="w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] focus:border-[#A1A1AA]"
                 />
                 {showValidation && !isCategoryNameValid && (
-                  <span className="text-[11px] font-medium text-[#71717A]">{nameErrorLabel}</span>
+                  <span className="text-[11px] font-medium text-[var(--text-secondary)]">{nameErrorLabel}</span>
                 )}
               </label>
 
@@ -313,14 +360,14 @@ export function CategoryQuickAddWidget({
             </div>
           </div>
 
-          <div className="border-t border-[#F4F4F5] px-4 py-3">
+          <div className="border-t border-[var(--surface-border)] px-4 py-3">
             <ActionButton
               type="submit"
               icon="plus"
               label={isLoading ? "Guardando..." : submitLabel}
-              iconColor="text-[#18181B]"
-              labelColor="text-[#18181B]"
-              bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#D4D4D8]"}
+              iconColor="text-[var(--text-primary)]"
+              labelColor="text-[var(--text-primary)]"
+              bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
               padding="px-4 py-3"
               className={isFormValid && !isLoading ? "" : "opacity-70"}
               disabled={!isFormValid || isLoading}
@@ -329,22 +376,21 @@ export function CategoryQuickAddWidget({
 
           <button
             type="button"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerCancel}
-            className="touch-none border-t border-[#F4F4F5] bg-[#FAFAFA] px-4 py-3"
+            onPointerDown={supportsPointerEvents ? handlePointerDown : undefined}
+            onPointerMove={supportsPointerEvents ? handlePointerMove : undefined}
+            onPointerUp={supportsPointerEvents ? handlePointerUp : undefined}
+            onPointerCancel={supportsPointerEvents ? handlePointerCancel : undefined}
+            onTouchStart={!supportsPointerEvents ? handleTouchStart : undefined}
+            onTouchMove={!supportsPointerEvents ? handleTouchMove : undefined}
+            onTouchEnd={!supportsPointerEvents ? handleTouchEnd : undefined}
+            onTouchCancel={!supportsPointerEvents ? handleTouchCancel : undefined}
+            className="touch-none border-t border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 pb-1.5 pt-2 active:scale-100"
             aria-label="Desliza hacia arriba para cerrar"
           >
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center justify-center">
               <span
-                className={`h-1.5 w-16 rounded-full bg-[#D4D4D8] ${
-                  isDragging ? "scale-x-105" : "scale-x-100"
-                } transition-transform duration-150`}
+                className={`h-1.5 w-14 rounded-full bg-[#9CA3AF] ${isDragging ? "scale-x-105" : "scale-x-100"} transition-transform duration-150`}
               />
-              <span className="text-[11px] font-medium text-[#71717A]">
-                Desliza hacia arriba para cerrar
-              </span>
             </div>
           </button>
         </form>

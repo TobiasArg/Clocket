@@ -19,8 +19,8 @@ export function PageHeader({
   onActionClick,
   actionIcon = "plus",
   actionAriaLabel,
-  actionButtonClassName = "bg-[#F4F4F5] border border-[#E4E4E7]",
-  actionIconClassName = "text-[#3F3F46]",
+  actionButtonClassName = "bg-[var(--surface-muted)] border border-[var(--surface-border)]",
+  actionIconClassName = "text-[var(--text-secondary)]",
 }: PageHeaderProps) {
   return (
     <div className="flex min-w-0 items-center justify-between px-5 py-4">
@@ -31,13 +31,13 @@ export function PageHeader({
           <button
             type="button"
             onClick={onBackClick}
-            className="flex shrink-0 items-center justify-center w-[44px] h-[44px] rounded-full bg-[#F4F4F5]"
+            className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full border border-[var(--surface-border)] bg-[var(--surface-muted)]"
             aria-label="Volver"
           >
-            <PhosphorIcon name="arrow-left" className="text-black" />
+            <PhosphorIcon name="arrow-left" className="text-[var(--text-primary)]" />
           </button>
         ) : null}
-        <span className="block truncate text-2xl font-bold text-black font-['Outfit']">
+        <span className="block truncate font-['Outfit'] text-2xl font-bold text-[var(--text-primary)]">
           {title}
         </span>
       </div>
