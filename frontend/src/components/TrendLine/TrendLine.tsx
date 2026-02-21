@@ -1,11 +1,3 @@
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { memo, useEffect, useRef, useState } from "react";
 
 export interface TrendLinePoint {
@@ -76,34 +68,59 @@ export const TrendLine = memo(function TrendLine({
   return (
     <div ref={containerRef} className={`relative h-[88px] w-full ${className}`}>
       {isContainerReady ? (
-        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-          <LineChart
-            key={animationKey}
-            data={points}
-            margin={{ top: 6, right: 6, left: 6, bottom: 2 }}
-          >
-            <CartesianGrid stroke={gridColor} vertical={false} />
-            <XAxis
-              dataKey="label"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: tickColor, fontSize: 10, fontWeight: 600 }}
-              dy={4}
-            />
-            <YAxis hide domain={yDomain} />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={lineColor}
-              strokeWidth={2}
-              dot={{ fill: dotColor, r: 2.5 }}
-              activeDot={{ r: 3.5, fill: dotColor }}
-              isAnimationActive
-              animationDuration={400}
-              animationEasing="ease-out"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <svg key={animationKey} viewBox="0 0 320 88" className="h-full w-full" aria-label="Trend chart">
+          {(() => {
+            const padding = { bottom: 18, left: 10, right: 10, top: 8 };
+            const chartWidth = 320 - padding.left - padding.right;
+            const chartHeight = 88 - padding.top - padding.bottom;
+
+            const values = points.map((point) => point.value);
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            const safeMax = maxValue === minValue ? minValue + 1 : maxValue;
+
+            const mapX = (index: number) => {
+              if (points.length <= 1) {
+                return padding.left + chartWidth / 2;
+              }
+              return padding.left + (index / (points.length - 1)) * chartWidth;
+            };
+            const mapY = (value: number) => {
+              const normalized = (value - minValue) / (safeMax - minValue);
+              return padding.top + chartHeight * (1 - normalized);
+            };
+
+            const path = points
+              .map((point, index) => `${index === 0 ? "M" : "L"} ${mapX(index)} ${mapY(point.value)}`)
+              .join(" ");
+
+            const gridY = [0, 0.5, 1].map((step) => padding.top + chartHeight * step);
+
+            return (
+              <>
+                {gridY.map((y) => (
+                  <line key={y} x1={padding.left} y1={y} x2={padding.left + chartWidth} y2={y} stroke={gridColor} strokeWidth="1" />
+                ))}
+                <path d={path} fill="none" stroke={lineColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                {points.map((point, index) => (
+                  <g key={`${point.label}-${index}`}>
+                    <circle cx={mapX(index)} cy={mapY(point.value)} r="2.5" fill={dotColor} />
+                    <text
+                      x={mapX(index)}
+                      y={82}
+                      textAnchor="middle"
+                      fill={tickColor}
+                      fontSize="10"
+                      fontWeight="600"
+                    >
+                      {point.label}
+                    </text>
+                  </g>
+                ))}
+              </>
+            );
+          })()}
+        </svg>
       ) : (
         <div className="h-full w-full" aria-hidden="true" />
       )}

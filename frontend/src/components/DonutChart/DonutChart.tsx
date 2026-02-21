@@ -1,6 +1,5 @@
 import type { DonutSegment } from "@/types";
 import { memo, useMemo, useState } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 export interface DonutChartProps {
   animationKey?: string;
@@ -38,7 +37,6 @@ export const DonutChart = memo(function DonutChart({
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
 
   const centerBgClassName = bgFill === "#FFFFFF" ? "bg-white" : "bg-[#F4F4F5]";
-  const innerRadius = chartType === "pie" ? "0%" : "58%";
   const isLegendBottom = legendPosition === "bottom";
 
   const normalizedSegments = useMemo(() => {
@@ -52,6 +50,49 @@ export const DonutChart = memo(function DonutChart({
       percentage: segments.length > 0 ? Math.round(100 / segments.length) : 0,
     }));
   }, [segments]);
+
+  const chartSegments = useMemo(() => {
+    const total = normalizedSegments.reduce((accumulator, segment) => {
+      return accumulator + Math.max(segment.percentage, 0);
+    }, 0);
+    if (total <= 0) {
+      return [];
+    }
+
+    let cursor = -Math.PI / 2;
+    return normalizedSegments.map((segment, index) => {
+      const ratio = Math.max(segment.percentage, 0) / total;
+      const sweep = ratio * Math.PI * 2;
+      const startAngle = cursor;
+      const endAngle = cursor + sweep;
+      cursor = endAngle;
+      return { endAngle, index, segment, startAngle };
+    });
+  }, [normalizedSegments]);
+
+  const radius = 48;
+  const innerRadiusValue = chartType === "pie" ? 0 : 28;
+  const ringThickness = radius - innerRadiusValue;
+
+  const toPolar = (angle: number, customRadius: number) => ({
+    x: 50 + customRadius * Math.cos(angle),
+    y: 50 + customRadius * Math.sin(angle),
+  });
+
+  const arcPath = (startAngle: number, endAngle: number) => {
+    const clampedEnd = Math.min(endAngle, startAngle + Math.PI * 2 - 0.0001);
+    const largeArc = clampedEnd - startAngle > Math.PI ? 1 : 0;
+    const outerStart = toPolar(startAngle, radius);
+    const outerEnd = toPolar(clampedEnd, radius);
+    if (chartType === "pie") {
+      return `M 50 50 L ${outerStart.x} ${outerStart.y} A ${radius} ${radius} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y} Z`;
+    }
+
+    const innerStart = toPolar(clampedEnd, innerRadiusValue);
+    const innerEnd = toPolar(startAngle, innerRadiusValue);
+    return `M ${outerStart.x} ${outerStart.y} A ${radius} ${radius} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y} L ${innerStart.x} ${innerStart.y} A ${innerRadiusValue} ${innerRadiusValue} 0 ${largeArc} 0 ${innerEnd.x} ${innerEnd.y} Z`;
+  };
+
   const selectedSegment = selectedSegmentIndex !== null
     ? (normalizedSegments[selectedSegmentIndex] ?? null)
     : null;
@@ -65,36 +106,23 @@ export const DonutChart = memo(function DonutChart({
       } ${className}`}
     >
       <div className={`relative ${size} shrink-0`}>
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart key={animationKey}>
-            <Pie
-              data={normalizedSegments}
-              dataKey="percentage"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={innerRadius}
-              outerRadius="100%"
-              paddingAngle={2}
+        <svg key={animationKey} viewBox="0 0 100 100" className="h-full w-full" aria-label="Donut chart">
+          {chartType === "donut" && (
+            <circle cx="50" cy="50" r={innerRadiusValue + ringThickness / 2} fill="none" stroke={bgFill} strokeWidth={ringThickness} />
+          )}
+          {chartSegments.map(({ segment, index, startAngle, endAngle }) => (
+            <path
+              key={segment.name}
+              d={arcPath(startAngle, endAngle)}
+              fill={segment.color}
+              fillOpacity={selectedSegmentIndex === null || selectedSegmentIndex === index ? 1 : 0.35}
               stroke={bgFill}
-              strokeWidth={2}
-              isAnimationActive
-              animationDuration={380}
-              animationEasing="ease-out"
-            >
-              {normalizedSegments.map((segment, index) => (
-                <Cell
-                  key={segment.name}
-                  fill={segment.color}
-                  fillOpacity={
-                    selectedSegmentIndex === null || selectedSegmentIndex === index ? 1 : 0.35
-                  }
-                  onClick={() => setSelectedSegmentIndex((current) => (current === index ? null : index))}
-                />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+              strokeWidth={1}
+              className="cursor-pointer transition-opacity duration-200"
+              onClick={() => setSelectedSegmentIndex((current) => (current === index ? null : index))}
+            />
+          ))}
+        </svg>
         {chartType === "donut" && ((selectedSegment?.value ?? centerValue) || centerLabel) && (
           <div
             className={`pointer-events-none absolute inset-[21%] flex flex-col items-center justify-center rounded-full ${centerBgClassName}`}

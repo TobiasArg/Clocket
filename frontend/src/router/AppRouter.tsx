@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { useAppSettings } from "@/hooks";
 import { Home } from "@/pages/Home/Home";
 import {
@@ -105,6 +105,31 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
     name: userName,
     email: profile?.email?.trim() || "usuario@email.com",
   };
+
+  useEffect(() => {
+    if (currentPath !== "/" && currentPath !== "/home") {
+      return;
+    }
+
+    const prefetch = () => {
+      void import("@/pages/Transactions/Transactions");
+      void import("@/pages/Settings/Settings");
+      void import("@/pages/Budgets/Budgets");
+      void import("@/pages/Investments/Investments");
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(prefetch, { timeout: 1200 });
+      return () => {
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(prefetch, 300);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentPath]);
 
   const goalId = extractGoalId(currentPath);
   if (goalId) {
