@@ -73,7 +73,7 @@ export function ExportDataPopup({
             void handleJsonExport();
           }}
           disabled={isBusy}
-          className="flex items-center justify-between rounded-2xl bg-[#111827] px-3 py-3 text-left text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center justify-between rounded-2xl bg-[var(--text-primary)] px-3 py-3 text-left text-[var(--panel-bg)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span className="flex flex-col">
             <span className="text-sm font-semibold">Backup JSON</span>
@@ -88,7 +88,7 @@ export function ExportDataPopup({
             void handleCsvExport();
           }}
           disabled={isBusy}
-          className="flex items-center justify-between rounded-2xl border border-[var(--surface-border)] bg-white px-3 py-3 text-left text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center justify-between rounded-2xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-3 text-left text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span className="flex flex-col">
             <span className="text-sm font-semibold">CSV transacciones</span>

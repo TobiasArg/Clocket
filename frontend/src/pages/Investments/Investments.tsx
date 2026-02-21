@@ -87,8 +87,8 @@ export function Investments({
   );
 
   return (
-    <div className="relative flex h-full w-full flex-col bg-white">
-      <div className="border-b border-[#E5E7EB] bg-white">
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
+      <div className="border-b border-[#E5E7EB] bg-[var(--panel-bg)]">
         <PageHeader
           title={headerTitle}
           avatarInitials={avatarInitials}

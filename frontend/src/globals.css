@@ -7,6 +7,8 @@
   --surface-border: #e4e4e7;
   --text-primary: #111827;
   --text-secondary: #71717a;
+  --error-bg: #fef2f2;
+  --error-text: #b91c1c;
 }
 
 :root[data-theme="dark"] {
@@ -16,13 +18,15 @@
   --surface-border: #3f3f46;
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
+  --error-bg: #450a0a;
+  --error-text: #fca5a5;
 }
 
 @layer base {
   button,
   a[href],
   [role="button"] {
-    @apply cursor-pointer transition-all duration-150 ease-out active:scale-[0.98] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A1A1AA]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+    @apply cursor-pointer transition-all duration-150 ease-out active:scale-[0.98] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A1A1AA]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--panel-bg)];
   }
 
   button:disabled,
@@ -44,4 +48,17 @@ body {
 .app-device-shell {
   background: var(--panel-bg);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Native form elements adapt to theme */
+select,
+input,
+textarea {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] textarea {
+  color-scheme: dark;
 }

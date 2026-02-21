@@ -84,7 +84,7 @@ export function EditProfilePopup({
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#111827] text-sm font-bold text-white">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--text-primary)] text-sm font-bold text-[var(--panel-bg)]">
             {profileInitials}
           </div>
           <div className="min-w-0">
@@ -99,7 +99,7 @@ export function EditProfilePopup({
             type="text"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[#111827]"
+            className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[var(--text-primary)]"
             placeholder="Tu nombre"
           />
         </label>
@@ -110,7 +110,7 @@ export function EditProfilePopup({
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[#111827]"
+            className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[var(--text-primary)]"
             placeholder="tu@email.com"
           />
         </label>
@@ -128,8 +128,8 @@ export function EditProfilePopup({
                   onClick={() => setAvatarIcon(iconName)}
                   className={`flex items-center justify-center rounded-xl border p-2 transition ${
                     isSelected
-                      ? "border-[#111827] bg-[#111827] text-white"
-                      : "border-[var(--surface-border)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
+                      ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--panel-bg)]"
+                      : "border-[var(--surface-border)] bg-[var(--panel-bg)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
                   }`}
                   aria-pressed={isSelected}
                 >
@@ -158,7 +158,7 @@ export function EditProfilePopup({
             onClick={() => {
               void handleSave();
             }}
-            className="rounded-xl bg-[#111827] px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl bg-[var(--text-primary)] px-3 py-2 text-xs font-semibold text-[var(--panel-bg)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Guardando..." : "Guardar cambios"}
           </button>

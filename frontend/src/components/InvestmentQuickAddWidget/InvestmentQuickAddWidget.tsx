@@ -82,16 +82,16 @@ export function InvestmentQuickAddWidget({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-h-[88vh] max-w-[560px] overflow-auto rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+        className="relative w-full max-h-[88vh] max-w-[560px] overflow-auto rounded-2xl bg-[var(--panel-bg)] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
       >
         <div className="mb-4 flex items-center justify-between">
-          <span className="text-lg font-semibold text-[#111827] font-['Outfit']">
+          <span className="text-lg font-semibold text-[var(--text-primary)] font-['Outfit']">
             {isEditing ? "Nuevo movimiento" : "Nueva entrada"}
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-[#E5E7EB] px-3 py-1.5 text-xs font-semibold text-[#374151] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+            className="rounded-lg border border-[var(--surface-border)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
           >
             Cerrar
           </button>
@@ -99,11 +99,11 @@ export function InvestmentQuickAddWidget({
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#4B5563]">Tipo</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">Tipo</span>
             <select
               value={entryTypeInput}
               onChange={(event) => onEntryTypeChange(event.target.value as EntryType)}
-              className="rounded-xl border border-[#D1D5DB] px-3 py-2 text-sm font-medium text-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             >
               <option value="ingreso">Ingreso</option>
               <option value="egreso">Egreso</option>
@@ -111,11 +111,11 @@ export function InvestmentQuickAddWidget({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#4B5563]">Activo</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">Activo</span>
             <select
               value={assetTypeInput}
               onChange={(event) => onAssetTypeChange(event.target.value as AssetType)}
-              className="rounded-xl border border-[#D1D5DB] px-3 py-2 text-sm font-medium text-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             >
               <option value="stock">Acción</option>
               <option value="crypto">Cripto</option>
@@ -123,18 +123,18 @@ export function InvestmentQuickAddWidget({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#4B5563]">Ticker</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">Ticker</span>
             <input
               type="text"
               value={tickerInput}
               onChange={(event) => onTickerChange(event.target.value.toUpperCase())}
               placeholder={assetTypeInput === "crypto" ? "BTC" : "AAPL"}
-              className="rounded-xl border border-[#D1D5DB] px-3 py-2 text-sm font-medium text-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#4B5563]">USD</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">USD</span>
             <input
               type="number"
               min="0.01"
@@ -142,40 +142,40 @@ export function InvestmentQuickAddWidget({
               value={usdSpentInput}
               onChange={(event) => onUsdSpentChange(event.target.value)}
               placeholder="1000"
-              className="rounded-xl border border-[#D1D5DB] px-3 py-2 text-sm font-medium text-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#4B5563]">Precio de entrada (USD)</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">Precio de entrada (USD)</span>
             <input
               type="number"
               min="0.00000001"
               step="0.00000001"
               value={buyPriceInput}
               onChange={(event) => onBuyPriceChange(event.target.value)}
-              className="rounded-xl border border-[#D1D5DB] px-3 py-2 text-sm font-medium text-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#4B5563]">Fecha</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">Fecha</span>
             <input
               type="datetime-local"
               value={createdAtInput}
               onChange={(event) => onCreatedAtChange(event.target.value)}
-              className="rounded-xl border border-[#D1D5DB] px-3 py-2 text-sm font-medium text-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             />
           </label>
         </div>
 
-        <div className="mt-3 rounded-xl bg-[#F3F4F6] px-3 py-2">
-          <span className="text-xs font-medium text-[#4B5563]">
+        <div className="mt-3 rounded-xl bg-[var(--surface-muted)] px-3 py-2">
+          <span className="text-xs font-medium text-[var(--text-secondary)]">
             Cantidad derivada: <strong>amount = USD / precio</strong>
           </span>
-          <div className="mt-1 text-sm font-semibold text-[#111827]">Cantidad: {derivedAmountLabel}</div>
+          <div className="mt-1 text-sm font-semibold text-[var(--text-primary)]">Cantidad: {derivedAmountLabel}</div>
           {entryTypeInput === "egreso" && (
-            <div className="mt-1 text-xs font-medium text-[#6B7280]">
+            <div className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
               Disponible para egreso: {availableAmountLabel}
             </div>
           )}
@@ -191,7 +191,7 @@ export function InvestmentQuickAddWidget({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[#D1D5DB] px-4 py-2 text-sm font-semibold text-[#374151] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+            className="rounded-xl border border-[var(--surface-border)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
           >
             Cancelar
           </button>

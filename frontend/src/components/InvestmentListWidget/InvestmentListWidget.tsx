@@ -16,9 +16,9 @@ export function InvestmentListWidget({
 }: InvestmentListWidgetProps) {
   const sectionHeader = (
     <div className="flex items-center justify-between">
-      <span className="text-sm font-semibold text-[#111827] font-['Outfit']">Posiciones</span>
+      <span className="text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">Posiciones</span>
       {rows.length > 0 && (
-        <span className="text-xs font-medium text-[#6B7280]">{rows.length} activas</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{rows.length} activas</span>
       )}
     </div>
   );
@@ -27,7 +27,7 @@ export function InvestmentListWidget({
     return (
       <div className="flex flex-col gap-2">
         {sectionHeader}
-        <span className="text-sm font-medium text-[#6B7280]">Cargando posiciones...</span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">Cargando posiciones...</span>
       </div>
     );
   }
@@ -45,9 +45,9 @@ export function InvestmentListWidget({
     return (
       <div className="flex flex-col gap-2">
         {sectionHeader}
-        <div className="rounded-2xl border border-dashed border-[#D1D5DB] bg-white p-5">
-          <span className="block text-sm font-semibold text-[#111827]">No hay posiciones</span>
-          <span className="mt-1 block text-xs font-medium text-[#6B7280]">
+        <div className="rounded-2xl border border-dashed border-[var(--surface-border)] bg-[var(--panel-bg)] p-5">
+          <span className="block text-sm font-semibold text-[var(--text-primary)]">No hay posiciones</span>
+          <span className="mt-1 block text-xs font-medium text-[var(--text-secondary)]">
             Agregá una entrada para comenzar a trackear tu portfolio.
           </span>
         </div>

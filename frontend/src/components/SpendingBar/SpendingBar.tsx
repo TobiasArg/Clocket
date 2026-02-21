@@ -19,11 +19,11 @@ export function SpendingBar({
 
   return (
     <div className={`flex min-w-0 items-center gap-3 w-full ${className}`}>
-      <span className={`min-w-0 truncate text-[13px] font-medium text-[#71717A] ${labelWidth} shrink-0`}>{label}</span>
-      <div className="min-w-0 flex-1 h-2 bg-[#F4F4F5] rounded overflow-hidden">
+      <span className={`min-w-0 truncate text-[13px] font-medium text-[var(--text-secondary)] ${labelWidth} shrink-0`}>{label}</span>
+      <div className="min-w-0 flex-1 h-2 bg-[var(--surface-muted)] rounded overflow-hidden">
         <div className={`h-full rounded ${barColor} ${widthClassName}`} />
       </div>
-      <span className="w-[40px] shrink-0 text-[13px] font-bold text-black font-['Outfit'] text-right">
+      <span className="w-[40px] shrink-0 text-[13px] font-bold text-[var(--text-primary)] font-['Outfit'] text-right">
         {percentage}%
       </span>
     </div>

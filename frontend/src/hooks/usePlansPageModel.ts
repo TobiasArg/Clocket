@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useCurrency } from "./useCurrency";
 import { useCuotas } from "./useCuotas";
 import type { CuotaPlanStatus, CuotaPlanWithStatus } from "@/types";
 import {
@@ -79,13 +80,14 @@ export const usePlansPageModel = (
   options: UsePlansPageModelOptions = {},
 ): UsePlansPageModelResult => {
   const { onAddClick } = options;
+  const { currency: appCurrency } = useCurrency();
   const { items, isLoading, error, create, update, remove } = useCuotas();
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [nameInput, setNameInput] = useState<string>("");
   const [totalAmountInput, setTotalAmountInput] = useState<string>("");
   const [installmentsCountInput, setInstallmentsCountInput] = useState<string>("");
-  const [selectedCurrency, setSelectedCurrency] = useState<TransactionInputCurrency>("ARS");
+  const [selectedCurrency, setSelectedCurrency] = useState<TransactionInputCurrency>(appCurrency);
   const [creationDateInput, setCreationDateInput] = useState<string>(getCurrentDateInputValue);
   const [statusFilter, setStatusFilter] = useState<UsePlansPageModelFilterStatus>("all");
   const [showValidation, setShowValidation] = useState<boolean>(false);
@@ -204,7 +206,7 @@ export const usePlansPageModel = (
     setNameInput("");
     setTotalAmountInput("");
     setInstallmentsCountInput("");
-    setSelectedCurrency("ARS");
+    setSelectedCurrency(appCurrency);
     setCreationDateInput(getCurrentDateInputValue());
     setShowValidation(false);
   };

@@ -81,22 +81,22 @@ export function BudgetDetail({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-white px-5">
-        <span className="text-sm font-medium text-[#71717A]">{loadingLabel}</span>
+      <div className="flex items-center justify-center h-full w-full bg-[var(--panel-bg)] px-5">
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
       </div>
     );
   }
 
   if (isEmpty) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-white px-5">
-        <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>
+      <div className="flex items-center justify-center h-full w-full bg-[var(--panel-bg)] px-5">
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
       <BudgetHero
         headerBg={headerBg}
         icon={resolvedBudgetIcon}

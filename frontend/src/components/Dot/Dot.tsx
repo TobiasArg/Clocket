@@ -5,7 +5,7 @@ export interface DotProps {
 }
 
 export function Dot({
-  color = "bg-black",
+  color = "bg-[var(--text-primary)]",
   size = "w-2.5 h-2.5",
   className = "",
 }: DotProps) {

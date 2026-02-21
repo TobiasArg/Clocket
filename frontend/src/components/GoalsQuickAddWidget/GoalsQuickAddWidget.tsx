@@ -90,43 +90,43 @@ export function GoalsQuickAddWidget({
 
   return (
     <div className="px-5 pb-2">
-      <div className="flex flex-col gap-3 bg-[#F4F4F5] rounded-2xl p-4">
-        <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+      <div className="flex flex-col gap-3 bg-[var(--surface-muted)] rounded-2xl p-4">
+        <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">
           {title}
         </span>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{quickAddNameLabel}</span>
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddNameLabel}</span>
           <input
             type="text"
             value={titleInput}
             onChange={(event) => onTitleChange?.(event.target.value)}
             placeholder="Ej. Fondo Emergencia"
-            className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isTitleValid && (
-            <span className="text-[11px] font-medium text-[#71717A]">{quickAddNameErrorLabel}</span>
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">{quickAddNameErrorLabel}</span>
           )}
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{quickAddDescriptionLabel}</span>
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddDescriptionLabel}</span>
           <textarea
             value={descriptionInput}
             onChange={(event) => onDescriptionChange?.(event.target.value)}
             placeholder="¿Para qué estás ahorrando?"
             rows={2}
-            className="w-full resize-none bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full resize-none bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isDescriptionValid && (
-            <span className="text-[11px] font-medium text-[#71717A]">
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
               {quickAddDescriptionErrorLabel}
             </span>
           )}
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{quickAddTargetAmountLabel}</span>
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddTargetAmountLabel}</span>
           <input
             type="number"
             min="0.01"
@@ -134,29 +134,29 @@ export function GoalsQuickAddWidget({
             value={targetAmountInput}
             onChange={(event) => onTargetAmountChange?.(event.target.value)}
             placeholder="0.00"
-            className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isTargetValid && (
-            <span className="text-[11px] font-medium text-[#71717A]">{quickAddTargetErrorLabel}</span>
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">{quickAddTargetErrorLabel}</span>
           )}
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{quickAddDeadlineLabel}</span>
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddDeadlineLabel}</span>
           <input
             type="date"
             value={deadlineDateInput}
             onChange={(event) => onDeadlineDateChange?.(event.target.value)}
-            className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+            className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
           />
           {showValidation && !isDeadlineValid && (
-            <span className="text-[11px] font-medium text-[#71717A]">{quickAddDeadlineErrorLabel}</span>
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">{quickAddDeadlineErrorLabel}</span>
           )}
         </label>
 
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{quickAddIconLabel}</span>
-          <div className="grid grid-cols-5 gap-2 rounded-xl bg-white p-2">
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddIconLabel}</span>
+          <div className="grid grid-cols-5 gap-2 rounded-xl bg-[var(--panel-bg)] p-2">
             {iconOptions.map((iconName) => {
               const isSelected = selectedIcon === iconName;
               return (
@@ -165,24 +165,24 @@ export function GoalsQuickAddWidget({
                   type="button"
                   onClick={() => onIconChange?.(iconName)}
                   className={`flex h-10 w-full items-center justify-center rounded-lg border ${
-                    isSelected ? "border-black bg-[#F4F4F5]" : "border-[#E4E4E7]"
+                    isSelected ? "border-black bg-[var(--surface-muted)]" : "border-[var(--surface-border)]"
                   }`}
                 >
-                  <PhosphorIcon name={iconName} size="text-[18px]" className="text-black" />
+                  <PhosphorIcon name={iconName} size="text-[18px]" className="text-[var(--text-primary)]" />
                 </button>
               );
             })}
           </div>
           {showValidation && !isIconValid && (
-            <span className="text-[11px] font-medium text-[#71717A]">
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
               Selecciona un ícono.
             </span>
           )}
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[#52525B]">{quickAddColorLabel}</span>
-          <div className="grid grid-cols-8 gap-2 rounded-xl bg-white p-2">
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddColorLabel}</span>
+          <div className="grid grid-cols-8 gap-2 rounded-xl bg-[var(--panel-bg)] p-2">
             {colorOptions.map((color) => {
               const isSelected = selectedColorKey === color.key;
               return (
@@ -203,9 +203,9 @@ export function GoalsQuickAddWidget({
         <ActionButton
           icon="plus"
           label={quickAddSubmitLabel}
-          iconColor="text-[#18181B]"
-          labelColor="text-[#18181B]"
-          bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"}
+          iconColor="text-[var(--text-primary)]"
+          labelColor="text-[var(--text-primary)]"
+          bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
           padding="px-4 py-3"
           className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
           onClick={onSubmit}

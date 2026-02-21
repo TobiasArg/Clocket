@@ -11,8 +11,8 @@ export interface TextBadgeProps {
 
 export function TextBadge({
   text,
-  bg = "bg-[#F4F4F5]",
-  textColor = "text-black",
+  bg = "bg-[var(--surface-muted)]",
+  textColor = "text-[var(--text-primary)]",
   rounded = "rounded-[10px]",
   padding = "px-3 py-1.5",
   fontSize = "text-sm",

@@ -28,13 +28,20 @@ const DEFAULT_POINTS: TrendLinePoint[] = [
 export const TrendLine = memo(function TrendLine({
   animationKey = "trend",
   className = "",
-  dotColor = "#2563EB",
-  gridColor = "rgba(63,63,70,0.12)",
-  lineColor = "#2563EB",
+  dotColor,
+  gridColor,
+  lineColor,
   points = DEFAULT_POINTS,
-  tickColor = "#71717A",
+  tickColor,
   yDomain = ["dataMin - 5", "dataMax + 5"],
 }: TrendLineProps) {
+  const { settings } = useAppSettings();
+  const isDark = settings?.theme === "dark";
+  const resolvedLineColor = lineColor ?? (isDark ? "#60a5fa" : "#2563eb");
+  const resolvedDotColor = dotColor ?? resolvedLineColor;
+  const resolvedGridColor = gridColor ?? (isDark ? "rgba(255,255,255,0.07)" : "rgba(63,63,70,0.12)");
+  const resolvedTickColor = tickColor ?? (isDark ? "#a1a1aa" : "#71717a");
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isContainerReady, setIsContainerReady] = useState<boolean>(false);
 

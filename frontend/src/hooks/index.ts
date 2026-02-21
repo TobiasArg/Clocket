@@ -126,3 +126,5 @@ export type {
   UseStatisticsPageModelOptions,
   UseStatisticsPageModelResult,
 } from "./useStatisticsPageModel";
+
+export { useCurrency } from "./useCurrency";

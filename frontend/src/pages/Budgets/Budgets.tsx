@@ -235,7 +235,7 @@ export function Budgets({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
       <PageHeader
         title={headerTitle}
         avatarInitials={avatarInitials}
@@ -254,14 +254,14 @@ export function Budgets({
               onPointerMove={handleMonthPointerMove}
               onPointerUp={handleMonthPointerEnd}
               onPointerCancel={handleMonthPointerEnd}
-              className="touch-pan-y select-none rounded-2xl bg-[#F4F4F5] px-3 py-2.5"
+              className="touch-pan-y select-none rounded-2xl bg-[var(--surface-muted)] px-3 py-2.5"
               aria-label="Selector de mes por deslizamiento"
             >
               <div
                 className={`flex items-center justify-center ${isMonthDragging ? "" : "transition-transform duration-200 ease-out"}`}
                 style={{ transform: `translateX(${monthDragX}px)` }}
               >
-                <span className="block max-w-full truncate text-xs font-semibold tracking-[0.2px] text-[#3F3F46]">
+                <span className="block max-w-full truncate text-xs font-semibold tracking-[0.2px] text-[var(--text-secondary)]">
                   {selectedMonthLabel}
                 </span>
               </div>

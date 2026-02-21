@@ -10,9 +10,9 @@ export interface AvatarProps {
 
 export function Avatar({
   initials,
-  bg = "bg-black",
+  bg = "bg-[var(--text-primary)]",
   size = "w-[44px] h-[44px]",
-  textColor = "text-white",
+  textColor = "text-[var(--panel-bg)]",
   textSize = "text-sm",
   fontWeight = "font-semibold",
   className = "",

@@ -99,7 +99,7 @@ export function SecurityPopup({
       <div className="flex flex-col gap-3">
         <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Estado</span>
-          <p className={`mt-1 text-sm font-semibold ${pinHash ? "text-[#166534]" : "text-[#71717A]"}`}>
+          <p className={`mt-1 text-sm font-semibold ${pinHash ? "text-[#166534]" : "text-[var(--text-secondary)]"}`}>
             {pinHash ? "PIN activo" : "PIN inactivo"}
           </p>
         </div>
@@ -112,7 +112,7 @@ export function SecurityPopup({
               inputMode="numeric"
               value={currentPin}
               onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-              className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]"
               placeholder="••••"
               maxLength={4}
             />
@@ -128,7 +128,7 @@ export function SecurityPopup({
             inputMode="numeric"
             value={nextPin}
             onChange={(event) => setNextPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-            className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
+            className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]"
             placeholder="••••"
             maxLength={4}
           />
@@ -141,7 +141,7 @@ export function SecurityPopup({
             inputMode="numeric"
             value={confirmPin}
             onChange={(event) => setConfirmPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-            className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
+            className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]"
             placeholder="••••"
             maxLength={4}
           />
@@ -170,7 +170,7 @@ export function SecurityPopup({
             onClick={() => {
               void handleSave();
             }}
-            className="rounded-xl bg-[#111827] px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl bg-[var(--text-primary)] px-3 py-2 text-xs font-semibold text-[var(--panel-bg)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Guardando..." : pinHash ? "Actualizar PIN" : "Activar PIN"}
           </button>

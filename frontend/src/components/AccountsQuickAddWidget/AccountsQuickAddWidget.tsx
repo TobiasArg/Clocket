@@ -48,39 +48,39 @@ export function AccountsQuickAddWidget({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-[#F4F4F5] p-4">
-      <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+    <div className="flex flex-col gap-3 rounded-2xl bg-[var(--surface-muted)] p-4">
+      <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">
         {title}
       </span>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{nameLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{nameLabel}</span>
         <input
           type="text"
           value={nameInput}
           onChange={(event) => onNameChange?.(event.target.value)}
           placeholder={namePlaceholder}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isNameValid && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {nameErrorLabel}
           </span>
         )}
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{balanceLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{balanceLabel}</span>
         <input
           type="number"
           step="0.01"
           value={balanceInput}
           onChange={(event) => onBalanceChange?.(event.target.value)}
           placeholder={balancePlaceholder}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isBalanceValid && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {balanceErrorLabel}
           </span>
         )}
@@ -89,9 +89,9 @@ export function AccountsQuickAddWidget({
       <ActionButton
         icon="plus"
         label={submitLabel}
-        iconColor="text-[#18181B]"
-        labelColor="text-[#18181B]"
-        bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"}
+        iconColor="text-[var(--text-primary)]"
+        labelColor="text-[var(--text-primary)]"
+        bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
         padding="px-4 py-3"
         className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
         onClick={onSubmit}

@@ -27,15 +27,15 @@ export function TransactionDeleteConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 px-5">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(0,0,0,0.14)]">
-        <span className="block text-sm font-bold text-black font-['Outfit']">
+      <div className="w-full max-w-sm rounded-2xl bg-[var(--panel-bg)] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.14)]">
+        <span className="block text-sm font-bold text-[var(--text-primary)] font-['Outfit']">
           {titleLabel}
         </span>
-        <span className="mt-1 block text-xs font-medium text-[#71717A]">
+        <span className="mt-1 block text-xs font-medium text-[var(--text-secondary)]">
           {messageLabel}
         </span>
         {transactionName && (
-          <span className="mt-2 block text-xs font-semibold text-black">
+          <span className="mt-2 block text-xs font-semibold text-[var(--text-primary)]">
             {transactionName}
           </span>
         )}
@@ -45,7 +45,7 @@ export function TransactionDeleteConfirmDialog({
             type="button"
             disabled={isLoading}
             onClick={onCancel}
-            className="rounded-xl border border-[#E4E4E7] px-3 py-1.5 text-xs font-semibold text-[#71717A] transition-colors hover:bg-[#F4F4F5]"
+            className="rounded-xl border border-[var(--surface-border)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)]"
           >
             {cancelLabel}
           </button>
@@ -55,7 +55,7 @@ export function TransactionDeleteConfirmDialog({
             onClick={onConfirm}
             className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
               isLoading
-                ? "bg-[#D4D4D8] text-white"
+                ? "bg-[var(--surface-border)] text-white"
                 : "bg-[#DC2626] text-white hover:bg-[#B91C1C]"
             }`}
           >

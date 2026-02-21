@@ -32,7 +32,7 @@ export function BudgetHero({
         <button
           type="button"
           onClick={onBackClick}
-          className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-white/20"
+          className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-[var(--panel-bg)]/20"
           aria-label="Volver"
         >
           <PhosphorIcon name="arrow-left" className="text-white" />
@@ -40,7 +40,7 @@ export function BudgetHero({
         <button
           type="button"
           onClick={onEditClick}
-          className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-white/20"
+          className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-[var(--panel-bg)]/20"
           aria-label="Editar"
         >
           <PhosphorIcon name="pencil-simple" className="text-white" />
@@ -51,7 +51,7 @@ export function BudgetHero({
         <div className="flex min-w-0 items-center gap-3">
           <IconBadge
             icon={icon}
-            bg="bg-white/20"
+            bg="bg-[var(--panel-bg)]/20"
             iconColor="text-white"
             iconSize="text-[26px]"
             size="w-[52px] h-[52px]"
@@ -69,7 +69,7 @@ export function BudgetHero({
             <span className="block truncate text-[clamp(1.25rem,7vw,1.75rem)] font-extrabold text-white font-['Outfit']">{spentValue}</span>
           </div>
           {percentBadgeText && (
-            <div className="max-w-[96px] shrink-0 rounded-2xl bg-white/20 px-4 py-2">
+            <div className="max-w-[96px] shrink-0 rounded-2xl bg-[var(--panel-bg)]/20 px-4 py-2">
               <span className="block truncate text-sm font-semibold text-white font-['Outfit']">{percentBadgeText}</span>
             </div>
           )}

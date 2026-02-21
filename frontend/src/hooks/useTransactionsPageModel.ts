@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { useCurrency } from "./useCurrency";
 import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
 import { useCuotas } from "./useCuotas";
 import { useTransactions } from "./useTransactions";
 import {
+  formatCurrency,
   getMonthlyBalance,
   getPendingInstallmentsTotalForMonth,
   getTransactionDateForMonthBalance,
@@ -109,21 +111,17 @@ const formatMonthTitle = (date: Date): string => {
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 };
 
-const formatTotalAmount = (value: number): string => {
-  const absolute = Math.abs(value).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
+const formatTotalAmount = (value: number, currency: TransactionInputCurrency): string => {
+  const absolute = formatCurrency(Math.abs(value), { currency });
   if (value < 0) {
-    return `-$${absolute}`;
+    return `-${absolute}`;
   }
 
   if (value > 0) {
-    return `+$${absolute}`;
+    return `+${absolute}`;
   }
 
-  return `$${absolute}`;
+  return absolute;
 };
 
 const formatAmountWithSign = (value: number, sign: AmountSign): string => {
@@ -167,6 +165,7 @@ export const useTransactionsPageModel = (
     uncategorizedAccountLabel = "Sin cuenta",
     uncategorizedLabel = "Sin categoría",
   } = options;
+  const { currency: appCurrency } = useCurrency();
 
   const { items, isLoading, error, create, update, remove } = useTransactions();
   const { items: cuotas, isLoading: isCuotasLoading } = useCuotas();
@@ -184,7 +183,7 @@ export const useTransactionsPageModel = (
   const [editorMode, setEditorMode] = useState<TransactionsEditorMode>(null);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
-  const [selectedCurrency, setSelectedCurrency] = useState<TransactionInputCurrency>("ARS");
+  const [selectedCurrency, setSelectedCurrency] = useState<TransactionInputCurrency>(appCurrency);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [editingAmountSign, setEditingAmountSign] = useState<AmountSign>("-");
   const [amountInput, setAmountInput] = useState<string>("");
@@ -326,13 +325,13 @@ export const useTransactionsPageModel = (
       .map((group) => ({
         key: `${new Date(group.sortTime).getFullYear()}-${String(new Date(group.sortTime).getMonth() + 1).padStart(2, "0")}`,
         title: group.title,
-        total: formatTotalAmount(group.total),
+        total: formatTotalAmount(group.total, appCurrency),
         totalColor:
           group.total < 0
             ? "text-[#DC2626]"
             : group.total > 0
               ? "text-[#16A34A]"
-              : "text-black",
+              : "text-[var(--text-primary)]",
         transactions: dedupeTransactionsById(group.transactions).sort((left, right) => {
           const leftTime = getTransactionDateForMonthBalance(left)?.getTime() ?? 0;
           const rightTime = getTransactionDateForMonthBalance(right)?.getTime() ?? 0;
@@ -345,7 +344,7 @@ export const useTransactionsPageModel = (
     setEditorMode(null);
     setSelectedTransactionId(null);
     setSelectedAccountId("");
-    setSelectedCurrency("ARS");
+    setSelectedCurrency(appCurrency);
     setSelectedCategoryId("");
     setEditingAmountSign("-");
     setAmountInput("");
@@ -357,7 +356,7 @@ export const useTransactionsPageModel = (
     setEditorMode("create");
     setSelectedTransactionId(null);
     setSelectedAccountId(defaultAccountId);
-    setSelectedCurrency("ARS");
+    setSelectedCurrency(appCurrency);
     setSelectedCategoryId("");
     setEditingAmountSign("-");
     setAmountInput("");
@@ -369,7 +368,7 @@ export const useTransactionsPageModel = (
     setEditorMode("edit");
     setSelectedTransactionId(transaction.id);
     setSelectedAccountId(transaction.accountId);
-    setSelectedCurrency("ARS");
+    setSelectedCurrency(appCurrency);
     setSelectedCategoryId(transaction.categoryId ?? "");
     setEditingAmountSign(parseAmountSign(transaction.amount));
     setAmountInput(getAbsoluteAmountFromValue(transaction.amount));

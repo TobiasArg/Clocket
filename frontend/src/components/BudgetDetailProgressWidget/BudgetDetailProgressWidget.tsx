@@ -23,7 +23,7 @@ export function BudgetDetailProgressWidget({
       leftLabel={usedLabel}
       rightLabel={remainingLabel}
       leftLabelClassName={`text-xs font-semibold ${usedTextColor}`}
-      rightLabelClassName="text-xs font-medium text-[#71717A]"
+      rightLabelClassName="text-xs font-medium text-[var(--text-secondary)]"
     />
   );
 }

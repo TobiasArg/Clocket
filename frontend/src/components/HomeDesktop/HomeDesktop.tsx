@@ -130,7 +130,7 @@ export function HomeDesktop({
   onViewAllBudgets,
 }: HomeDesktopProps) {
   return (
-    <div className="flex h-full w-full bg-white overflow-hidden">
+    <div className="flex h-full w-full bg-[var(--panel-bg)] overflow-hidden">
       <SidebarNav
         logoInitial={logoInitial}
         logoName={logoName}
@@ -147,23 +147,23 @@ export function HomeDesktop({
             <StatDisplay
               label={greeting}
               value={headerTitle}
-              labelClassName="text-sm font-normal text-[#71717A]"
-              valueClassName="text-[32px] font-extrabold text-black font-['Outfit']"
+              labelClassName="text-sm font-normal text-[var(--text-secondary)]"
+              valueClassName="text-[32px] font-extrabold text-[var(--text-primary)] font-['Outfit']"
               gap="gap-1"
             />
             <div className="flex items-center gap-3">
               <div
                 onClick={onSearchFocus}
-                className="flex items-center gap-2.5 bg-[#F4F4F5] rounded-xl px-4 py-3 w-[280px] cursor-text"
+                className="flex items-center gap-2.5 bg-[var(--surface-muted)] rounded-xl px-4 py-3 w-[280px] cursor-text"
               >
-                <PhosphorIcon name="magnifying-glass" className="text-[#71717A]" />
-                <span className="text-sm font-normal text-[#A1A1AA]">{searchPlaceholder}</span>
+                <PhosphorIcon name="magnifying-glass" className="text-[var(--text-secondary)]" />
+                <span className="text-sm font-normal text-[var(--text-secondary)]">{searchPlaceholder}</span>
               </div>
               <button type="button" onClick={onNotificationClick} aria-label="Notifications">
                 <IconBadge
                   icon="bell"
-                  bg="bg-[#F4F4F5]"
-                  iconColor="text-[#71717A]"
+                  bg="bg-[var(--surface-muted)]"
+                  iconColor="text-[var(--text-secondary)]"
                   size="w-[48px] h-[48px]"
                   rounded="rounded-xl"
                   iconSize="text-[22px]"
@@ -185,9 +185,9 @@ export function HomeDesktop({
             />
             <div className="flex flex-col gap-4 w-[280px] shrink-0">
               {stats.map((stat) => (
-                <div key={stat.label} className="flex flex-col gap-3 bg-[#F4F4F5] rounded-[20px] p-6 flex-1">
-                  <span className="text-[13px] font-medium text-[#71717A]">{stat.label}</span>
-                  <span className="text-[32px] font-extrabold text-black font-['Outfit']">{stat.value}</span>
+                <div key={stat.label} className="flex flex-col gap-3 bg-[var(--surface-muted)] rounded-[20px] p-6 flex-1">
+                  <span className="text-[13px] font-medium text-[var(--text-secondary)]">{stat.label}</span>
+                  <span className="text-[32px] font-extrabold text-[var(--text-primary)] font-['Outfit']">{stat.value}</span>
                   <span className={`text-xs font-medium ${stat.changeColor}`}>{stat.change}</span>
                 </div>
               ))}
@@ -197,22 +197,22 @@ export function HomeDesktop({
           {/* Transactions + Spending */}
           <div className="flex gap-8">
             <CardSection title={txTitle} className="flex-1">
-              <div className="flex flex-col bg-[#F4F4F5] rounded-2xl p-1">
+              <div className="flex flex-col bg-[var(--surface-muted)] rounded-2xl p-1">
                 {transactions.map((tx) => (
                   <ListItemRow
                     key={tx.name}
                     left={<IconBadge icon={tx.icon} bg={tx.iconBg} />}
                     title={tx.name}
                     subtitle={tx.category}
-                    titleClassName="text-sm font-semibold text-black"
-                    subtitleClassName="text-xs font-normal text-[#71717A]"
+                    titleClassName="text-sm font-semibold text-[var(--text-primary)]"
+                    subtitleClassName="text-xs font-normal text-[var(--text-secondary)]"
                     right={
                       <span className={`text-[15px] font-bold font-['Outfit'] ${tx.amountColor}`}>
                         {tx.amount}
                       </span>
                     }
                     padding="px-5 py-4"
-                    className="bg-white first:rounded-t-xl last:rounded-b-xl"
+                    className="bg-[var(--panel-bg)] first:rounded-t-xl last:rounded-b-xl"
                     gap="gap-3.5"
                   />
                 ))}
@@ -222,19 +222,19 @@ export function HomeDesktop({
             <div className="flex flex-col gap-5 w-[360px] shrink-0">
               <CardSection
                 title={spendTitle}
-                action={<span className="text-[13px] font-normal text-[#71717A]">{spendPeriod}</span>}
+                action={<span className="text-[13px] font-normal text-[var(--text-secondary)]">{spendPeriod}</span>}
               >
-                <div className="flex flex-col gap-5 bg-[#F4F4F5] rounded-[20px] p-6">
+                <div className="flex flex-col gap-5 bg-[var(--surface-muted)] rounded-[20px] p-6">
                   {spendingCategories.map((cat) => (
                     <div key={cat.name} className="flex flex-col gap-2.5">
                       <div className="flex justify-between">
-                        <span className="text-sm font-semibold text-black">{cat.name}</span>
-                        <span className="text-sm font-bold text-black font-['Outfit']">{cat.value}</span>
+                        <span className="text-sm font-semibold text-[var(--text-primary)]">{cat.name}</span>
+                        <span className="text-sm font-bold text-[var(--text-primary)] font-['Outfit']">{cat.value}</span>
                       </div>
                       <ProgressBar
                         percent={cat.barWidthPercent}
                         barColor={cat.barColor}
-                        trackColor="bg-[#E4E4E7]"
+                        trackColor="bg-[var(--surface-border)]"
                       />
                     </div>
                   ))}
@@ -244,11 +244,11 @@ export function HomeDesktop({
           </div>
 
           {/* Charts Placeholder */}
-          <div className="flex items-center justify-center bg-[#F4F4F5] rounded-[20px] h-[280px] p-6">
+          <div className="flex items-center justify-center bg-[var(--surface-muted)] rounded-[20px] h-[280px] p-6">
             <div className="flex flex-col items-center gap-3">
-              <PhosphorIcon name="chart-line-up" className="text-[#A1A1AA]" size="text-[48px]" />
-              <span className="text-lg font-semibold text-[#71717A] font-['Outfit']">{chartsTitle}</span>
-              <span className="text-[13px] font-normal text-[#A1A1AA]">{chartsSubtitle}</span>
+              <PhosphorIcon name="chart-line-up" className="text-[var(--text-secondary)]" size="text-[48px]" />
+              <span className="text-lg font-semibold text-[var(--text-secondary)] font-['Outfit']">{chartsTitle}</span>
+              <span className="text-[13px] font-normal text-[var(--text-secondary)]">{chartsSubtitle}</span>
             </div>
           </div>
 
@@ -259,8 +259,8 @@ export function HomeDesktop({
               <button type="button" onClick={onAddGoalClick} aria-label="Add goal">
                 <IconBadge
                   icon="plus"
-                  bg="bg-[#F4F4F5]"
-                  iconColor="text-[#71717A]"
+                  bg="bg-[var(--surface-muted)]"
+                  iconColor="text-[var(--text-secondary)]"
                   size="w-[32px] h-[32px]"
                   rounded="rounded-lg"
                   iconSize="text-[16px]"
@@ -274,32 +274,32 @@ export function HomeDesktop({
                 return (
                   <div
                     key={goal.name}
-                    className={`flex flex-col gap-4 rounded-[20px] p-5 flex-1 ${isHL ? "bg-black" : "bg-[#F4F4F5]"}`}
+                    className={`flex flex-col gap-4 rounded-[20px] p-5 flex-1 ${isHL ? "bg-[var(--text-primary)]" : "bg-[var(--surface-muted)]"}`}
                   >
                     <div className="flex items-center justify-between">
                       <IconBadge
                         icon={goal.icon}
-                        bg={isHL ? "bg-[#27272A]" : "bg-white"}
-                        iconColor={isHL ? "text-white" : "text-[#18181B]"}
+                        bg="bg-[var(--panel-bg)]"
+                        iconColor={isHL ? "text-[var(--panel-bg)]" : "text-[var(--text-primary)]"}
                         size="w-[40px] h-[40px]"
                         rounded="rounded-[10px]"
                       />
-                      <span className={`text-sm font-semibold font-['Outfit'] ${isHL ? "text-white" : "text-[#18181B]"}`}>
+                      <span className={`text-sm font-semibold font-['Outfit'] ${isHL ? "text-[var(--panel-bg)]" : "text-[var(--text-primary)]"}`}>
                         {goal.percent}
                       </span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className={`text-base font-semibold font-['Outfit'] ${isHL ? "text-white" : "text-[#18181B]"}`}>
+                      <span className={`text-base font-semibold font-['Outfit'] ${isHL ? "text-[var(--panel-bg)]" : "text-[var(--text-primary)]"}`}>
                         {goal.name}
                       </span>
-                      <span className={`text-xs font-normal ${isHL ? "text-[#A1A1AA]" : "text-[#71717A]"}`}>
+                      <span className={`text-xs font-normal text-[var(--text-secondary)]`}>
                         {goal.progressText}
                       </span>
                     </div>
                     <ProgressBar
                       percent={goal.barWidthPercent}
                       barColor="bg-[#10B981]"
-                      trackColor={isHL ? "bg-[#3F3F46]" : "bg-[#E4E4E7]"}
+                      trackColor="bg-[var(--surface-border)]"
                       height="h-1.5"
                     />
                   </div>
@@ -319,27 +319,27 @@ export function HomeDesktop({
               }
               className="flex-1"
             >
-              <div className="flex flex-col gap-4 bg-[#F4F4F5] rounded-[20px] p-5">
+              <div className="flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5">
                 {planes.map((plan) => {
                   const isHL = plan.highlighted ?? false;
                   return (
                     <div
                       key={plan.name}
-                      className={`flex items-center justify-between rounded-[14px] p-4 ${isHL ? "bg-black" : "bg-white"}`}
+                      className={`flex items-center justify-between rounded-[14px] p-4 ${isHL ? "bg-[var(--text-primary)]" : "bg-[var(--panel-bg)]"}`}
                     >
                       <div className="flex flex-col gap-1">
-                        <span className={`text-sm font-semibold font-['Outfit'] ${isHL ? "text-white" : "text-[#18181B]"}`}>
+                        <span className={`text-sm font-semibold font-['Outfit'] ${isHL ? "text-[var(--panel-bg)]" : "text-[var(--text-primary)]"}`}>
                           {plan.name}
                         </span>
-                        <span className={`text-[11px] font-normal ${isHL ? "text-[#A1A1AA]" : "text-[#71717A]"}`}>
+                        <span className={`text-[11px] font-normal text-[var(--text-secondary)]`}>
                           {plan.detail}
                         </span>
                       </div>
                       <div className="flex flex-col items-end gap-0.5">
-                        <span className={`text-sm font-semibold font-['Outfit'] ${isHL ? "text-white" : "text-[#18181B]"}`}>
+                        <span className={`text-sm font-semibold font-['Outfit'] ${isHL ? "text-[var(--panel-bg)]" : "text-[var(--text-primary)]"}`}>
                           {plan.remaining}
                         </span>
-                        <span className="text-[10px] font-normal text-[#71717A]">restante</span>
+                        <span className="text-[10px] font-normal text-[var(--text-secondary)]">restante</span>
                       </div>
                     </div>
                   );
@@ -356,13 +356,13 @@ export function HomeDesktop({
               }
               className="flex-1"
             >
-              <div className="flex flex-col gap-4 bg-[#F4F4F5] rounded-[20px] p-5">
+              <div className="flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5">
                 {budgets.map((b) => {
                   const isHL = b.highlighted ?? false;
                   return (
                     <div
                       key={b.name}
-                      className={`flex items-center justify-between rounded-[14px] p-4 ${isHL ? "bg-black" : "bg-white"}`}
+                      className={`flex items-center justify-between rounded-[14px] p-4 ${isHL ? "bg-[var(--text-primary)]" : "bg-[var(--panel-bg)]"}`}
                     >
                       <div className="flex items-center gap-3">
                         <IconBadge
@@ -373,10 +373,10 @@ export function HomeDesktop({
                           iconSize="text-[18px]"
                         />
                         <div className="flex flex-col gap-0.5">
-                          <span className={`text-sm font-semibold font-['Outfit'] ${isHL ? "text-white" : "text-[#18181B]"}`}>
+                          <span className={`text-sm font-semibold font-['Outfit'] ${isHL ? "text-[var(--panel-bg)]" : "text-[var(--text-primary)]"}`}>
                             {b.name}
                           </span>
-                          <span className={`text-xs font-normal ${isHL ? "text-[#A1A1AA]" : "text-[#71717A]"}`}>
+                          <span className={`text-xs font-normal text-[var(--text-secondary)]`}>
                             {b.meta}
                           </span>
                         </div>
@@ -385,7 +385,7 @@ export function HomeDesktop({
                         <span className={`text-base font-bold font-['Outfit'] ${isHL ? "text-[#DC2626]" : b.percentColor}`}>
                           {b.percent}
                         </span>
-                        <span className={`text-[11px] font-normal ${isHL ? "text-[#A1A1AA]" : "text-[#71717A]"}`}>
+                        <span className={`text-[11px] font-normal text-[var(--text-secondary)]`}>
                           {b.statusLabel ?? "usado"}
                         </span>
                       </div>

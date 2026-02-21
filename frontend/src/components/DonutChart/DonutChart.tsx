@@ -1,4 +1,5 @@
 import type { DonutSegment } from "@/types";
+import { useAppSettings } from "@/hooks";
 import { memo, useMemo, useState } from "react";
 
 export interface DonutChartProps {
@@ -27,13 +28,16 @@ export const DonutChart = memo(function DonutChart({
   legendPosition = "right",
   showLegend = true,
   size = "w-[100px] h-[100px]",
-  bgFill = "#F4F4F5",
-  centerValueClassName = "text-sm font-bold text-black font-['Outfit']",
-  centerLabelClassName = "text-[9px] font-medium text-[#71717A]",
-  legendNameClassName = "text-[13px] font-medium text-black",
-  legendValueClassName = "text-xs font-medium text-[#71717A]",
+  bgFill,
+  centerValueClassName = "text-sm font-bold text-[var(--text-primary)] font-['Outfit']",
+  centerLabelClassName = "text-[9px] font-medium text-[var(--text-secondary)]",
+  legendNameClassName = "text-[13px] font-medium text-[var(--text-primary)]",
+  legendValueClassName = "text-xs font-medium text-[var(--text-secondary)]",
   className = "",
 }: DonutChartProps) {
+  const { settings } = useAppSettings();
+  const isDark = settings?.theme === "dark";
+  const resolvedBgFill = bgFill ?? (isDark ? "#27272a" : "#f4f4f5");
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
 
   const centerBgClassName = bgFill === "#FFFFFF" ? "bg-white" : "bg-[#F4F4F5]";
@@ -132,7 +136,7 @@ export const DonutChart = memo(function DonutChart({
             )}
             {centerLabel && <span className={centerLabelClassName}>{centerLabel}</span>}
             {selectedSegment?.name && (
-              <span className="mt-0.5 max-w-[85%] truncate text-center text-[10px] font-semibold text-[#3F3F46]">
+              <span className="mt-0.5 max-w-[85%] truncate text-center text-[10px] font-semibold text-[var(--text-secondary)]">
                 {selectedSegment.name}
               </span>
             )}

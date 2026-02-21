@@ -1,4 +1,9 @@
-export { formatCurrency } from "./formatCurrency";
+export {
+  formatCurrency,
+  getGlobalCurrency,
+  resolveLocaleForCurrency,
+  setGlobalCurrency,
+} from "./formatCurrency";
 export { navigateToPath } from "./navigation";
 export { getPercentWidthClass } from "./percentWidthClass";
 export { buildExportSnapshot, buildTransactionsCsv, downloadJsonExport, downloadTransactionsCsvExport } from "./settingsExport";

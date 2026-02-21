@@ -13,7 +13,7 @@ export interface SummaryPanelProps {
 
 export function SummaryPanel({
   title,
-  titleClassName = "text-xs font-semibold text-[#71717A] tracking-[2px]",
+  titleClassName = "text-xs font-semibold text-[var(--text-secondary)] tracking-[2px]",
   bg = "bg-black",
   padding = "p-5",
   rounded = "",

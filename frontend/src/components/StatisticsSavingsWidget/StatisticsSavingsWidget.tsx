@@ -45,7 +45,7 @@ export interface StatisticsSavingsWidgetProps {
 
 export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
   savingsBadge = "+0%",
-  savingsBg = "bg-[#F4F4F5]",
+  savingsBg = "bg-[var(--surface-muted)]",
   savingsGoalLabel = "Meta mensual",
   savingsGoalValue = "$0.00",
   savingsLabel = "Ahorrado este mes",
@@ -78,12 +78,12 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
     (view: StatisticsChartView) => {
       const points = trendPointsByView[view] ?? [];
       if (!loadedViews[view]) {
-        return <div className="h-[124px] w-full rounded-xl bg-white/70" />;
+        return <div className="h-[124px] w-full rounded-xl bg-[var(--panel-bg)]/70" />;
       }
 
       const ViewComponent = TREND_VIEW_COMPONENTS[view];
       return (
-        <Suspense fallback={<div className="h-[124px] w-full rounded-xl bg-white/70" />}>
+        <Suspense fallback={<div className="h-[124px] w-full rounded-xl bg-[var(--panel-bg)]/70" />}>
           <ViewComponent
             animationKey={`${trendAnimationKey}-${view}`}
             points={points}
@@ -105,11 +105,11 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
       padding="p-5"
     >
       <div className="flex items-start justify-between w-full">
-        <span className="text-sm font-semibold text-[#18181B] font-['Outfit']">{savingsTitle}</span>
+        <span className="text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">{savingsTitle}</span>
         <TextBadge
           text={savingsBadge}
-          bg="bg-white"
-          textColor="text-[#18181B]"
+          bg="bg-[var(--panel-bg)]"
+          textColor="text-[var(--text-primary)]"
           rounded="rounded-lg"
           padding="px-2.5 py-1"
           fontSize="text-xs"
@@ -123,9 +123,9 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
       />
       <div className="grid grid-cols-2 gap-2">
         {metrics.map((metric) => (
-          <div key={metric.label} className="rounded-xl bg-white px-3 py-2">
-            <span className="block text-[10px] font-medium text-[#71717A]">{metric.label}</span>
-            <span className={`block text-base text-[#18181B] font-['Outfit'] ${metric.valueClassName}`}>
+          <div key={metric.label} className="rounded-xl bg-[var(--panel-bg)] px-3 py-2">
+            <span className="block text-[10px] font-medium text-[var(--text-secondary)]">{metric.label}</span>
+            <span className={`block text-base text-[var(--text-primary)] font-['Outfit'] ${metric.valueClassName}`}>
               {metric.value}
             </span>
           </div>

@@ -109,8 +109,8 @@ export function HeroBalance({
 
   return (
     <div className={`flex min-w-0 flex-col items-center gap-3 ${className}`}>
-      <span className="text-xs font-medium text-[#71717A] tracking-[2px]">{label}</span>
-      <span className={`block w-full max-w-full text-center overflow-hidden text-ellipsis whitespace-nowrap font-black text-black font-['Outfit'] tracking-[-2px] leading-none ${balanceSizeClass}`}>
+      <span className="text-xs font-medium text-[var(--text-secondary)] tracking-[2px]">{label}</span>
+      <span className={`block w-full max-w-full text-center overflow-hidden text-ellipsis whitespace-nowrap font-black text-[var(--text-primary)] font-['Outfit'] tracking-[-2px] leading-none ${balanceSizeClass}`}>
         {renderBalanceWithScaledDecimals(balance)}
       </span>
       <div className="flex gap-3 w-full">
@@ -118,18 +118,18 @@ export function HeroBalance({
           <StatDisplay
             label={incomeLabel}
             value={incomeValue}
-            labelClassName="text-xs font-medium text-[#71717A]"
-            valueClassName="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.125rem,5.2vw,1.5rem)] font-extrabold text-black font-['Outfit']"
-            className="min-w-0 flex-1 bg-[#F4F4F5] rounded-2xl p-4"
+            labelClassName="text-xs font-medium text-[var(--text-secondary)]"
+            valueClassName="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.125rem,5.2vw,1.5rem)] font-extrabold text-[var(--text-primary)] font-['Outfit']"
+            className="min-w-0 flex-1 bg-[var(--surface-muted)] rounded-2xl p-4"
           />
         )}
         {expenseValue && (
           <StatDisplay
             label={expenseLabel}
             value={expenseValue}
-            labelClassName="text-xs font-medium text-[#71717A]"
-            valueClassName="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.125rem,5.2vw,1.5rem)] font-extrabold text-black font-['Outfit']"
-            className="min-w-0 flex-1 bg-[#F4F4F5] rounded-2xl p-4"
+            labelClassName="text-xs font-medium text-[var(--text-secondary)]"
+            valueClassName="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.125rem,5.2vw,1.5rem)] font-extrabold text-[var(--text-primary)] font-['Outfit']"
+            className="min-w-0 flex-1 bg-[var(--surface-muted)] rounded-2xl p-4"
           />
         )}
       </div>
@@ -138,7 +138,7 @@ export function HeroBalance({
           <Dot
             key={i}
             size={i === activeDot ? "w-2 h-2" : "w-1.5 h-1.5"}
-            color={i === activeDot ? "bg-black" : "bg-[#D4D4D8]"}
+            color={i === activeDot ? "bg-[var(--text-primary)]" : "bg-[var(--surface-border)]"}
           />
         ))}
       </div>

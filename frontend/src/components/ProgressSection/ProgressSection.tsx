@@ -15,12 +15,12 @@ export interface ProgressSectionProps {
 export function ProgressSection({
   percent,
   barColor,
-  trackColor = "bg-[#E4E4E7]",
+  trackColor = "bg-[var(--surface-border)]",
   barHeight = "h-2",
   leftLabel,
   rightLabel,
-  leftLabelClassName = "text-sm font-semibold text-[#18181B] font-['Outfit']",
-  rightLabelClassName = "text-sm font-normal text-[#71717A]",
+  leftLabelClassName = "text-sm font-semibold text-[var(--text-primary)] font-['Outfit']",
+  rightLabelClassName = "text-sm font-normal text-[var(--text-secondary)]",
   className = "",
 }: ProgressSectionProps) {
   return (

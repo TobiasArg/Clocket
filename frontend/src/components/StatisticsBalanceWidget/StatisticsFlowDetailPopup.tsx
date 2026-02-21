@@ -69,7 +69,7 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl"
+        className="w-full max-w-sm rounded-2xl bg-[var(--panel-bg)] p-4 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-label="Detalle de flujo diario"
@@ -77,13 +77,13 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-black">{day.dateLabel}</span>
-            <span className="text-[11px] font-medium text-[#71717A]">Detalle diario</span>
+            <span className="text-sm font-semibold text-[var(--text-primary)]">{day.dateLabel}</span>
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">Detalle diario</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-[#F4F4F5] px-2.5 py-1.5 text-xs font-semibold text-[#3F3F46]"
+            className="rounded-lg bg-[var(--surface-muted)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)]"
           >
             {popupCloseLabel}
           </button>
@@ -91,7 +91,7 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
 
         <div className="flex flex-col gap-3">
           {sections.map((section) => (
-            <div key={section.key} className="rounded-xl bg-[#F9FAFB] px-3 py-2">
+            <div key={section.key} className="rounded-xl bg-[var(--surface-muted)] px-3 py-2">
               <div className="mb-1 flex items-center justify-between">
                 <span className={`text-xs font-semibold ${section.amountClassName}`}>{section.label}</span>
                 <span className={`text-xs font-semibold tabular-nums ${section.amountClassName}`}>
@@ -100,7 +100,7 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
               </div>
               <div className="flex flex-col gap-1">
                 {section.rows.length === 0 ? (
-                  <span className="text-[11px] font-medium text-[#71717A]">{section.emptyLabel}</span>
+                  <span className="text-[11px] font-medium text-[var(--text-secondary)]">{section.emptyLabel}</span>
                 ) : (
                   section.rows.map((entry) => (
                     <div key={`${section.key}-${entry.category}`} className="flex items-center justify-between gap-2">
@@ -110,7 +110,7 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
                             <circle cx="5" cy="5" r="5" fill={entry.color} />
                           </svg>
                         )}
-                        <span className="truncate text-[11px] font-medium text-[#3F3F46]">
+                        <span className="truncate text-[11px] font-medium text-[var(--text-secondary)]">
                           {entry.category}
                         </span>
                       </div>

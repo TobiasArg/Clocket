@@ -25,12 +25,12 @@ export function CategoryItem({
   name,
   value,
   secondaryValue,
-  nameClassName = "text-[15px] font-semibold text-black font-['Outfit']",
-  valueClassName = "text-[15px] font-bold text-black font-['Outfit']",
-  secondaryClassName = "text-xs font-medium text-[#71717A]",
+  nameClassName = "text-[15px] font-semibold text-[var(--text-primary)] font-['Outfit']",
+  valueClassName = "text-[15px] font-bold text-[var(--text-primary)] font-['Outfit']",
+  secondaryClassName = "text-xs font-medium text-[var(--text-secondary)]",
   dotSize = "w-2.5 h-2.5",
   progress,
-  containerClassName = "bg-[#F4F4F5] rounded-2xl p-4",
+  containerClassName = "bg-[var(--surface-muted)] rounded-2xl p-4",
   className = "",
 }: CategoryItemProps) {
   return (
@@ -51,7 +51,7 @@ export function CategoryItem({
         <ProgressBar
           percent={progress.percent}
           barColor={progress.barColor}
-          trackColor={progress.trackColor ?? "bg-[#E4E4E7]"}
+          trackColor={progress.trackColor ?? "bg-[var(--surface-border)]"}
           height={progress.barHeight ?? "h-1.5"}
         />
       )}

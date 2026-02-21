@@ -106,21 +106,21 @@ export function TransactionEditorWidget({
   }
 
   return (
-    <div className="flex flex-col gap-3 bg-[#F4F4F5] rounded-2xl p-4">
-      <span className="text-[11px] font-semibold text-[#71717A] tracking-[1px]">
+    <div className="flex flex-col gap-3 bg-[var(--surface-muted)] rounded-2xl p-4">
+      <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">
         {editorMode === "create" ? quickAddTitle : editTitle}
       </span>
 
       <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{quickAddTypeLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddTypeLabel}</span>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => onSignChange?.("-")}
             className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
               editingAmountSign === "-"
-                ? "bg-[#E4E4E7] text-[#18181B]"
-                : "bg-white text-[#52525B]"
+                ? "bg-[var(--surface-border)] text-[var(--text-primary)]"
+                : "bg-[var(--panel-bg)] text-[var(--text-secondary)]"
             }`}
           >
             {quickAddExpenseLabel}
@@ -130,8 +130,8 @@ export function TransactionEditorWidget({
             onClick={() => onSignChange?.("+")}
             className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
               editingAmountSign === "+"
-                ? "bg-[#E4E4E7] text-[#18181B]"
-                : "bg-white text-[#52525B]"
+                ? "bg-[var(--surface-border)] text-[var(--text-primary)]"
+                : "bg-[var(--panel-bg)] text-[var(--text-secondary)]"
             }`}
           >
             {quickAddIncomeLabel}
@@ -140,7 +140,7 @@ export function TransactionEditorWidget({
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{quickAddAmountLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddAmountLabel}</span>
         <input
           type="number"
           min="0.01"
@@ -148,21 +148,21 @@ export function TransactionEditorWidget({
           value={amountInput}
           onChange={(event) => onAmountChange?.(event.target.value)}
           placeholder={quickAddAmountPlaceholder}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isAmountValid && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {quickAddAmountErrorLabel}
           </span>
         )}
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{quickAddCurrencyLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddCurrencyLabel}</span>
         <select
           value={selectedCurrency}
           onChange={(event) => onCurrencyChange?.(event.target.value as TransactionInputCurrency)}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         >
           <option value="ARS">ARS</option>
           <option value="USD">USD</option>
@@ -170,27 +170,27 @@ export function TransactionEditorWidget({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{quickAddDescriptionLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddDescriptionLabel}</span>
         <input
           type="text"
           value={descriptionInput}
           onChange={(event) => onDescriptionChange?.(event.target.value)}
           placeholder={quickAddDescriptionPlaceholder}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         />
         {showValidation && !isDescriptionValid && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {quickAddDescriptionErrorLabel}
           </span>
         )}
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{quickAddAccountLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddAccountLabel}</span>
         <select
           value={selectedAccountId}
           onChange={(event) => onSelectedAccountIdChange?.(event.target.value)}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         >
           <option value="">{uncategorizedAccountLabel}</option>
           {sortedAccounts.map((account) => (
@@ -200,33 +200,33 @@ export function TransactionEditorWidget({
           ))}
         </select>
         {showValidation && !isAccountValid && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {quickAddAccountErrorLabel}
           </span>
         )}
         {isAccountsLoading && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             Cargando cuentas...
           </span>
         )}
         {accountsError && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             No pudimos cargar las cuentas.
           </span>
         )}
         {!isAccountsLoading && sortedAccounts.length === 0 && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             {noAccountsLabel}
           </span>
         )}
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[#52525B]">{quickAddCategoryLabel}</span>
+        <span className="text-xs font-medium text-[var(--text-secondary)]">{quickAddCategoryLabel}</span>
         <select
           value={selectedCategoryId}
           onChange={(event) => onSelectedCategoryIdChange?.(event.target.value)}
-          className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-medium text-black outline-none border border-transparent focus:border-[#D4D4D8]"
+          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
         >
           <option value="">{uncategorizedLabel}</option>
           {sortedCategories.map((category) => (
@@ -236,12 +236,12 @@ export function TransactionEditorWidget({
           ))}
         </select>
         {isCategoriesLoading && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             Cargando categorías...
           </span>
         )}
         {categoriesError && (
-          <span className="text-[11px] font-medium text-[#71717A]">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
             No pudimos cargar las categorías.
           </span>
         )}
@@ -250,9 +250,9 @@ export function TransactionEditorWidget({
       <ActionButton
         icon={editorMode === "create" ? "plus" : "check"}
         label={editorMode === "create" ? quickAddSubmitLabel : editSubmitLabel}
-        iconColor="text-[#18181B]"
-        labelColor="text-[#18181B]"
-        bg={isFormValid && !isLoading ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"}
+        iconColor="text-[var(--text-primary)]"
+        labelColor="text-[var(--text-primary)]"
+        bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
         padding="px-4 py-3"
         className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
         onClick={onSubmit}

@@ -1,4 +1,5 @@
 import type { StatisticsFlowDay } from "@/types";
+import { useAppSettings } from "@/hooks";
 import { memo, useCallback, useMemo } from "react";
 
 export interface FlowChartViewProps {
@@ -14,6 +15,11 @@ export const FlowChartView = memo(function FlowChartView({
   flowDays,
   onSelectDay,
 }: FlowChartViewProps) {
+  const { settings } = useAppSettings();
+  const isDark = settings?.theme === "dark";
+  const tickColor = isDark ? "#a1a1aa" : "#71717a";
+  const refLineColor = isDark ? "#3f3f46" : "#d4d4d8";
+
   const { chartData, expenseSeries, hasFlowData } = useMemo(() => {
     const totalsByCategory = new Map<string, { color: string; total: number }>();
     flowDays.forEach((day) => {
@@ -71,7 +77,7 @@ export const FlowChartView = memo(function FlowChartView({
   }, [flowDays, onSelectDay]);
 
   if (!hasFlowData) {
-    return <span className="text-sm font-medium text-[#71717A]">{emptyLabel}</span>;
+    return <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>;
   }
 
   return (

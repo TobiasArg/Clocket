@@ -261,7 +261,7 @@ export function Settings({
                       void handleNotificationsToggle();
                     }}
                     className={`relative inline-flex h-7 w-12 items-center rounded-full p-0.5 transition ${
-                      resolvedSettings.notificationsEnabled ? "bg-[#22C55E]" : "bg-[#D4D4D8]"
+                      resolvedSettings.notificationsEnabled ? "bg-[#22C55E]" : "bg-[var(--surface-border)]"
                     } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
                     <span
@@ -271,7 +271,7 @@ export function Settings({
                     />
                   </button>
                 ) : (
-                  <PhosphorIcon name="caret-right" className="shrink-0 text-[#A1A1AA]" />
+                  <PhosphorIcon name="caret-right" className="shrink-0 text-[var(--text-secondary)]" />
                 );
 
                 return (
