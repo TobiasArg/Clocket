@@ -10,7 +10,6 @@ import { ActionButton } from "../ActionButton/ActionButton";
 import { CategoryColorPicker, type CategoryColorPickerOption } from "../CategoryColorPicker/CategoryColorPicker";
 import { CategoryIconPicker } from "../CategoryIconPicker/CategoryIconPicker";
 import { IconBadge } from "../IconBadge/IconBadge";
-import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
 const MAX_DRAG_UP_DISTANCE = 220;
 const CLOSE_GESTURE_THRESHOLD = MAX_DRAG_UP_DISTANCE * 0.5;
@@ -308,16 +307,8 @@ export function CategoryQuickAddWidget({
             willChange: "transform, opacity",
           }}
         >
-          <div className="flex items-center justify-between border-b border-[var(--surface-border)] px-4 py-3">
+          <div className="border-b border-[var(--surface-border)] px-4 py-3">
             <span className="text-[11px] font-semibold tracking-[1px] text-[var(--text-secondary)]">{title}</span>
-            <button
-              type="button"
-              onClick={triggerClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--surface-border)] bg-[var(--surface-muted)] text-[var(--text-secondary)]"
-              aria-label="Cerrar"
-            >
-              <PhosphorIcon name="x" size="text-[15px]" className="text-[var(--text-secondary)]" />
-            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-3">
