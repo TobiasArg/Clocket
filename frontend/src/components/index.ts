@@ -35,6 +35,10 @@ export { CategoriesListWidget } from "./CategoriesListWidget/CategoriesListWidge
 export type { CategoriesListWidgetProps } from "./CategoriesListWidget/CategoriesListWidget";
 export { CategoryQuickAddWidget } from "./CategoryQuickAddWidget/CategoryQuickAddWidget";
 export type { CategoryQuickAddWidgetProps } from "./CategoryQuickAddWidget/CategoryQuickAddWidget";
+export { CategoryIconPicker } from "./CategoryIconPicker/CategoryIconPicker";
+export type { CategoryIconPickerProps } from "./CategoryIconPicker/CategoryIconPicker";
+export { CategoryColorPicker } from "./CategoryColorPicker/CategoryColorPicker";
+export type { CategoryColorPickerProps } from "./CategoryColorPicker/CategoryColorPicker";
 export { CategoryItem } from "./CategoryItem/CategoryItem";
 export type { CategoryItemProps } from "./CategoryItem/CategoryItem";
 export { Divider } from "./Divider/Divider";

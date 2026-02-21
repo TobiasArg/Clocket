@@ -1,5 +1,13 @@
 import { useMemo, useState } from "react";
 import type { Category } from "@/types";
+import {
+  CATEGORY_COLOR_OPTIONS,
+  CATEGORY_ICON_OPTIONS,
+  DEFAULT_CATEGORY_COLOR_KEY,
+  DEFAULT_CATEGORY_ICON,
+  getCategoryColorOption,
+} from "@/utils";
+import type { CategoryColorKey } from "@/utils";
 import { useCategories } from "./useCategories";
 import { useTransactions } from "./useTransactions";
 
@@ -13,21 +21,31 @@ export interface UseCategoriesPageModelOptions {
 }
 
 export interface UseCategoriesPageModelResult {
+  colorOptions: Array<{ key: string; label: string; swatchClass: string }>;
   categoryNameInput: string;
   deleteConfirmCategoryId: string | null;
   expandedIndex: number | null;
+  handleCloseQuickAdd: () => void;
   handleCreateCategory: () => Promise<void>;
   handleDeleteCategory: (category: Category) => Promise<void>;
   handleHeaderAction: () => void;
   handleToggle: (index: number) => void;
   isCategoryNameValid: boolean;
+  isColorValid: boolean;
+  isFormValid: boolean;
+  isIconValid: boolean;
   isLoading: boolean;
   isQuickAddOpen: boolean;
   isTransactionsLoading: boolean;
   isUsingExternalCategories: boolean;
+  iconOptions: string[];
   resolvedCategories: Category[];
+  selectedColorKey: string;
+  selectedIcon: string;
   setCategoryNameInput: (value: string) => void;
   setDeleteConfirmCategoryId: (value: string | null) => void;
+  setSelectedColorKey: (value: string) => void;
+  setSelectedIcon: (value: string) => void;
   showValidation: boolean;
   statusMessage: string | null;
   transactionsError: string | null;
@@ -64,6 +82,8 @@ export const useCategoriesPageModel = (
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState<boolean>(false);
   const [categoryNameInput, setCategoryNameInput] = useState<string>("");
+  const [selectedIcon, setSelectedIcon] = useState<string>(DEFAULT_CATEGORY_ICON);
+  const [selectedColorKey, setSelectedColorKeyState] = useState<CategoryColorKey>(DEFAULT_CATEGORY_COLOR_KEY);
   const [showValidation, setShowValidation] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [deleteConfirmCategoryId, setDeleteConfirmCategoryId] = useState<string | null>(null);
@@ -85,12 +105,25 @@ export const useCategoriesPageModel = (
   }, [transactions]);
 
   const normalizedCategoryName = categoryNameInput.trim();
+  const normalizedIcon = selectedIcon.trim();
+  const selectedColorClass = getCategoryColorOption(selectedColorKey).iconBgClass;
   const isCategoryNameValid = normalizedCategoryName.length > 0;
+  const isIconValid = normalizedIcon.length > 0;
+  const isColorValid = selectedColorClass.trim().length > 0;
+  const isFormValid = isCategoryNameValid && isIconValid && isColorValid;
 
   const closeQuickAdd = () => {
     setIsQuickAddOpen(false);
     setCategoryNameInput("");
+    setSelectedIcon(DEFAULT_CATEGORY_ICON);
+    setSelectedColorKeyState(DEFAULT_CATEGORY_COLOR_KEY);
     setShowValidation(false);
+  };
+
+  const setSelectedColorKey = (value: string) => {
+    const resolvedColorKey = CATEGORY_COLOR_OPTIONS.find((option) => option.key === value)?.key
+      ?? DEFAULT_CATEGORY_COLOR_KEY;
+    setSelectedColorKeyState(resolvedColorKey);
   };
 
   const handleHeaderAction = () => {
@@ -118,12 +151,14 @@ export const useCategoriesPageModel = (
 
   const handleCreateCategory = async () => {
     setShowValidation(true);
-    if (!isCategoryNameValid || isUsingExternalCategories) {
+    if (!isFormValid || isUsingExternalCategories) {
       return;
     }
 
     const created = await create({
       name: normalizedCategoryName,
+      icon: normalizedIcon,
+      iconBg: selectedColorClass,
     });
 
     if (!created) {
@@ -163,20 +198,34 @@ export const useCategoriesPageModel = (
 
   return {
     categoryNameInput,
+    colorOptions: CATEGORY_COLOR_OPTIONS.map((option) => ({
+      key: option.key,
+      label: option.label,
+      swatchClass: option.iconBgClass,
+    })),
     deleteConfirmCategoryId,
     expandedIndex,
+    handleCloseQuickAdd: closeQuickAdd,
     handleCreateCategory,
     handleDeleteCategory,
     handleHeaderAction,
     handleToggle,
     isCategoryNameValid,
+    isColorValid,
+    isFormValid,
+    isIconValid,
     isLoading,
     isQuickAddOpen,
     isTransactionsLoading,
     isUsingExternalCategories,
+    iconOptions: CATEGORY_ICON_OPTIONS,
     resolvedCategories,
+    selectedColorKey,
+    selectedIcon,
     setCategoryNameInput,
     setDeleteConfirmCategoryId,
+    setSelectedColorKey,
+    setSelectedIcon,
     showValidation,
     statusMessage,
     transactionsError: error,
