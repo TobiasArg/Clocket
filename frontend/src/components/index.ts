@@ -45,8 +45,6 @@ export { CategoryItem } from "./CategoryItem/CategoryItem";
 export type { CategoryItemProps } from "./CategoryItem/CategoryItem";
 export { Divider } from "./Divider/Divider";
 export type { DividerProps } from "./Divider/Divider";
-export { DonutChart } from "./DonutChart/DonutChart";
-export type { DonutChartProps } from "./DonutChart/DonutChart";
 export { Dot } from "./Dot/Dot";
 export type { DotProps } from "./Dot/Dot";
 export { ExpandableListItem } from "./ExpandableListItem/ExpandableListItem";
