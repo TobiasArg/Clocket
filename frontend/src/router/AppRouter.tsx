@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+import { useAppSettings } from "@/hooks";
 import {
   Accounts,
   BudgetDetail,
@@ -35,6 +36,22 @@ interface AppRouterProps {
 }
 
 export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
+  const { settings } = useAppSettings();
+  const profile = settings?.profile;
+  const userName = profile?.name?.trim() || "Usuario";
+  const avatarInitials = userName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "U";
+
+  const desktopUser = {
+    initial: avatarInitials,
+    name: userName,
+    email: profile?.email?.trim() || "usuario@email.com",
+  };
+
   const goalId = extractGoalId(currentPath);
   if (goalId) {
     return <GoalDetail goalId={goalId} onBackClick={goBack} />;
@@ -50,6 +67,8 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
     case "/home":
       return (
         <Home
+          avatarInitials={avatarInitials}
+          userName={userName}
           onMenuClick={() => navigateTo("/more")}
           onSeeAllTransactions={() => navigateTo("/transactions")}
           onSeeAllCuotas={() => navigateTo("/plans")}
@@ -63,7 +82,12 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
     case "/categories":
       return <Categories onBackClick={goBack} />;
     case "/budgets":
-      return <Budgets onBudgetClick={(id) => navigateTo(toBudgetDetailPath(id))} />;
+      return (
+        <Budgets
+          avatarInitials={avatarInitials}
+          onBudgetClick={(id) => navigateTo(toBudgetDetailPath(id))}
+        />
+      );
     case "/budget-detail":
       return <BudgetDetail onBackClick={goBack} />;
     case "/goals":
@@ -74,7 +98,7 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
         />
       );
     case "/investments":
-      return <Investments />;
+      return <Investments avatarInitials={avatarInitials} />;
     case "/plans":
       return <Plans onBackClick={goBack} />;
     case "/settings":
@@ -90,14 +114,20 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
             </div>
           )}
         >
-          <StatisticsLazy />
+          <StatisticsLazy avatarInitials={avatarInitials} />
         </Suspense>
       );
     case "/more":
       return <More onCloseClick={goBack} />;
     case "/home-desktop":
-      return <HomeDesktop />;
+      return (
+        <HomeDesktop
+          user={desktopUser}
+          greeting={`Hola, ${userName}`}
+          headerTitle="Dashboard"
+        />
+      );
     default:
-      return <Home />;
+      return <Home avatarInitials={avatarInitials} userName={userName} />;
   }
 }

@@ -66,7 +66,7 @@ describe("LocalStorageAppSettingsRepository", () => {
     const repository = new LocalStorageAppSettingsRepository(storageKey);
     const settings = await repository.get();
 
-    expect(settings.currency).toBe("EUR");
+    expect(settings.currency).toBe("ARS");
     expect(settings.language).toBe("en");
     expect(settings.profile.avatarIcon).toBe("user");
 

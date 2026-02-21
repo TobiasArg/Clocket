@@ -302,7 +302,7 @@ export interface SettingsSection {
 }
 
 export interface AppSettings {
-  currency: "USD" | "EUR";
+  currency: "USD" | "ARS";
   language: "es" | "en";
   notificationsEnabled: boolean;
   theme: "light" | "dark";

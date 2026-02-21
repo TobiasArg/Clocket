@@ -21,6 +21,7 @@ export interface UseAppSettingsResult {
 
 const FALLBACK_ERROR_MESSAGE =
   "We couldn’t complete that settings action. Please try again.";
+const SETTINGS_UPDATED_EVENT = "clocket:app-settings-updated";
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -41,6 +42,16 @@ export const useAppSettings = (
   const [settings, setSettings] = useState<AppSettingsItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const broadcastSettingsUpdate = useCallback((next: AppSettingsItem) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<AppSettingsItem>(SETTINGS_UPDATED_EVENT, { detail: next }),
+    );
+  }, []);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -64,6 +75,7 @@ export const useAppSettings = (
       try {
         const updated = await repository.update(patch);
         setSettings(updated);
+        broadcastSettingsUpdate(updated);
         return updated;
       } catch (updateError) {
         setError(getErrorMessage(updateError));
@@ -72,7 +84,7 @@ export const useAppSettings = (
         setIsLoading(false);
       }
     },
-    [repository],
+    [broadcastSettingsUpdate, repository],
   );
 
   const reset = useCallback(async (): Promise<AppSettingsItem | null> => {
@@ -82,6 +94,7 @@ export const useAppSettings = (
     try {
       const resetSettings = await repository.reset();
       setSettings(resetSettings);
+      broadcastSettingsUpdate(resetSettings);
       return resetSettings;
     } catch (resetError) {
       setError(getErrorMessage(resetError));
@@ -89,11 +102,32 @@ export const useAppSettings = (
     } finally {
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [broadcastSettingsUpdate, repository]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleSettingsUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<AppSettingsItem>;
+      if (!customEvent.detail) {
+        return;
+      }
+
+      setSettings(customEvent.detail);
+      setError(null);
+    };
+
+    window.addEventListener(SETTINGS_UPDATED_EVENT, handleSettingsUpdate);
+    return () => {
+      window.removeEventListener(SETTINGS_UPDATED_EVENT, handleSettingsUpdate);
+    };
+  }, []);
 
   return {
     settings,

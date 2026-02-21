@@ -76,7 +76,7 @@ describe("localStorage repositories smoke", () => {
     expect(defaults.security.pinHash).toBeNull();
 
     const updated = await repository.update({
-      currency: "EUR",
+      currency: "ARS",
       language: "en",
       notificationsEnabled: false,
       theme: "dark",
@@ -89,7 +89,7 @@ describe("localStorage repositories smoke", () => {
         pinHash: "pin_hash",
       },
     });
-    expect(updated.currency).toBe("EUR");
+    expect(updated.currency).toBe("ARS");
     expect(updated.language).toBe("en");
     expect(updated.notificationsEnabled).toBe(false);
     expect(updated.theme).toBe("dark");

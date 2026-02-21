@@ -85,8 +85,9 @@ const isAppSettingsV2 = (value: unknown): value is AppSettingsItem => {
   }
 
   const settings = value as Partial<AppSettingsItem>;
+  const currency = (settings as { currency?: string }).currency;
   return (
-    (settings.currency === "USD" || settings.currency === "EUR") &&
+    (currency === "USD" || currency === "ARS" || currency === "EUR") &&
     (settings.language === "es" || settings.language === "en") &&
     typeof settings.notificationsEnabled === "boolean" &&
     (settings.theme === "light" || settings.theme === "dark") &&
@@ -139,9 +140,10 @@ const normalizePartialSettings = (
 ): AppSettingsItem => {
   const profile = settings.profile ?? {};
   const security = settings.security ?? {};
+  const currency = (settings as { currency?: string }).currency;
 
   return {
-    currency: settings.currency === "EUR" ? "EUR" : "USD",
+    currency: currency === "ARS" || currency === "EUR" ? "ARS" : "USD",
     language: settings.language === "en" ? "en" : "es",
     notificationsEnabled: settings.notificationsEnabled ?? true,
     theme: settings.theme === "dark" ? "dark" : "light",
@@ -252,9 +254,20 @@ export class LocalStorageAppSettingsRepository implements AppSettingsRepository 
     try {
       const parsed: unknown = JSON.parse(raw);
       if (isStorageShapeV2(parsed)) {
+        const normalizedSettings = normalizePartialSettings(parsed.settings);
+        const isNormalizedDifferent = JSON.stringify(parsed.settings) !== JSON.stringify(normalizedSettings);
+        if (isNormalizedDifferent) {
+          const migrated: AppSettingsStorageV2 = {
+            version: STORAGE_VERSION,
+            settings: normalizedSettings,
+          };
+          this.writeState(migrated);
+          return migrated;
+        }
+
         return {
           version: parsed.version,
-          settings: cloneSettings(parsed.settings),
+          settings: cloneSettings(normalizedSettings),
         };
       }
 

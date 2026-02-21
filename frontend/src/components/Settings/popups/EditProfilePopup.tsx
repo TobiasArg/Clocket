@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AppSettings } from "@/types";
 import { PhosphorIcon } from "@/components/PhosphorIcon/PhosphorIcon";
 import { SettingsModalShell } from "../SettingsModalShell";
 
 const AVATAR_ICONS = ["user", "smiley", "user-circle", "star", "rocket-launch"] as const;
-
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface EditProfilePopupProps {
@@ -24,6 +23,7 @@ export function EditProfilePopup({
   const [email, setEmail] = useState(profile.email);
   const [avatarIcon, setAvatarIcon] = useState(profile.avatarIcon);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -34,27 +34,45 @@ export function EditProfilePopup({
     setEmail(profile.email);
     setAvatarIcon(profile.avatarIcon);
     setError(null);
+    setIsSaving(false);
   }, [isOpen, profile]);
 
-  const handleSave = async (): Promise<void> => {
-    const normalizedName = name.trim();
-    const normalizedEmail = email.trim();
+  const normalizedName = name.trim() || "Tu nombre";
+  const normalizedEmail = email.trim() || "tu@email.com";
+  const canSave = name.trim().length > 0 && EMAIL_PATTERN.test(email.trim()) && !isSaving;
 
-    if (!normalizedName) {
+  const profileInitials = useMemo(
+    () => normalizedName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "U",
+    [normalizedName],
+  );
+
+  const handleSave = async (): Promise<void> => {
+    const finalName = name.trim();
+    const finalEmail = email.trim();
+
+    if (!finalName) {
       setError("El nombre es obligatorio.");
       return;
     }
 
-    if (!EMAIL_PATTERN.test(normalizedEmail)) {
+    if (!EMAIL_PATTERN.test(finalEmail)) {
       setError("Ingresa un email válido.");
       return;
     }
 
-    await onSave({
-      name: normalizedName,
-      email: normalizedEmail,
-      avatarIcon,
-    });
+    setError(null);
+    setIsSaving(true);
+    try {
+      await onSave({
+        name: finalName,
+        email: finalEmail,
+        avatarIcon,
+      });
+    } catch {
+      setError("No pudimos guardar los cambios del perfil.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -62,33 +80,43 @@ export function EditProfilePopup({
       isOpen={isOpen}
       onClose={onClose}
       title="Editar perfil"
-      subtitle="Actualiza nombre, email e icono de perfil"
+      subtitle="Estos datos se usan globalmente en la app."
     >
-      <div className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-[#3F3F46]">Nombre</span>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#111827] text-sm font-bold text-white">
+            {profileInitials}
+          </div>
+          <div className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-[var(--text-primary)]">{normalizedName}</span>
+            <span className="block truncate text-xs font-medium text-[var(--text-secondary)]">{normalizedEmail}</span>
+          </div>
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Nombre</span>
           <input
             type="text"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="rounded-xl border border-[#E4E4E7] px-3 py-2 text-sm font-medium text-[#111827]"
+            className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[#111827]"
             placeholder="Tu nombre"
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-[#3F3F46]">Email</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Email</span>
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="rounded-xl border border-[#E4E4E7] px-3 py-2 text-sm font-medium text-[#111827]"
+            className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-medium text-[var(--text-primary)] outline-none transition focus:border-[#111827]"
             placeholder="tu@email.com"
           />
         </label>
 
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-[#3F3F46]">Icono</span>
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Avatar</span>
           <div className="grid grid-cols-5 gap-2">
             {AVATAR_ICONS.map((iconName) => {
               const isSelected = iconName === avatarIcon;
@@ -98,13 +126,14 @@ export function EditProfilePopup({
                   key={iconName}
                   type="button"
                   onClick={() => setAvatarIcon(iconName)}
-                  className={`flex items-center justify-center rounded-xl border p-2 ${
+                  className={`flex items-center justify-center rounded-xl border p-2 transition ${
                     isSelected
                       ? "border-[#111827] bg-[#111827] text-white"
-                      : "border-[#E4E4E7] bg-white text-[#3F3F46]"
+                      : "border-[var(--surface-border)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
                   }`}
+                  aria-pressed={isSelected}
                 >
-                  <PhosphorIcon name={iconName} size="text-[20px]" />
+                  <PhosphorIcon name={iconName} size="text-[18px]" />
                 </button>
               );
             })}
@@ -112,25 +141,26 @@ export function EditProfilePopup({
         </div>
 
         {error && (
-          <span className="text-xs font-semibold text-[#B91C1C]">{error}</span>
+          <span className="rounded-lg bg-[#FEF2F2] px-2.5 py-2 text-xs font-semibold text-[#B91C1C]">{error}</span>
         )}
 
         <div className="mt-1 flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[#E4E4E7] px-3 py-1.5 text-xs font-semibold text-[#71717A]"
+            className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)]"
           >
             Cancelar
           </button>
           <button
             type="button"
+            disabled={!canSave}
             onClick={() => {
               void handleSave();
             }}
-            className="rounded-xl bg-[#18181B] px-3 py-1.5 text-xs font-semibold text-white"
+            className="rounded-xl bg-[#111827] px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Guardar
+            {isSaving ? "Guardando..." : "Guardar cambios"}
           </button>
         </div>
       </div>

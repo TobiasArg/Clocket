@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   downloadJsonExport,
   downloadTransactionsCsvExport,
@@ -19,6 +19,17 @@ export function ExportDataPopup({
   const [isExportingJson, setIsExportingJson] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    setError(null);
+    setIsExportingJson(false);
+    setIsExportingCsv(false);
+  }, [isOpen]);
+
+  const isBusy = isExportingJson || isExportingCsv;
 
   const handleJsonExport = async (): Promise<void> => {
     setError(null);
@@ -53,18 +64,22 @@ export function ExportDataPopup({
       isOpen={isOpen}
       onClose={onClose}
       title="Exportar datos"
-      subtitle="Descarga un backup JSON o transacciones CSV"
+      subtitle="Descarga una copia de seguridad o el detalle de transacciones."
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <button
           type="button"
           onClick={() => {
             void handleJsonExport();
           }}
-          disabled={isExportingJson || isExportingCsv}
-          className="rounded-xl bg-[#111827] px-3 py-2 text-sm font-semibold text-white"
+          disabled={isBusy}
+          className="flex items-center justify-between rounded-2xl bg-[#111827] px-3 py-3 text-left text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isExportingJson ? "Generando JSON..." : "Descargar backup JSON"}
+          <span className="flex flex-col">
+            <span className="text-sm font-semibold">Backup JSON</span>
+            <span className="text-xs font-medium text-white/80">Incluye configuración y datos clave</span>
+          </span>
+          <span className="text-xs font-semibold">{isExportingJson ? "Generando..." : "Descargar"}</span>
         </button>
 
         <button
@@ -72,25 +87,29 @@ export function ExportDataPopup({
           onClick={() => {
             void handleCsvExport();
           }}
-          disabled={isExportingJson || isExportingCsv}
-          className="rounded-xl border border-[#E4E4E7] px-3 py-2 text-sm font-semibold text-[#3F3F46]"
+          disabled={isBusy}
+          className="flex items-center justify-between rounded-2xl border border-[var(--surface-border)] bg-white px-3 py-3 text-left text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isExportingCsv ? "Generando CSV..." : "Descargar CSV de transacciones"}
+          <span className="flex flex-col">
+            <span className="text-sm font-semibold">CSV transacciones</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">Formato listo para análisis externo</span>
+          </span>
+          <span className="text-xs font-semibold">{isExportingCsv ? "Generando..." : "Descargar"}</span>
         </button>
+
+        {error && (
+          <span className="rounded-lg bg-[#FEF2F2] px-2.5 py-2 text-xs font-semibold text-[#B91C1C]">{error}</span>
+        )}
 
         <div className="mt-1 flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[#E4E4E7] px-3 py-1.5 text-xs font-semibold text-[#71717A]"
+            className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)]"
           >
-            Volver a settings
+            Cerrar
           </button>
         </div>
-
-        {error && (
-          <span className="text-xs font-semibold text-[#B91C1C]">{error}</span>
-        )}
       </div>
     </SettingsModalShell>
   );

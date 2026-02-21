@@ -30,6 +30,7 @@ export function SecurityPopup({
     setNextPin("");
     setConfirmPin("");
     setError(null);
+    setIsSaving(false);
   }, [isOpen]);
 
   const handleSave = async (): Promise<void> => {
@@ -93,54 +94,61 @@ export function SecurityPopup({
       isOpen={isOpen}
       onClose={onClose}
       title="Seguridad"
-      subtitle={pinHash ? "PIN activo" : "PIN inactivo"}
+      subtitle={pinHash ? "PIN activo para proteger acciones sensibles." : "Activa un PIN para reforzar seguridad."}
     >
       <div className="flex flex-col gap-3">
+        <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Estado</span>
+          <p className={`mt-1 text-sm font-semibold ${pinHash ? "text-[#166534]" : "text-[#71717A]"}`}>
+            {pinHash ? "PIN activo" : "PIN inactivo"}
+          </p>
+        </div>
+
         {pinHash && (
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-[#3F3F46]">PIN actual</span>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">PIN actual</span>
             <input
               type="password"
               inputMode="numeric"
               value={currentPin}
-              onChange={(event) => setCurrentPin(event.target.value)}
-              className="rounded-xl border border-[#E4E4E7] px-3 py-2 text-sm font-medium text-[#111827]"
+              onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+              className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
               placeholder="••••"
               maxLength={4}
             />
           </label>
         )}
 
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-[#3F3F46]">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
             {pinHash ? "Nuevo PIN" : "PIN"}
           </span>
           <input
             type="password"
             inputMode="numeric"
             value={nextPin}
-            onChange={(event) => setNextPin(event.target.value)}
-            className="rounded-xl border border-[#E4E4E7] px-3 py-2 text-sm font-medium text-[#111827]"
+            onChange={(event) => setNextPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+            className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
             placeholder="••••"
             maxLength={4}
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-[#3F3F46]">Confirmar PIN</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Confirmar PIN</span>
           <input
             type="password"
             inputMode="numeric"
             value={confirmPin}
-            onChange={(event) => setConfirmPin(event.target.value)}
-            className="rounded-xl border border-[#E4E4E7] px-3 py-2 text-sm font-medium text-[#111827]"
+            onChange={(event) => setConfirmPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+            className="rounded-xl border border-[var(--surface-border)] bg-white px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[#111827]"
             placeholder="••••"
             maxLength={4}
           />
         </label>
 
         {error && (
-          <span className="text-xs font-semibold text-[#B91C1C]">{error}</span>
+          <span className="rounded-lg bg-[#FEF2F2] px-2.5 py-2 text-xs font-semibold text-[#B91C1C]">{error}</span>
         )}
 
         <div className="mt-1 flex items-center justify-end gap-2">
@@ -151,7 +159,7 @@ export function SecurityPopup({
               onClick={() => {
                 void handleRemove();
               }}
-              className="rounded-xl border border-[#FCA5A5] px-3 py-1.5 text-xs font-semibold text-[#B91C1C]"
+              className="rounded-xl border border-[#FCA5A5] px-3 py-2 text-xs font-semibold text-[#B91C1C] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Desactivar PIN
             </button>
@@ -162,7 +170,7 @@ export function SecurityPopup({
             onClick={() => {
               void handleSave();
             }}
-            className="rounded-xl bg-[#18181B] px-3 py-1.5 text-xs font-semibold text-white"
+            className="rounded-xl bg-[#111827] px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Guardando..." : pinHash ? "Actualizar PIN" : "Activar PIN"}
           </button>

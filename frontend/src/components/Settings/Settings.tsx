@@ -12,14 +12,12 @@ import { applyTheme } from "@/utils";
 import { CurrencyPopup } from "./popups/CurrencyPopup";
 import { EditProfilePopup } from "./popups/EditProfilePopup";
 import { ExportDataPopup } from "./popups/ExportDataPopup";
-import { NotificationsPopup } from "./popups/NotificationsPopup";
 import { SecurityPopup } from "./popups/SecurityPopup";
 import { ThemePopup } from "./popups/ThemePopup";
 
 type SettingsItemKey =
   | "edit-profile"
   | "currency"
-  | "notifications"
   | "theme"
   | "export"
   | "security";
@@ -70,7 +68,7 @@ const getSectionsFromSettings = (settings: AppSettings): SettingsSection[] => {
         {
           icon: "currency-dollar",
           name: "Moneda",
-          description: settings.currency === "USD" ? "USD - Dólar estadounidense" : "EUR - Euro",
+          description: settings.currency === "USD" ? "USD - Dólar estadounidense" : "ARS - Peso argentino",
         },
         {
           icon: "bell",
@@ -103,9 +101,9 @@ const getSectionsFromSettings = (settings: AppSettings): SettingsSection[] => {
 };
 
 const getItemKey = (sectionIndex: number, itemIndex: number): SettingsItemKey | null => {
-  const matrix: SettingsItemKey[][] = [
+  const matrix: Array<Array<SettingsItemKey | null>> = [
     ["edit-profile"],
-    ["currency", "notifications", "theme"],
+    ["currency", null, "theme"],
     ["export", "security"],
   ];
 
@@ -124,6 +122,7 @@ export function Settings({
   const { settings, isLoading, error, update } = useAppSettings();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [openPopup, setOpenPopup] = useState<SettingsItemKey | null>(null);
+  const [isTogglingNotifications, setIsTogglingNotifications] = useState(false);
   const popupHistoryActiveRef = useRef(false);
 
   const resolvedSettings = settings ?? DEFAULT_SETTINGS;
@@ -206,6 +205,23 @@ export function Settings({
     setOpenPopup(itemKey);
   };
 
+  const handleNotificationsToggle = async (): Promise<void> => {
+    if (isTogglingNotifications) {
+      return;
+    }
+
+    setIsTogglingNotifications(true);
+    try {
+      const next = !resolvedSettings.notificationsEnabled;
+      await updateSettings(
+        { notificationsEnabled: next },
+        next ? "Notificaciones activadas" : "Notificaciones pausadas",
+      );
+    } finally {
+      setIsTogglingNotifications(false);
+    }
+  };
+
   return (
     <div className="flex h-full w-full flex-col bg-[var(--panel-bg)] text-[var(--text-primary)]">
       <PageHeader title={headerTitle} onBackClick={handleHeaderBack} />
@@ -231,29 +247,57 @@ export function Settings({
 
           {resolvedSections.map((section, sectionIndex) => (
             <SettingsGroup key={section.title} title={section.title}>
-              {section.items.map((item, itemIndex) => (
-                <ListItemRow
-                  key={item.name}
-                  left={(
-                    <IconBadge
-                      icon={item.icon}
-                      size="w-[36px] h-[36px]"
-                      rounded="rounded-[10px]"
+              {section.items.map((item, itemIndex) => {
+                const isNotificationsItem = !sections && sectionIndex === 1 && itemIndex === 1;
+
+                const rightNode = isNotificationsItem ? (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={resolvedSettings.notificationsEnabled}
+                    aria-label="Alternar notificaciones"
+                    disabled={isTogglingNotifications}
+                    onClick={() => {
+                      void handleNotificationsToggle();
+                    }}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full p-0.5 transition ${
+                      resolvedSettings.notificationsEnabled ? "bg-[#22C55E]" : "bg-[#D4D4D8]"
+                    } disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    <span
+                      className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+                        resolvedSettings.notificationsEnabled ? "translate-x-5" : "translate-x-0"
+                      }`}
                     />
-                  )}
-                  title={item.name}
-                  subtitle={item.description}
-                  titleClassName="text-[15px] font-semibold text-[var(--text-primary)] font-['Outfit']"
-                  subtitleClassName="truncate text-xs font-medium text-[var(--text-secondary)]"
-                  right={<PhosphorIcon name="caret-right" className="shrink-0 text-[#A1A1AA]" />}
-                  onClick={() => {
-                    handleItemClick(sectionIndex, itemIndex);
-                  }}
-                  showBorder={itemIndex < section.items.length - 1}
-                  borderColor="border-[var(--surface-border)]"
-                  padding="p-4"
-                />
-              ))}
+                  </button>
+                ) : (
+                  <PhosphorIcon name="caret-right" className="shrink-0 text-[#A1A1AA]" />
+                );
+
+                return (
+                  <ListItemRow
+                    key={item.name}
+                    left={(
+                      <IconBadge
+                        icon={item.icon}
+                        size="w-[36px] h-[36px]"
+                        rounded="rounded-[10px]"
+                      />
+                    )}
+                    title={item.name}
+                    subtitle={item.description}
+                    titleClassName="text-[15px] font-semibold text-[var(--text-primary)] font-['Outfit']"
+                    subtitleClassName="truncate text-xs font-medium text-[var(--text-secondary)]"
+                    right={rightNode}
+                    onClick={isNotificationsItem ? undefined : () => {
+                      handleItemClick(sectionIndex, itemIndex);
+                    }}
+                    showBorder={itemIndex < section.items.length - 1}
+                    borderColor="border-[var(--surface-border)]"
+                    padding="p-4"
+                  />
+                );
+              })}
             </SettingsGroup>
           ))}
         </div>
@@ -274,15 +318,6 @@ export function Settings({
         onClose={closePopup}
         onSave={async (currency) => {
           await updateSettings({ currency });
-        }}
-      />
-
-      <NotificationsPopup
-        isOpen={openPopup === "notifications"}
-        enabled={resolvedSettings.notificationsEnabled}
-        onClose={closePopup}
-        onSave={async (enabled) => {
-          await updateSettings({ notificationsEnabled: enabled });
         }}
       />
 
