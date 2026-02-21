@@ -1,7 +1,6 @@
 import type { StatisticsFlowDay } from "@/types";
 import { useAppSettings } from "@/hooks";
 import { memo, useCallback, useMemo } from "react";
-import { Bar, BarChart, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 export interface FlowChartViewProps {
   animationKey: string;
@@ -82,41 +81,92 @@ export const FlowChartView = memo(function FlowChartView({
   }
 
   return (
-    <div className="h-[210px] w-full rounded-xl bg-[var(--panel-bg)]/70 px-2 py-2">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart key={animationKey} data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-          <XAxis
-            dataKey="label"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: tickColor, fontSize: 10, fontWeight: 600 }}
-          />
-          <YAxis hide />
-          <ReferenceLine y={0} stroke={refLineColor} strokeWidth={1} />
-          <Bar
-            dataKey="income"
-            fill="#16A34A"
-            radius={[6, 6, 0, 0]}
-            isAnimationActive
-            animationDuration={360}
-            animationEasing="ease-out"
-            onClick={handleBarClick}
-          />
-          {expenseSeries.map((series, index) => (
-            <Bar
-              key={series.dataKey}
-              dataKey={series.dataKey}
-              stackId="expense"
-              fill={series.color}
-              radius={index === expenseSeries.length - 1 ? [0, 0, 6, 6] : [0, 0, 0, 0]}
-              isAnimationActive
-              animationDuration={360}
-              animationEasing="ease-out"
-              onClick={handleBarClick}
-            />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="h-[210px] w-full rounded-xl bg-white/70 px-2 py-2">
+      <svg key={animationKey} viewBox="0 0 360 210" className="h-full w-full" aria-label="Flow chart">
+        {(() => {
+          const padding = { bottom: 24, left: 8, right: 8, top: 8 };
+          const chartWidth = 360 - padding.left - padding.right;
+          const chartHeight = 210 - padding.top - padding.bottom;
+
+          const maxIncome = chartData.reduce((max, row) => Math.max(max, Number(row.income ?? 0)), 0);
+          const maxExpense = chartData.reduce((max, row) => {
+            const totalExpense = expenseSeries.reduce((sum, series) => {
+              return sum + Math.abs(Number(row[series.dataKey] ?? 0));
+            }, 0);
+            return Math.max(max, totalExpense);
+          }, 0);
+          const axisCap = Math.max(1, maxIncome, maxExpense);
+          const zeroY = padding.top + (chartHeight * maxIncome) / (maxIncome + maxExpense || 1);
+
+          const groupWidth = chartData.length > 0 ? chartWidth / chartData.length : chartWidth;
+          const barWidth = Math.max(8, groupWidth * 0.52);
+
+          const toY = (value: number) => (value / axisCap) * (chartHeight / 2);
+
+          return (
+            <>
+              <line x1={padding.left} y1={zeroY} x2={padding.left + chartWidth} y2={zeroY} stroke="#D4D4D8" strokeWidth="1" />
+              {chartData.map((row, index) => {
+                const centerX = padding.left + groupWidth * index + groupWidth / 2;
+                const barLeft = centerX - barWidth / 2;
+                const incomeValue = Number(row.income ?? 0);
+                const incomeHeight = toY(incomeValue);
+                const incomeTop = zeroY - incomeHeight;
+
+                let expenseCursor = zeroY;
+                const expenseBars = expenseSeries.map((series) => {
+                  const value = Math.abs(Number(row[series.dataKey] ?? 0));
+                  const height = toY(value);
+                  const top = expenseCursor;
+                  expenseCursor += height;
+                  return { color: series.color, height, top };
+                }).filter((bar) => bar.height > 0);
+
+                return (
+                  <g
+                    key={`flow-${index}`}
+                    className="cursor-pointer"
+                    onClick={() => handleBarClick(row, index)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleBarClick(row, index);
+                      }
+                    }}
+                  >
+                    {incomeHeight > 0 && (
+                      <rect x={barLeft} y={incomeTop} width={barWidth} height={incomeHeight} rx={6} fill="#16A34A" />
+                    )}
+                    {expenseBars.map((bar, expenseIndex) => (
+                      <rect
+                        key={`expense-${expenseIndex}`}
+                        x={barLeft}
+                        y={bar.top}
+                        width={barWidth}
+                        height={bar.height}
+                        rx={expenseIndex === expenseBars.length - 1 ? 6 : 0}
+                        fill={bar.color}
+                      />
+                    ))}
+                    <text
+                      x={centerX}
+                      y={204}
+                      textAnchor="middle"
+                      fill="#71717A"
+                      fontSize="10"
+                      fontWeight="600"
+                    >
+                      {String(row.label)}
+                    </text>
+                  </g>
+                );
+              })}
+            </>
+          );
+        })()}
+      </svg>
     </div>
   );
 });

@@ -1,4 +1,5 @@
-import { ProgressSection, StatDisplay, SummaryPanel } from "@/components";
+import { StatDisplay, SummaryPanel } from "@/components";
+import { ProgressSection } from "../ProgressSection/ProgressSection";
 import { formatCurrency } from "@/utils";
 
 export interface GoalsSummaryWidgetProps {

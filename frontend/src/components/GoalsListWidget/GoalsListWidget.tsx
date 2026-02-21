@@ -1,4 +1,6 @@
-import { CardSection, IconBadge, ProgressSection, TextBadge } from "@/components";
+import { CardSection, TextBadge } from "@/components";
+import { IconBadge } from "../IconBadge/IconBadge";
+import { ProgressSection } from "../ProgressSection/ProgressSection";
 import type { GoalListPresentation } from "@/hooks";
 
 export interface GoalsListWidgetProps {

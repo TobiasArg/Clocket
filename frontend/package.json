@@ -7,6 +7,8 @@
         "dev": "concurrently -k -n backend,frontend -c cyan,green \"npm --prefix ../backend run dev\" \"vite\"",
         "dev:ui": "vite",
         "build": "vite build",
+        "build:ci": "vite build && npm run bundle:check",
+        "bundle:check": "node scripts/check-bundle-size.mjs",
         "preview": "vite preview",
         "test": "vitest run"
     },
@@ -18,7 +20,6 @@
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-is": "^19.2.4",
-        "recharts": "^3.7.0",
         "tailwindcss": "^4.1.18",
         "typescript": "^5.9.3"
     },

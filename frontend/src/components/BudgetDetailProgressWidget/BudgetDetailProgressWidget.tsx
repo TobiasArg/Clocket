@@ -1,4 +1,4 @@
-import { ProgressSection } from "@/components";
+import { ProgressSection } from "../ProgressSection/ProgressSection";
 
 export interface BudgetDetailProgressWidgetProps {
   percent?: number;

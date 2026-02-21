@@ -1,4 +1,4 @@
-import { ActionButton } from "@/components";
+import { ActionButton } from "../ActionButton/ActionButton";
 import type { AmountSign, TransactionsEditorMode } from "@/hooks";
 import type { TransactionInputCurrency } from "@/utils";
 

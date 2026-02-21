@@ -1,4 +1,5 @@
-import { ActionButton, PhosphorIcon } from "@/components";
+import { PhosphorIcon } from "@/components";
+import { ActionButton } from "../ActionButton/ActionButton";
 
 export interface GoalColorPickerOption {
   key: string;

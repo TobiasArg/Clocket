@@ -1,13 +1,10 @@
-import {
-  ActionButton,
-  IconBadge,
-  PageHeader,
-  PhosphorIcon,
-  ProgressBar,
-  formatCurrency,
-  getGoalColorOption,
-  useGoalDetailPageModel,
-} from "@/modules/goals";
+import { ActionButton } from "@/components/ActionButton/ActionButton";
+import { IconBadge } from "@/components/IconBadge/IconBadge";
+import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { PhosphorIcon } from "@/components/PhosphorIcon/PhosphorIcon";
+import { ProgressBar } from "@/components/ProgressBar/ProgressBar";
+import { useGoalDetailPageModel } from "@/hooks/useGoalDetailPageModel";
+import { formatCurrency, getGoalColorOption } from "@/utils";
 
 export interface GoalDetailProps {
   goalId: string;
