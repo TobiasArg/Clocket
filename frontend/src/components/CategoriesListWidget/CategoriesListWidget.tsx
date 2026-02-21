@@ -144,7 +144,6 @@ export function CategoriesListWidget({
                       {deleteActionLabel}
                     </button>
                   ) : (
-                    <div className="rounded-xl bg-[var(--panel-bg)] px-3 py-3 flex flex-col gap-2 max-w-[280px]">
                     <div className="flex max-w-[280px] flex-col gap-2 rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-3">
                       <span className="text-xs font-semibold text-[var(--text-primary)]">{deleteConfirmTitle}</span>
                       <span className="text-xs font-medium text-[var(--text-secondary)]">{deleteConfirmHint}</span>
@@ -153,14 +152,12 @@ export function CategoriesListWidget({
                           type="button"
                           onClick={() => onDeleteConfirmCategoryIdChange?.(null)}
                           className="px-3 py-1.5 rounded-lg bg-[var(--surface-muted)] text-xs font-medium text-[var(--text-secondary)]"
-                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-muted)] text-xs font-medium text-[var(--text-secondary)]"
                         >
                           {deleteCancelLabel}
                         </button>
                         <button
                           type="button"
                           onClick={() => onDeleteCategory?.(category)}
-                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-border)] text-xs font-medium text-[var(--text-primary)]"
                           className="px-3 py-1.5 rounded-lg bg-[var(--surface-border)] text-xs font-medium text-[var(--text-primary)]"
                         >
                           {deleteConfirmLabel}
