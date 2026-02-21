@@ -1,4 +1,5 @@
-import { ProgressSection, StatDisplay } from "@/components";
+import { StatDisplay } from "@/components";
+import { ProgressSection } from "../ProgressSection/ProgressSection";
 import { formatCurrency, type CuotaPlanItem } from "@/utils";
 
 export interface PlansListWidgetProps {

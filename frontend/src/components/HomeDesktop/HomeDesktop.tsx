@@ -8,14 +8,14 @@ import type {
   PlanSummaryItem,
   BudgetSummaryItem,
 } from "@/types";
-import { IconBadge } from "@/components";
 import { PhosphorIcon } from "@/components";
 import { ProgressBar } from "@/components";
 import { ListItemRow } from "@/components";
 import { StatDisplay } from "@/components";
 import { CardSection } from "@/components";
-import { HeroBalance } from "@/components";
 import { SidebarNav } from "@/components";
+import { HeroBalance } from "../HeroBalance/HeroBalance";
+import { IconBadge } from "../IconBadge/IconBadge";
 
 export interface HomeDesktopProps {
   logoInitial?: string;

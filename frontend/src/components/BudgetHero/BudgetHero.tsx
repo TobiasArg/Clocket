@@ -1,5 +1,5 @@
-import { IconBadge } from "@/components";
-import { PhosphorIcon } from "@/components";
+import { IconBadge } from "../IconBadge/IconBadge";
+import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
 export interface BudgetHeroProps {
   headerBg?: string;

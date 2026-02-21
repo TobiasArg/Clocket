@@ -1,4 +1,4 @@
-import { ActionButton } from "@/components";
+import { ActionButton } from "../ActionButton/ActionButton";
 
 export interface CategoryQuickAddWidgetProps {
   nameErrorLabel?: string;

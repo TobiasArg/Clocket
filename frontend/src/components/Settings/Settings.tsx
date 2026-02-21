@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, SettingsSection } from "@/types";
 import {
-  IconBadge,
   ListItemRow,
   PageHeader,
   PhosphorIcon,
@@ -9,6 +8,7 @@ import {
 } from "@/components";
 import { useAppSettings } from "@/hooks";
 import { applyTheme } from "@/utils";
+import { IconBadge } from "../IconBadge/IconBadge";
 import { CurrencyPopup } from "./popups/CurrencyPopup";
 import { EditProfilePopup } from "./popups/EditProfilePopup";
 import { ExportDataPopup } from "./popups/ExportDataPopup";

@@ -1,5 +1,6 @@
 import type { Category } from "@/types";
-import { ExpandableListItem, IconBadge } from "@/components";
+import { ExpandableListItem } from "@/components";
+import { IconBadge } from "../IconBadge/IconBadge";
 
 export interface CategoriesListWidgetProps {
   categories?: Category[];
