@@ -12,8 +12,8 @@ import { CategoryIconPicker } from "../CategoryIconPicker/CategoryIconPicker";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
-const CLOSE_GESTURE_THRESHOLD = 68;
 const MAX_DRAG_UP_DISTANCE = 220;
+const CLOSE_GESTURE_THRESHOLD = MAX_DRAG_UP_DISTANCE * 0.5;
 const CLOSE_ANIMATION_MS = 260;
 
 export interface CategoryQuickAddWidgetProps {
@@ -82,8 +82,14 @@ export function CategoryQuickAddWidget({
   const pointerIdRef = useRef<number | null>(null);
   const dragOffsetRef = useRef<number>(0);
   const closeTimeoutRef = useRef<number | null>(null);
+  const isClosingRef = useRef<boolean>(false);
+  const onRequestCloseRef = useRef(onRequestClose);
 
   const supportsPointerEvents = typeof window !== "undefined" && "PointerEvent" in window;
+
+  useEffect(() => {
+    onRequestCloseRef.current = onRequestClose;
+  }, [onRequestClose]);
 
   const clearCloseTimeout = useCallback(() => {
     if (closeTimeoutRef.current !== null) {
@@ -93,11 +99,12 @@ export function CategoryQuickAddWidget({
   }, []);
 
   const triggerClose = useCallback(() => {
-    if (isClosing) {
+    if (isClosingRef.current) {
       return;
     }
 
     clearCloseTimeout();
+    isClosingRef.current = true;
     setIsClosing(true);
     setIsDragging(false);
     gestureStartYRef.current = null;
@@ -106,16 +113,18 @@ export function CategoryQuickAddWidget({
     setDragOffset(0);
 
     closeTimeoutRef.current = window.setTimeout(() => {
-      if (onRequestClose) {
-        onRequestClose();
+      const requestClose = onRequestCloseRef.current;
+      if (requestClose) {
+        requestClose();
       } else {
+        isClosingRef.current = false;
         setIsClosing(false);
       }
     }, CLOSE_ANIMATION_MS);
-  }, [clearCloseTimeout, isClosing, onRequestClose]);
+  }, [clearCloseTimeout]);
 
   const startGesture = useCallback((clientY: number) => {
-    if (isClosing) {
+    if (isClosingRef.current) {
       return;
     }
 
@@ -123,10 +132,10 @@ export function CategoryQuickAddWidget({
     dragOffsetRef.current = 0;
     setDragOffset(0);
     setIsDragging(true);
-  }, [isClosing]);
+  }, []);
 
   const updateGesture = useCallback((clientY: number) => {
-    if (gestureStartYRef.current === null || isClosing) {
+    if (gestureStartYRef.current === null || isClosingRef.current) {
       return;
     }
 
@@ -137,7 +146,7 @@ export function CategoryQuickAddWidget({
 
     dragOffsetRef.current = nextOffset;
     setDragOffset(nextOffset);
-  }, [isClosing]);
+  }, []);
 
   const finishGesture = useCallback(() => {
     if (gestureStartYRef.current === null) {
@@ -226,6 +235,7 @@ export function CategoryQuickAddWidget({
     dragOffsetRef.current = 0;
     setIsDragging(false);
     setIsClosing(false);
+    isClosingRef.current = false;
     setIsEntered(false);
     clearCloseTimeout();
 
@@ -250,6 +260,7 @@ export function CategoryQuickAddWidget({
       document.body.style.overflow = previousOverflow;
       gestureStartYRef.current = null;
       pointerIdRef.current = null;
+      isClosingRef.current = false;
     };
   }, [clearCloseTimeout, isOpen, triggerClose]);
 
