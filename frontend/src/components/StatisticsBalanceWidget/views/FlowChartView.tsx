@@ -81,7 +81,7 @@ export const FlowChartView = memo(function FlowChartView({
   }
 
   return (
-    <div className="h-[210px] w-full rounded-xl bg-white/70 px-2 py-2">
+    <div className="h-[210px] w-full rounded-xl bg-[var(--surface-muted)] px-2 py-2">
       <svg key={animationKey} viewBox="0 0 360 210" className="h-full w-full" aria-label="Flow chart">
         {(() => {
           const padding = { bottom: 24, left: 8, right: 8, top: 8 };
@@ -105,7 +105,14 @@ export const FlowChartView = memo(function FlowChartView({
 
           return (
             <>
-              <line x1={padding.left} y1={zeroY} x2={padding.left + chartWidth} y2={zeroY} stroke="#D4D4D8" strokeWidth="1" />
+              <line
+                x1={padding.left}
+                y1={zeroY}
+                x2={padding.left + chartWidth}
+                y2={zeroY}
+                stroke={refLineColor}
+                strokeWidth="1"
+              />
               {chartData.map((row, index) => {
                 const centerX = padding.left + groupWidth * index + groupWidth / 2;
                 const barLeft = centerX - barWidth / 2;
@@ -154,7 +161,7 @@ export const FlowChartView = memo(function FlowChartView({
                       x={centerX}
                       y={204}
                       textAnchor="middle"
-                      fill="#71717A"
+                      fill={tickColor}
                       fontSize="10"
                       fontWeight="600"
                     >

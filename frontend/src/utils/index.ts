@@ -4,6 +4,7 @@ export {
   resolveLocaleForCurrency,
   setGlobalCurrency,
 } from "./formatCurrency";
+export type { FormatCurrencyOptions, SupportedCurrency } from "./formatCurrency";
 export { navigateToPath } from "./navigation";
 export { getPercentWidthClass } from "./percentWidthClass";
 export { buildExportSnapshot, buildTransactionsCsv, downloadJsonExport, downloadTransactionsCsvExport } from "./settingsExport";

@@ -38,6 +38,7 @@ export function PageHeader({
           </button>
         ) : null}
         <span className="block truncate text-2xl font-bold text-[var(--text-primary)] font-['Outfit']">
+        <span className="block truncate text-2xl font-bold text-[var(--text-primary)] font-['Outfit']">
           {title}
         </span>
       </div>

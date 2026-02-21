@@ -40,7 +40,6 @@ export const DonutChart = memo(function DonutChart({
   const resolvedBgFill = bgFill ?? (isDark ? "#27272a" : "#f4f4f5");
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
 
-  const centerBgClassName = bgFill === "#FFFFFF" ? "bg-white" : "bg-[#F4F4F5]";
   const isLegendBottom = legendPosition === "bottom";
 
   const normalizedSegments = useMemo(() => {
@@ -112,7 +111,14 @@ export const DonutChart = memo(function DonutChart({
       <div className={`relative ${size} shrink-0`}>
         <svg key={animationKey} viewBox="0 0 100 100" className="h-full w-full" aria-label="Donut chart">
           {chartType === "donut" && (
-            <circle cx="50" cy="50" r={innerRadiusValue + ringThickness / 2} fill="none" stroke={bgFill} strokeWidth={ringThickness} />
+            <circle
+              cx="50"
+              cy="50"
+              r={innerRadiusValue + ringThickness / 2}
+              fill="none"
+              stroke={resolvedBgFill}
+              strokeWidth={ringThickness}
+            />
           )}
           {chartSegments.map(({ segment, index, startAngle, endAngle }) => (
             <path
@@ -120,7 +126,7 @@ export const DonutChart = memo(function DonutChart({
               d={arcPath(startAngle, endAngle)}
               fill={segment.color}
               fillOpacity={selectedSegmentIndex === null || selectedSegmentIndex === index ? 1 : 0.35}
-              stroke={bgFill}
+              stroke={resolvedBgFill}
               strokeWidth={1}
               className="cursor-pointer transition-opacity duration-200"
               onClick={() => setSelectedSegmentIndex((current) => (current === index ? null : index))}
@@ -129,7 +135,8 @@ export const DonutChart = memo(function DonutChart({
         </svg>
         {chartType === "donut" && ((selectedSegment?.value ?? centerValue) || centerLabel) && (
           <div
-            className={`pointer-events-none absolute inset-[21%] flex flex-col items-center justify-center rounded-full ${centerBgClassName}`}
+            className="pointer-events-none absolute inset-[21%] flex flex-col items-center justify-center rounded-full"
+            style={{ backgroundColor: resolvedBgFill }}
           >
             {(selectedSegment?.value ?? centerValue) && (
               <span className={centerValueClassName}>{selectedSegment?.value ?? centerValue}</span>
