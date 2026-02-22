@@ -255,7 +255,6 @@ export const useGoalDetailPageModel = (
 
     const editCurrency = appCurrency;
     const displayTarget = convertArsToCurrency(goal.targetAmount, editCurrency);
-
     setTitleInput(goal.title);
     setDescriptionInput(goal.description);
     setTargetAmountInput(formatAmountInput(displayTarget));

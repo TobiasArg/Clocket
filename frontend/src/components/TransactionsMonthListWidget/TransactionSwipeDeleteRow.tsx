@@ -2,6 +2,10 @@ import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react
 import { IconBadge } from "../IconBadge/IconBadge";
 import { ListItemRow } from "../ListItemRow/ListItemRow";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
+import {
+  TRANSACTION_EXPENSE_TEXT_CLASS,
+  TRANSACTION_INCOME_TEXT_CLASS,
+} from "@/constants";
 import type { TransactionItem } from "@/utils";
 
 export interface TransactionSwipeDeleteRowProps {
@@ -296,8 +300,8 @@ export function TransactionSwipeDeleteRow({
               <span
                 className={`text-[15px] font-bold font-['Outfit'] ${
                   parseAmountSign(transaction.amount) === "+"
-                    ? "text-[#16A34A]"
-                    : "text-[#DC2626]"
+                    ? TRANSACTION_INCOME_TEXT_CLASS
+                    : TRANSACTION_EXPENSE_TEXT_CLASS
                 }`}
               >
                 {transaction.amount}

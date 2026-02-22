@@ -19,6 +19,7 @@ import type {
   CreateTransactionInput,
   TransactionItem,
 } from "@/domain/transactions/repository";
+import { TRANSACTION_EXPENSE_TEXT_CLASS } from "@/constants";
 import { accountsRepository } from "@/data/localStorage/accountsRepository";
 import { categoriesRepository } from "@/data/localStorage/categoriesRepository";
 import { transactionsRepository } from "@/data/localStorage/transactionsRepository";
@@ -34,7 +35,7 @@ const CREDIT_CARD_ACCOUNT_NAME = "Tarjeta de Credito";
 const CREDIT_CARD_ACCOUNT_ICON = "credit-card";
 const CREDIT_CARD_TRANSACTION_ICON = "credit-card";
 const CREDIT_CARD_TRANSACTION_ICON_BG = "bg-[#18181B]";
-const CREDIT_CARD_TRANSACTION_AMOUNT_COLOR = "text-[#DC2626]";
+const CREDIT_CARD_TRANSACTION_AMOUNT_COLOR = TRANSACTION_EXPENSE_TEXT_CLASS;
 
 interface CuotasStorageV1 {
   version: typeof STORAGE_VERSION;

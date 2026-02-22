@@ -3,6 +3,7 @@ import { IconBadge } from "@/components/IconBadge/IconBadge";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { PhosphorIcon } from "@/components/PhosphorIcon/PhosphorIcon";
 import { ProgressBar } from "@/components/ProgressBar/ProgressBar";
+import { TRANSACTION_EXPENSE_TEXT_CLASS } from "@/constants";
 import { useGoalDetailPageModel } from "@/hooks/useGoalDetailPageModel";
 import { formatCurrency, getGoalColorOption } from "@/utils";
 import type { GoalColorKey } from "@/types";
@@ -193,7 +194,7 @@ export function GoalDetail({
                         {entry.date}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold text-[#DC2626]">
+                    <span className={`text-sm font-semibold ${TRANSACTION_EXPENSE_TEXT_CLASS}`}>
                       {entry.amountLabel}
                     </span>
                   </div>

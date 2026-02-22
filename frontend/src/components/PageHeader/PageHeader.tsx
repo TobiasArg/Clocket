@@ -37,7 +37,7 @@ export function PageHeader({
             <PhosphorIcon name="arrow-left" className="text-[var(--text-primary)]" />
           </button>
         ) : null}
-        <span className="block truncate text-2xl font-bold text-[var(--text-primary)] font-['Outfit']">
+        <span className="block truncate font-['Outfit'] text-2xl font-bold text-[var(--text-primary)]">
           {title}
         </span>
       </div>

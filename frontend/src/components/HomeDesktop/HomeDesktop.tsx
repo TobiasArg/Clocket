@@ -14,6 +14,10 @@ import { ListItemRow } from "@/components";
 import { StatDisplay } from "@/components";
 import { CardSection } from "@/components";
 import { SidebarNav } from "@/components";
+import {
+  TRANSACTION_EXPENSE_TEXT_CLASS,
+  TRANSACTION_INCOME_TEXT_CLASS,
+} from "@/constants";
 import { HeroBalance } from "../HeroBalance/HeroBalance";
 import { IconBadge } from "../IconBadge/IconBadge";
 
@@ -87,10 +91,10 @@ export function HomeDesktop({
   ],
   txTitle = "Recent Transactions",
   transactions = [
-    { icon: "fork-knife", iconBg: "bg-[#DC2626]", name: "Supermercado", category: "Alimentación · Hoy", amount: "-$85.50", amountColor: "text-[#DC2626]", meta: "" },
-    { icon: "arrow-down", iconBg: "bg-[#10B981]", name: "Salario", category: "Ingreso · 5 Feb", amount: "+$4,200.00", amountColor: "text-[#22C55E]", meta: "" },
-    { icon: "car", iconBg: "bg-[#2563EB]", name: "Gasolina", category: "Transporte · Ayer", amount: "-$45.00", amountColor: "text-[#DC2626]", meta: "" },
-    { icon: "popcorn", iconBg: "bg-[#7C3AED]", name: "Netflix", category: "Entretenimiento · 3 Feb", amount: "-$15.99", amountColor: "text-[#DC2626]", meta: "" },
+    { icon: "fork-knife", iconBg: "bg-[#DC2626]", name: "Supermercado", category: "Alimentación · Hoy", amount: "-$85.50", amountColor: TRANSACTION_EXPENSE_TEXT_CLASS, meta: "" },
+    { icon: "arrow-down", iconBg: "bg-[#10B981]", name: "Salario", category: "Ingreso · 5 Feb", amount: "+$4,200.00", amountColor: TRANSACTION_INCOME_TEXT_CLASS, meta: "" },
+    { icon: "car", iconBg: "bg-[#2563EB]", name: "Gasolina", category: "Transporte · Ayer", amount: "-$45.00", amountColor: TRANSACTION_EXPENSE_TEXT_CLASS, meta: "" },
+    { icon: "popcorn", iconBg: "bg-[#7C3AED]", name: "Netflix", category: "Entretenimiento · 3 Feb", amount: "-$15.99", amountColor: TRANSACTION_EXPENSE_TEXT_CLASS, meta: "" },
   ],
   spendTitle = "Spending",
   spendPeriod = "This month",

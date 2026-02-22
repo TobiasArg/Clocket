@@ -17,7 +17,7 @@ export function ExpandableListItem({
   left,
   title,
   subtitle,
-  titleClassName = "text-base font-semibold text-[var(--text-primary)] font-['Outfit']",
+  titleClassName = "font-['Outfit'] text-base font-semibold text-[var(--text-primary)]",
   subtitleClassName = "text-xs font-medium text-[var(--text-secondary)]",
   isExpanded = false,
   onToggle,
