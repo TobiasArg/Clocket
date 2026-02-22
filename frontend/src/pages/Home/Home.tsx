@@ -17,6 +17,8 @@ import {
   SpendingInfoWidget,
   useHomePageModel,
 } from "@/modules/home";
+import { TransactionEditorSlideUpMenu } from "@/components";
+import { TransactionEditorWidget, useTransactionsPageModel } from "@/modules/transactions";
 
 export interface HomeProps {
   avatarInitials?: string;
@@ -47,7 +49,7 @@ export interface HomeProps {
   emptySpendingLabel?: string;
   emptyCuotasLabel?: string;
   onNavItemClick?: (index: number) => void;
-  onMenuClick?: () => void;
+  onAddTransactionClick?: () => void;
   onSeeAllTransactions?: () => void;
   onSeeAllCuotas?: () => void;
   onGoalClick?: (goalId: string) => void;
@@ -82,7 +84,7 @@ export function Home({
   emptySpendingLabel = "Sin gastos este mes.",
   emptyCuotasLabel = "Sin cuotas activas.",
   onNavItemClick,
-  onMenuClick,
+  onAddTransactionClick,
   onSeeAllTransactions,
   onSeeAllCuotas,
   onGoalClick,
@@ -113,6 +115,42 @@ export function Home({
     loadingLabel,
   });
 
+  const {
+    accountsError,
+    amountInput,
+    categoriesError,
+    descriptionInput,
+    editorMode,
+    editingAmountSign,
+    handleHeaderAction,
+    handleSubmit,
+    isAccountValid,
+    isAccountsLoading,
+    isAmountValid,
+    isCategoriesLoading,
+    isDescriptionValid,
+    isEditorOpen,
+    isFormValid,
+    isLoading,
+    selectedAccountId,
+    selectedCurrency,
+    selectedCategoryId,
+    setAmountInput,
+    setDescriptionInput,
+    setEditingAmountSign,
+    setSelectedAccountId,
+    setSelectedCategoryId,
+    setSelectedCurrency,
+    showValidation,
+    sortedAccounts,
+    sortedCategories,
+  } = useTransactionsPageModel();
+
+  const handleAddTransactionPress = () => {
+    handleHeaderAction();
+    onAddTransactionClick?.();
+  };
+
   return (
     <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
       <div className="flex items-center justify-between px-5 py-4">
@@ -123,9 +161,9 @@ export function Home({
             <span className="text-lg font-bold text-[var(--text-primary)] font-['Outfit']">{userName}</span>
           </div>
         </div>
-        <button type="button" onClick={onMenuClick} aria-label="Menu">
+        <button type="button" onClick={handleAddTransactionPress} aria-label="Agregar transacción">
           <IconBadge
-            icon="list"
+            icon={isEditorOpen ? "x" : "plus"}
             bg="bg-[var(--surface-muted)]"
             iconColor="text-[var(--text-primary)]"
             size="w-[44px] h-[44px]"
@@ -208,6 +246,64 @@ export function Home({
       </div>
 
       <BottomNavigation items={navItems} onItemClick={onNavItemClick} />
+
+      <TransactionEditorSlideUpMenu
+        isOpen={isEditorOpen}
+        onClose={handleHeaderAction}
+        title={editorMode === "create" ? "Agregar transacción" : "Editar transacción"}
+      >
+        <TransactionEditorWidget
+          isOpen={isEditorOpen}
+          editorMode={editorMode}
+          quickAddTitle="Nueva transacción"
+          editTitle="Editar transacción"
+          quickAddTypeLabel="Tipo"
+          quickAddExpenseLabel="Egreso"
+          quickAddIncomeLabel="Ingreso"
+          quickAddAmountLabel="Monto"
+          quickAddAmountPlaceholder="0.00"
+          quickAddAmountErrorLabel="Ingresa un monto mayor a 0."
+          quickAddDescriptionLabel="Descripción (opcional)"
+          quickAddDescriptionPlaceholder="Ej. Café, Uber, supermercado"
+          quickAddDescriptionErrorLabel="Puedes dejarlo vacío."
+          quickAddAccountLabel="Cuenta"
+          quickAddCurrencyLabel="Moneda"
+          quickAddAccountErrorLabel="Selecciona una cuenta."
+          quickAddCategoryLabel="Categoría"
+          quickAddSubmitLabel="Agregar transacción"
+          editSubmitLabel="Guardar cambios"
+          uncategorizedLabel="Sin categoría"
+          uncategorizedAccountLabel="Sin cuenta"
+          noAccountsLabel="Crea una cuenta en Más > Cuentas para registrar transacciones."
+          amountInput={amountInput}
+          descriptionInput={descriptionInput}
+          selectedAccountId={selectedAccountId}
+          selectedCurrency={selectedCurrency}
+          selectedCategoryId={selectedCategoryId}
+          editingAmountSign={editingAmountSign}
+          showValidation={showValidation}
+          isAmountValid={isAmountValid}
+          isDescriptionValid={isDescriptionValid}
+          isAccountValid={isAccountValid}
+          isFormValid={isFormValid}
+          isLoading={isLoading}
+          isAccountsLoading={isAccountsLoading}
+          isCategoriesLoading={isCategoriesLoading}
+          accountsError={accountsError}
+          categoriesError={categoriesError}
+          sortedAccounts={sortedAccounts}
+          sortedCategories={sortedCategories}
+          onAmountChange={setAmountInput}
+          onDescriptionChange={setDescriptionInput}
+          onSelectedAccountIdChange={setSelectedAccountId}
+          onCurrencyChange={setSelectedCurrency}
+          onSelectedCategoryIdChange={setSelectedCategoryId}
+          onSignChange={setEditingAmountSign}
+          onSubmit={() => {
+            void handleSubmit();
+          }}
+        />
+      </TransactionEditorSlideUpMenu>
     </div>
   );
 }

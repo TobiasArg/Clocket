@@ -30,6 +30,7 @@ export type AmountSign = "+" | "-";
 export type TransactionsEditorMode = "create" | "edit" | null;
 
 export interface UseTransactionsPageModelOptions {
+  descriptionFallbackLabel?: string;
   onFilterClick?: () => void;
   onTransactionClick?: (monthIndex: number, txIndex: number) => void;
   uncategorizedAccountLabel?: string;
@@ -168,6 +169,7 @@ export const useTransactionsPageModel = (
   options: UseTransactionsPageModelOptions = {},
 ): UseTransactionsPageModelResult => {
   const {
+    descriptionFallbackLabel = "Sin descripción",
     onFilterClick,
     onTransactionClick,
     uncategorizedAccountLabel = "Sin cuenta",
@@ -230,9 +232,10 @@ export const useTransactionsPageModel = (
   );
 
   const normalizedDescription = descriptionInput.trim();
+  const resolvedDescription = normalizedDescription || descriptionFallbackLabel;
   const amountValue = Number(amountInput);
   const isAmountValid = Number.isFinite(amountValue) && amountValue > 0;
-  const isDescriptionValid = normalizedDescription.length > 0;
+  const isDescriptionValid = true;
   const isAccountValid = selectedAccountId.trim().length > 0;
   const isCategoryValid = selectedCategoryId.trim().length > 0;
   const isFormValid = isAmountValid && isDescriptionValid && isAccountValid && isCategoryValid;
@@ -483,7 +486,7 @@ export const useTransactionsPageModel = (
       const created = await create({
         icon: selectedCategoryMeta?.icon ?? (isIncome ? "arrow-up-right" : "receipt"),
         iconBg: selectedCategoryMeta?.iconBg ?? (isIncome ? "bg-[#16A34A]" : "bg-[#18181B]"),
-        name: normalizedDescription,
+        name: resolvedDescription,
         accountId: selectedAccountId,
         category: selectedCategoryName,
         categoryId: selectedCategoryId || undefined,
@@ -507,7 +510,7 @@ export const useTransactionsPageModel = (
       const amountInArs = toArsTransactionAmount(amountValue, selectedCurrency);
       const selectedCategoryMeta = categoryIconById.get(selectedCategoryId);
       const updated = await update(selectedTransactionId, {
-        name: normalizedDescription,
+        name: resolvedDescription,
         accountId: selectedAccountId,
         category: selectedCategoryName,
         categoryId: selectedCategoryId || undefined,

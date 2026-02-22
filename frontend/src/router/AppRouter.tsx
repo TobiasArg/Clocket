@@ -156,7 +156,6 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
         <Home
           avatarInitials={avatarInitials}
           userName={userName}
-          onMenuClick={() => navigateTo("/more")}
           onSeeAllTransactions={() => navigateTo("/transactions")}
           onSeeAllCuotas={() => navigateTo("/plans")}
           onGoalClick={(id) => navigateTo(toGoalDetailPath(id))}
