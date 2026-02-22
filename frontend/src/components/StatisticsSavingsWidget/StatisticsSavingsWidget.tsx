@@ -5,7 +5,7 @@ import { StatisticsViewCarousel } from "../StatisticsViewCarousel/StatisticsView
 import { SummaryPanel } from "../SummaryPanel/SummaryPanel";
 import { TextBadge } from "../TextBadge/TextBadge";
 import type { TrendLinePoint } from "../TrendLine/TrendLine";
-import type { TrendChartViewProps } from "./views/TrendChartView";
+import type { TrendChartMode, TrendChartViewProps } from "./views/TrendChartView";
 
 const TrendDayView = lazy(async () => {
   const module = await import("./views/TrendDayView");
@@ -55,6 +55,7 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
   trendPointsByView = EMPTY_POINTS_BY_VIEW,
 }: StatisticsSavingsWidgetProps) {
   const [activeView, setActiveView] = useState<StatisticsChartView>("day");
+  const [trendMode, setTrendMode] = useState<TrendChartMode>("line");
   const [loadedViews, setLoadedViews] = useState<Record<StatisticsChartView, boolean>>({
     day: true,
     month: false,
@@ -86,12 +87,13 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
         <Suspense fallback={<div className="h-[124px] w-full rounded-xl bg-[var(--panel-bg)]/70" />}>
           <ViewComponent
             animationKey={`${trendAnimationKey}-${view}`}
+            mode={trendMode}
             points={points}
           />
         </Suspense>
       );
     }
-  ), [loadedViews, trendAnimationKey, trendPointsByView]);
+  ), [loadedViews, trendAnimationKey, trendMode, trendPointsByView]);
 
   const metrics = [
     { label: savingsLabel, value: savingsValue, valueClassName: "font-bold" },
@@ -100,12 +102,15 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
 
   return (
     <SummaryPanel
-      bg={savingsBg}
-      rounded="rounded-[20px]"
+      bg={`${savingsBg} border border-[var(--surface-border)]`}
+      rounded="rounded-[22px]"
       padding="p-5"
     >
-      <div className="flex items-start justify-between w-full">
-        <span className="text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">{savingsTitle}</span>
+      <div className="flex items-start justify-between gap-3 w-full">
+        <div className="min-w-0">
+          <span className="block text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">{savingsTitle}</span>
+          <span className="block text-[11px] font-medium text-[var(--text-secondary)]">Progreso acumulado por período</span>
+        </div>
         <TextBadge
           text={savingsBadge}
           bg="bg-[var(--panel-bg)]"
@@ -116,6 +121,30 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
           fontWeight="font-semibold"
         />
       </div>
+      <div className="flex items-center justify-end">
+        <div className="flex items-center rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] p-1">
+          {([
+            { id: "line", label: "Línea" },
+            { id: "bars", label: "Barras" },
+          ] as const).map((option) => {
+            const isActive = trendMode === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setTrendMode(option.id)}
+                className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                  isActive
+                    ? "bg-[var(--surface-border)] text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <StatisticsViewCarousel
         activeView={activeView}
         onViewChange={setActiveView}
@@ -123,8 +152,8 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
       />
       <div className="grid grid-cols-2 gap-2">
         {metrics.map((metric) => (
-          <div key={metric.label} className="rounded-xl bg-[var(--panel-bg)] px-3 py-2">
-            <span className="block text-[10px] font-medium text-[var(--text-secondary)]">{metric.label}</span>
+          <div key={metric.label} className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.8px] text-[var(--text-secondary)]">{metric.label}</span>
             <span className={`block text-base text-[var(--text-primary)] font-['Outfit'] ${metric.valueClassName}`}>
               {metric.value}
             </span>

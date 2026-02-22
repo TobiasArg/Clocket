@@ -2,97 +2,58 @@ import type { StatisticsFlowDay } from "@/types";
 import { useAppSettings } from "@/hooks";
 import { memo, useCallback, useMemo } from "react";
 
+export type FlowChartMode = "stacked" | "net";
+
 export interface FlowChartViewProps {
   animationKey: string;
+  chartMode?: FlowChartMode;
   emptyLabel: string;
   flowDays: StatisticsFlowDay[];
   onSelectDay: (day: StatisticsFlowDay) => void;
 }
 
+const clampNumber = (value: number, min: number, max: number): number => {
+  if (value < min) {
+    return min;
+  }
+  if (value > max) {
+    return max;
+  }
+  return value;
+};
+
 export const FlowChartView = memo(function FlowChartView({
   animationKey,
+  chartMode = "stacked",
   emptyLabel,
   flowDays,
   onSelectDay,
 }: FlowChartViewProps) {
   const { settings } = useAppSettings();
   const isDark = settings?.theme === "dark";
+
   const tickColor = isDark ? "#a1a1aa" : "#71717a";
-  const refLineColor = isDark ? "#3f3f46" : "#d4d4d8";
+  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(63,63,70,0.14)";
+  const zeroLineColor = isDark ? "#52525b" : "#d4d4d8";
+  const incomeColor = isDark ? "#4ade80" : "#16a34a";
+  const expenseColor = isDark ? "#a1a1aa" : "#18181b";
+  const netPositiveColor = isDark ? "#4ade80" : "#22c55e";
+  const netNegativeColor = isDark ? "#fca5a5" : "#dc2626";
 
-  const { chartData, expenseSeries, incomeSeries, hasFlowData } = useMemo(() => {
-    const expenseTotalsByCategory = new Map<string, { color: string; total: number }>();
-    const incomeTotalsByCategory = new Map<string, { color: string; total: number }>();
-    flowDays.forEach((day) => {
-      day.expenseByCategory.forEach((entry) => {
-        const current = expenseTotalsByCategory.get(entry.category);
-        expenseTotalsByCategory.set(entry.category, {
-          color: current?.color ?? entry.color,
-          total: (current?.total ?? 0) + entry.amount,
-        });
-      });
-      day.incomeByCategory.forEach((entry) => {
-        const current = incomeTotalsByCategory.get(entry.category);
-        incomeTotalsByCategory.set(entry.category, {
-          color: current?.color ?? entry.color,
-          total: (current?.total ?? 0) + entry.amount,
-        });
-      });
-    });
-
-    const nextExpenseSeries = Array.from(expenseTotalsByCategory.entries())
-      .sort((left, right) => right[1].total - left[1].total)
-      .map(([category, value], index) => ({
-        category,
-        color: value.color,
-        dataKey: `expense_${index}`,
-      }));
-    const nextIncomeSeries = Array.from(incomeTotalsByCategory.entries())
-      .sort((left, right) => right[1].total - left[1].total)
-      .map(([category, value], index) => ({
-        category,
-        color: value.color,
-        dataKey: `income_${index}`,
-      }));
-
-    const expenseDataKeyByCategory = new Map(nextExpenseSeries.map((series) => [series.category, series.dataKey]));
-    const incomeDataKeyByCategory = new Map(nextIncomeSeries.map((series) => [series.category, series.dataKey]));
-    const nextChartData = flowDays.map((day) => {
-      const row: Record<string, number | string> = {
-        label: day.label,
-      };
-
-      nextIncomeSeries.forEach((series) => {
-        row[series.dataKey] = 0;
-      });
-      nextExpenseSeries.forEach((series) => {
-        row[series.dataKey] = 0;
-      });
-      day.incomeByCategory.forEach((entry) => {
-        const dataKey = incomeDataKeyByCategory.get(entry.category);
-        if (dataKey) {
-          row[dataKey] = entry.amount;
-        }
-      });
-      day.expenseByCategory.forEach((entry) => {
-        const dataKey = expenseDataKeyByCategory.get(entry.category);
-        if (dataKey) {
-          row[dataKey] = -entry.amount;
-        }
-      });
-
-      return row;
-    });
-
-    return {
-      chartData: nextChartData,
-      expenseSeries: nextExpenseSeries,
-      incomeSeries: nextIncomeSeries,
-      hasFlowData: flowDays.some((day) => day.incomeTotal > 0 || day.expenseTotal > 0),
-    };
+  const chartRows = useMemo(() => {
+    return flowDays.map((day) => ({
+      expenseTotal: day.expenseTotal,
+      incomeTotal: day.incomeTotal,
+      label: day.label,
+      net: day.incomeTotal - day.expenseTotal,
+    }));
   }, [flowDays]);
 
-  const handleBarClick = useCallback((_entry: unknown, index: number) => {
+  const hasFlowData = useMemo(() => {
+    return chartRows.some((row) => row.incomeTotal > 0 || row.expenseTotal > 0);
+  }, [chartRows]);
+
+  const handlePointSelect = useCallback((index: number) => {
     const clickedDay = flowDays[index];
     if (!clickedDay) {
       return;
@@ -106,109 +67,207 @@ export const FlowChartView = memo(function FlowChartView({
   }
 
   return (
-    <div className="h-[210px] w-full rounded-xl bg-[var(--surface-muted)] px-2 py-2">
+    <div className="h-[220px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/70 px-2 py-2">
       <svg key={animationKey} viewBox="0 0 360 210" className="h-full w-full" aria-label="Flow chart">
         {(() => {
-          const padding = { bottom: 24, left: 8, right: 8, top: 8 };
+          const padding = { bottom: 24, left: 10, right: 10, top: 8 };
           const chartWidth = 360 - padding.left - padding.right;
           const chartHeight = 210 - padding.top - padding.bottom;
+          const groupWidth = chartRows.length > 0 ? chartWidth / chartRows.length : chartWidth;
+          const labelY = 204;
 
-          const maxIncome = chartData.reduce((max, row) => {
-            const totalIncome = incomeSeries.reduce((sum, series) => {
-              return sum + Math.abs(Number(row[series.dataKey] ?? 0));
-            }, 0);
-            return Math.max(max, totalIncome);
-          }, 0);
-          const maxExpense = chartData.reduce((max, row) => {
-            const totalExpense = expenseSeries.reduce((sum, series) => {
-              return sum + Math.abs(Number(row[series.dataKey] ?? 0));
-            }, 0);
-            return Math.max(max, totalExpense);
-          }, 0);
-          const axisCap = Math.max(1, maxIncome, maxExpense);
-          const zeroY = padding.top + (chartHeight * maxIncome) / (maxIncome + maxExpense || 1);
+          if (chartMode === "net") {
+            const maxAbsNet = Math.max(1, ...chartRows.map((row) => Math.abs(row.net)));
+            const zeroY = padding.top + chartHeight / 2;
+            const verticalReach = chartHeight / 2 - 14;
 
-          const groupWidth = chartData.length > 0 ? chartWidth / chartData.length : chartWidth;
-          const barWidth = Math.max(8, groupWidth * 0.52);
+            const points = chartRows.map((row, index) => {
+              const x = padding.left + groupWidth * index + groupWidth / 2;
+              const y = zeroY - (row.net / maxAbsNet) * verticalReach;
+              return { ...row, index, x, y };
+            });
 
-          const toY = (value: number) => (value / axisCap) * (chartHeight / 2);
+            const linePath = points
+              .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+              .join(" ");
+            const firstPoint = points[0];
+            const lastPoint = points[points.length - 1];
+            const areaPath = firstPoint && lastPoint
+              ? `${linePath} L ${lastPoint.x} ${zeroY} L ${firstPoint.x} ${zeroY} Z`
+              : "";
+            const fillId = `flow-net-fill-${animationKey.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+
+            return (
+              <>
+                <defs>
+                  <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={netPositiveColor} stopOpacity="0.3" />
+                    <stop offset="100%" stopColor={netPositiveColor} stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+
+                {[0.25, 0.5, 0.75].map((step) => {
+                  const y = padding.top + chartHeight * step;
+                  return (
+                    <line
+                      key={`grid-${step}`}
+                      x1={padding.left}
+                      y1={y}
+                      x2={padding.left + chartWidth}
+                      y2={y}
+                      stroke={gridColor}
+                      strokeWidth="1"
+                    />
+                  );
+                })}
+
+                <line
+                  x1={padding.left}
+                  y1={zeroY}
+                  x2={padding.left + chartWidth}
+                  y2={zeroY}
+                  stroke={zeroLineColor}
+                  strokeWidth="1"
+                />
+
+                {areaPath && <path d={areaPath} fill={`url(#${fillId})`} />}
+                {linePath && (
+                  <path
+                    d={linePath}
+                    fill="none"
+                    stroke={netPositiveColor}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
+
+                {points.map((point) => {
+                  const isPositive = point.net >= 0;
+                  const pointColor = isPositive ? netPositiveColor : netNegativeColor;
+
+                  return (
+                    <g
+                      key={`net-point-${point.index}`}
+                      className="cursor-pointer"
+                      onClick={() => handlePointSelect(point.index)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handlePointSelect(point.index);
+                        }
+                      }}
+                    >
+                      <line
+                        x1={point.x}
+                        y1={zeroY}
+                        x2={point.x}
+                        y2={point.y}
+                        stroke={pointColor}
+                        strokeOpacity="0.32"
+                        strokeWidth="2"
+                      />
+                      <circle cx={point.x} cy={point.y} r="5" fill={pointColor} />
+                      <circle cx={point.x} cy={point.y} r="2.2" fill={isDark ? "#18181b" : "#ffffff"} />
+                      <text
+                        x={point.x}
+                        y={labelY}
+                        textAnchor="middle"
+                        fill={tickColor}
+                        fontSize="10"
+                        fontWeight="600"
+                      >
+                        {point.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </>
+            );
+          }
+
+          const maxIncome = Math.max(1, ...chartRows.map((row) => row.incomeTotal));
+          const maxExpense = Math.max(1, ...chartRows.map((row) => row.expenseTotal));
+          const positiveHeight = chartHeight * 0.44;
+          const negativeHeight = chartHeight * 0.44;
+          const zeroY = padding.top + positiveHeight;
+          const barWidth = clampNumber(groupWidth * 0.38, 10, 24);
 
           return (
             <>
+              {[0.15, 0.85].map((step) => {
+                const y = padding.top + chartHeight * step;
+                return (
+                  <line
+                    key={`grid-${step}`}
+                    x1={padding.left}
+                    y1={y}
+                    x2={padding.left + chartWidth}
+                    y2={y}
+                    stroke={gridColor}
+                    strokeWidth="1"
+                  />
+                );
+              })}
+
               <line
                 x1={padding.left}
                 y1={zeroY}
                 x2={padding.left + chartWidth}
                 y2={zeroY}
-                stroke={refLineColor}
+                stroke={zeroLineColor}
                 strokeWidth="1"
               />
-              {chartData.map((row, index) => {
-                const centerX = padding.left + groupWidth * index + groupWidth / 2;
-                const barLeft = centerX - barWidth / 2;
-                let incomeCursor = zeroY;
-                const incomeBars = incomeSeries.map((series) => {
-                  const value = Math.abs(Number(row[series.dataKey] ?? 0));
-                  const height = toY(value);
-                  const top = incomeCursor - height;
-                  incomeCursor = top;
-                  return { color: series.color, height, top };
-                }).filter((bar) => bar.height > 0);
 
-                let expenseCursor = zeroY;
-                const expenseBars = expenseSeries.map((series) => {
-                  const value = Math.abs(Number(row[series.dataKey] ?? 0));
-                  const height = toY(value);
-                  const top = expenseCursor;
-                  expenseCursor += height;
-                  return { color: series.color, height, top };
-                }).filter((bar) => bar.height > 0);
+              {chartRows.map((row, index) => {
+                const centerX = padding.left + groupWidth * index + groupWidth / 2;
+                const left = centerX - barWidth / 2;
+                const incomeHeight = (row.incomeTotal / maxIncome) * positiveHeight;
+                const expenseHeight = (row.expenseTotal / maxExpense) * negativeHeight;
 
                 return (
                   <g
-                    key={`flow-${index}`}
+                    key={`stacked-${index}`}
                     className="cursor-pointer"
-                    onClick={() => handleBarClick(row, index)}
+                    onClick={() => handlePointSelect(index)}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
-                        handleBarClick(row, index);
+                        handlePointSelect(index);
                       }
                     }}
                   >
-                    {incomeBars.map((bar, incomeIndex) => (
-                      <rect
-                        key={`income-${incomeIndex}`}
-                        x={barLeft}
-                        y={bar.top}
-                        width={barWidth}
-                        height={bar.height}
-                        rx={incomeIndex === incomeBars.length - 1 ? 6 : 0}
-                        fill={bar.color}
-                      />
-                    ))}
-                    {expenseBars.map((bar, expenseIndex) => (
-                      <rect
-                        key={`expense-${expenseIndex}`}
-                        x={barLeft}
-                        y={bar.top}
-                        width={barWidth}
-                        height={bar.height}
-                        rx={expenseIndex === expenseBars.length - 1 ? 6 : 0}
-                        fill={bar.color}
-                      />
-                    ))}
+                    <rect
+                      x={left}
+                      y={zeroY - incomeHeight}
+                      width={barWidth}
+                      height={incomeHeight}
+                      rx="8"
+                      fill={incomeColor}
+                      fillOpacity="0.95"
+                    />
+                    <rect
+                      x={left}
+                      y={zeroY}
+                      width={barWidth}
+                      height={expenseHeight}
+                      rx="8"
+                      fill={expenseColor}
+                      fillOpacity="0.85"
+                    />
                     <text
                       x={centerX}
-                      y={204}
+                      y={labelY}
                       textAnchor="middle"
                       fill={tickColor}
                       fontSize="10"
                       fontWeight="600"
                     >
-                      {String(row.label)}
+                      {row.label}
                     </text>
                   </g>
                 );
