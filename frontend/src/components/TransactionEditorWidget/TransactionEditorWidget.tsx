@@ -146,6 +146,7 @@ export function TransactionEditorWidget({
   const [isAccountPickerOpen, setIsAccountPickerOpen] = useState<boolean>(false);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState<boolean>(false);
   const [isSubcategoryPickerOpen, setIsSubcategoryPickerOpen] = useState<boolean>(false);
+  const [pendingSubcategoryPickerCategoryId, setPendingSubcategoryPickerCategoryId] = useState<string | null>(null);
 
   const selectedCategory = useMemo(
     () => sortedCategories.find((category) => category.id === selectedCategoryId) ?? null,
@@ -233,8 +234,28 @@ export function TransactionEditorWidget({
       setIsAccountPickerOpen(false);
       setIsCategoryPickerOpen(false);
       setIsSubcategoryPickerOpen(false);
+      setPendingSubcategoryPickerCategoryId(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!pendingSubcategoryPickerCategoryId) {
+      return;
+    }
+
+    if (selectedCategoryId !== pendingSubcategoryPickerCategoryId) {
+      return;
+    }
+
+    setPendingSubcategoryPickerCategoryId(null);
+    if (availableSubcategories.length > 0) {
+      setIsSubcategoryPickerOpen(true);
+    }
+  }, [
+    availableSubcategories.length,
+    pendingSubcategoryPickerCategoryId,
+    selectedCategoryId,
+  ]);
 
   useEffect(() => {
     if (!isSubcategoryPickerOpen) {
@@ -486,7 +507,9 @@ export function TransactionEditorWidget({
 
           const nextSubcategories = normalizeSubcategories(nextCategory.subcategories);
           if (nextSubcategories.length > 0) {
-            setIsSubcategoryPickerOpen(true);
+            setPendingSubcategoryPickerCategoryId(nextCategory.id);
+          } else {
+            setPendingSubcategoryPickerCategoryId(null);
           }
         }}
       />
