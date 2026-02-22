@@ -18,6 +18,7 @@ export interface TransactionsProps {
   quickAddAccountLabel?: string;
   quickAddCurrencyLabel?: string;
   quickAddCategoryLabel?: string;
+  quickAddCategoryErrorLabel?: string;
   quickAddAmountPlaceholder?: string;
   quickAddDescriptionPlaceholder?: string;
   quickAddSubmitLabel?: string;
@@ -64,6 +65,7 @@ export function Transactions({
   quickAddAccountLabel = "Cuenta",
   quickAddCurrencyLabel = "Moneda",
   quickAddCategoryLabel = "Categoría",
+  quickAddCategoryErrorLabel = "Selecciona una categoría.",
   quickAddAmountPlaceholder = "0.00",
   quickAddDescriptionPlaceholder = "Ej. Café, Uber, supermercado",
   quickAddSubmitLabel = "Agregar transacción",
@@ -110,6 +112,7 @@ export function Transactions({
     editorMode,
     editingAmountSign,
     error,
+    handleCloseEditor,
     handleHeaderAction,
     handleSubmit,
     handleTransactionRowClick,
@@ -118,6 +121,7 @@ export function Transactions({
     isAccountsLoading,
     isAmountValid,
     isCategoriesLoading,
+    isCategoryValid,
     isCuotasLoading,
     isDescriptionValid,
     isEditorOpen,
@@ -132,6 +136,7 @@ export function Transactions({
     selectedAccountId,
     selectedCurrency,
     selectedCategoryId,
+    selectedSubcategoryName,
     isDeleteConfirmOpen,
     setAmountInput,
     setDescriptionInput,
@@ -139,6 +144,7 @@ export function Transactions({
     setSelectedAccountId,
     setSelectedCurrency,
     setSelectedCategoryId,
+    setSelectedSubcategoryName,
     showSaved,
     showValidation,
     sortedAccounts,
@@ -153,108 +159,115 @@ export function Transactions({
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
         onActionClick={handleHeaderAction}
         actionIcon={isEditorOpen ? "x" : "plus"}
       />
-      <div className="flex-1 overflow-auto px-5 py-2">
-        <div className="flex flex-col gap-6">
-          {showSaved && (
-            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-2">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">{savedLabel}</span>
-            </div>
-          )}
+      <div className="relative flex-1 overflow-hidden">
+        <div className={`h-full overflow-auto px-5 py-2 ${isEditorOpen ? "pointer-events-none" : ""}`}>
+          <div className="flex flex-col gap-6">
+            {showSaved && (
+              <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-2">
+                <span className="text-xs font-medium text-[var(--text-secondary)]">{savedLabel}</span>
+              </div>
+            )}
 
-          <TransactionsMonthlyBalanceWidget
-            isLoading={isLoading}
-            itemsCount={itemsCount}
-            monthlyBalanceTitle={monthlyBalanceTitle}
-            monthlyLoadingLabel={monthlyLoadingLabel}
-            monthlyNetLabel={monthlyNetLabel}
-            monthlyIncomeLabel={monthlyIncomeLabel}
-            monthlyExpenseLabel={monthlyExpenseLabel}
-            monthlyPendingInstallmentsLabel={monthlyPendingInstallmentsLabel}
-            monthlyPendingInstallmentsLoadingLabel={monthlyPendingInstallmentsLoadingLabel}
-            monthlyEmptyHint={monthlyEmptyHint}
-            monthlyBalance={monthlyBalance}
-            monthlyPendingInstallments={monthlyPendingInstallments}
-            hasMonthlyTransactions={hasMonthlyTransactions}
-            isCuotasLoading={isCuotasLoading}
-            cuotasCount={cuotasCount}
-          />
+            <TransactionsMonthlyBalanceWidget
+              isLoading={isLoading}
+              itemsCount={itemsCount}
+              monthlyBalanceTitle={monthlyBalanceTitle}
+              monthlyLoadingLabel={monthlyLoadingLabel}
+              monthlyNetLabel={monthlyNetLabel}
+              monthlyIncomeLabel={monthlyIncomeLabel}
+              monthlyExpenseLabel={monthlyExpenseLabel}
+              monthlyPendingInstallmentsLabel={monthlyPendingInstallmentsLabel}
+              monthlyPendingInstallmentsLoadingLabel={monthlyPendingInstallmentsLoadingLabel}
+              monthlyEmptyHint={monthlyEmptyHint}
+              monthlyBalance={monthlyBalance}
+              monthlyPendingInstallments={monthlyPendingInstallments}
+              hasMonthlyTransactions={hasMonthlyTransactions}
+              isCuotasLoading={isCuotasLoading}
+              cuotasCount={cuotasCount}
+            />
 
-          <TransactionEditorWidget
-            isOpen={isEditorOpen}
-            editorMode={editorMode}
-            quickAddTitle={quickAddTitle}
-            editTitle={editTitle}
-            quickAddTypeLabel={quickAddTypeLabel}
-            quickAddExpenseLabel={quickAddExpenseLabel}
-            quickAddIncomeLabel={quickAddIncomeLabel}
-            quickAddAmountLabel={quickAddAmountLabel}
-            quickAddAmountPlaceholder={quickAddAmountPlaceholder}
-            quickAddAmountErrorLabel={quickAddAmountErrorLabel}
-            quickAddDescriptionLabel={quickAddDescriptionLabel}
-            quickAddDescriptionPlaceholder={quickAddDescriptionPlaceholder}
-            quickAddDescriptionErrorLabel={quickAddDescriptionErrorLabel}
-            quickAddAccountLabel={quickAddAccountLabel}
-            quickAddCurrencyLabel={quickAddCurrencyLabel}
-            quickAddAccountErrorLabel={quickAddAccountErrorLabel}
-            quickAddCategoryLabel={quickAddCategoryLabel}
-            quickAddSubmitLabel={quickAddSubmitLabel}
-            editSubmitLabel={editSubmitLabel}
-            uncategorizedLabel={uncategorizedLabel}
-            uncategorizedAccountLabel={uncategorizedAccountLabel}
-            noAccountsLabel={noAccountsLabel}
-            amountInput={amountInput}
-            descriptionInput={descriptionInput}
-            selectedAccountId={selectedAccountId}
-            selectedCurrency={selectedCurrency}
-            selectedCategoryId={selectedCategoryId}
-            editingAmountSign={editingAmountSign}
-            showValidation={showValidation}
-            isAmountValid={isAmountValid}
-            isDescriptionValid={isDescriptionValid}
-            isAccountValid={isAccountValid}
-            isFormValid={isFormValid}
-            isLoading={isLoading}
-            isAccountsLoading={isAccountsLoading}
-            isCategoriesLoading={isCategoriesLoading}
-            accountsError={accountsError}
-            categoriesError={categoriesError}
-            sortedAccounts={sortedAccounts}
-            sortedCategories={sortedCategories}
-            onAmountChange={setAmountInput}
-            onDescriptionChange={setDescriptionInput}
-            onSelectedAccountIdChange={setSelectedAccountId}
-            onCurrencyChange={setSelectedCurrency}
-            onSelectedCategoryIdChange={setSelectedCategoryId}
-            onSignChange={setEditingAmountSign}
-            onSubmit={() => {
-              void handleSubmit();
-            }}
-          />
-
-          <TransactionsMonthListWidget
-            monthGroups={monthGroups}
-            isLoading={isLoading}
-            hasError={Boolean(error)}
-            loadingLabel={loadingLabel}
-            errorLabel={errorLabel}
-            emptyTitle={emptyTitle}
-            emptyHint={emptyHint}
-            deleteActionLabel={deleteActionLabel}
-            editActionLabel={editActionLabel}
-            pendingDeleteTransactionId={pendingDeleteTransactionId}
-            onDeleteTransaction={requestDeleteTransaction}
-            resolveAccountLabel={resolveAccountLabel}
-            resolveCategoryLabel={resolveCategoryLabel}
-            onTransactionClick={handleTransactionRowClick}
-          />
+            <TransactionsMonthListWidget
+              monthGroups={monthGroups}
+              isLoading={isLoading}
+              hasError={Boolean(error)}
+              loadingLabel={loadingLabel}
+              errorLabel={errorLabel}
+              emptyTitle={emptyTitle}
+              emptyHint={emptyHint}
+              deleteActionLabel={deleteActionLabel}
+              editActionLabel={editActionLabel}
+              pendingDeleteTransactionId={pendingDeleteTransactionId}
+              onDeleteTransaction={requestDeleteTransaction}
+              resolveAccountLabel={resolveAccountLabel}
+              resolveCategoryLabel={resolveCategoryLabel}
+              onTransactionClick={handleTransactionRowClick}
+            />
+          </div>
         </div>
+
+        <TransactionEditorWidget
+          isOpen={isEditorOpen}
+          editorMode={editorMode}
+          quickAddTitle={quickAddTitle}
+          editTitle={editTitle}
+          quickAddTypeLabel={quickAddTypeLabel}
+          quickAddExpenseLabel={quickAddExpenseLabel}
+          quickAddIncomeLabel={quickAddIncomeLabel}
+          quickAddAmountLabel={quickAddAmountLabel}
+          quickAddAmountPlaceholder={quickAddAmountPlaceholder}
+          quickAddAmountErrorLabel={quickAddAmountErrorLabel}
+          quickAddDescriptionLabel={quickAddDescriptionLabel}
+          quickAddDescriptionPlaceholder={quickAddDescriptionPlaceholder}
+          quickAddDescriptionErrorLabel={quickAddDescriptionErrorLabel}
+          quickAddAccountLabel={quickAddAccountLabel}
+          quickAddCurrencyLabel={quickAddCurrencyLabel}
+          quickAddAccountErrorLabel={quickAddAccountErrorLabel}
+          quickAddCategoryLabel={quickAddCategoryLabel}
+          quickAddCategoryErrorLabel={quickAddCategoryErrorLabel}
+          quickAddSubmitLabel={quickAddSubmitLabel}
+          editSubmitLabel={editSubmitLabel}
+          uncategorizedLabel={uncategorizedLabel}
+          uncategorizedAccountLabel={uncategorizedAccountLabel}
+          noAccountsLabel={noAccountsLabel}
+          amountInput={amountInput}
+          descriptionInput={descriptionInput}
+          selectedAccountId={selectedAccountId}
+          selectedCurrency={selectedCurrency}
+          selectedCategoryId={selectedCategoryId}
+          selectedSubcategoryName={selectedSubcategoryName}
+          editingAmountSign={editingAmountSign}
+          showValidation={showValidation}
+          isAmountValid={isAmountValid}
+          isDescriptionValid={isDescriptionValid}
+          isAccountValid={isAccountValid}
+          isCategoryValid={isCategoryValid}
+          isFormValid={isFormValid}
+          isLoading={isLoading}
+          isAccountsLoading={isAccountsLoading}
+          isCategoriesLoading={isCategoriesLoading}
+          accountsError={accountsError}
+          categoriesError={categoriesError}
+          sortedAccounts={sortedAccounts}
+          sortedCategories={sortedCategories}
+          onAmountChange={setAmountInput}
+          onDescriptionChange={setDescriptionInput}
+          onSelectedAccountIdChange={setSelectedAccountId}
+          onCurrencyChange={setSelectedCurrency}
+          onSelectedCategoryIdChange={setSelectedCategoryId}
+          onSelectedSubcategoryNameChange={setSelectedSubcategoryName}
+          onSignChange={setEditingAmountSign}
+          onRequestClose={handleCloseEditor}
+          onSubmit={() => {
+            void handleSubmit();
+          }}
+        />
       </div>
 
       <TransactionDeleteConfirmDialog

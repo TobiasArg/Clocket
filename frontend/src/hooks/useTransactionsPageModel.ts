@@ -43,6 +43,7 @@ export interface UseTransactionsPageModelResult {
   editorMode: TransactionsEditorMode;
   editingAmountSign: AmountSign;
   error: string | null;
+  handleCloseEditor: () => void;
   handleHeaderAction: () => void;
   handleSubmit: () => Promise<void>;
   handleTransactionRowClick: (
@@ -55,6 +56,7 @@ export interface UseTransactionsPageModelResult {
   isAccountsLoading: boolean;
   isAmountValid: boolean;
   isCategoriesLoading: boolean;
+  isCategoryValid: boolean;
   isCuotasLoading: boolean;
   isDeleteConfirmOpen: boolean;
   isDescriptionValid: boolean;
@@ -71,6 +73,7 @@ export interface UseTransactionsPageModelResult {
   selectedAccountId: string;
   selectedCurrency: TransactionInputCurrency;
   selectedCategoryId: string;
+  selectedSubcategoryName: string;
   selectedTransaction: TransactionItem | null;
   setAmountInput: (value: string) => void;
   setDescriptionInput: (value: string) => void;
@@ -78,6 +81,7 @@ export interface UseTransactionsPageModelResult {
   setSelectedAccountId: (value: string) => void;
   setSelectedCurrency: (value: TransactionInputCurrency) => void;
   setSelectedCategoryId: (value: string) => void;
+  setSelectedSubcategoryName: (value: string) => void;
   showSaved: boolean;
   showValidation: boolean;
   sortedAccounts: ReturnType<typeof useAccounts>["items"];
@@ -184,7 +188,8 @@ export const useTransactionsPageModel = (
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [selectedCurrency, setSelectedCurrency] = useState<TransactionInputCurrency>(appCurrency);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [selectedCategoryId, setSelectedCategoryIdState] = useState<string>("");
+  const [selectedSubcategoryName, setSelectedSubcategoryName] = useState<string>("");
   const [editingAmountSign, setEditingAmountSign] = useState<AmountSign>("-");
   const [amountInput, setAmountInput] = useState<string>("");
   const [descriptionInput, setDescriptionInput] = useState<string>("");
@@ -225,7 +230,8 @@ export const useTransactionsPageModel = (
   const isAmountValid = Number.isFinite(amountValue) && amountValue > 0;
   const isDescriptionValid = normalizedDescription.length > 0;
   const isAccountValid = selectedAccountId.trim().length > 0;
-  const isFormValid = isAmountValid && isDescriptionValid && isAccountValid;
+  const isCategoryValid = selectedCategoryId.trim().length > 0;
+  const isFormValid = isAmountValid && isDescriptionValid && isAccountValid && isCategoryValid;
 
   const monthlyBalance = useMemo(() => getMonthlyBalance(items), [items]);
   const monthlyPendingInstallments = useMemo(
@@ -268,12 +274,49 @@ export const useTransactionsPageModel = (
       return;
     }
 
-    if (selectedAccountId || !defaultAccountId) {
+    if (!selectedAccountId) {
       return;
     }
 
-    setSelectedAccountId(defaultAccountId);
-  }, [defaultAccountId, isEditorOpen, selectedAccountId]);
+    const accountExists = sortedAccounts.some((account) => account.id === selectedAccountId);
+    if (!accountExists) {
+      setSelectedAccountId("");
+    }
+  }, [isEditorOpen, selectedAccountId, sortedAccounts]);
+
+  useEffect(() => {
+    if (!isEditorOpen) {
+      return;
+    }
+
+    if (selectedCategoryId) {
+      const selectedCategory = sortedCategories.find((category) => category.id === selectedCategoryId);
+      if (!selectedCategory) {
+        setSelectedCategoryIdState("");
+        setSelectedSubcategoryName("");
+        return;
+      }
+
+      if (selectedSubcategoryName.trim().length > 0) {
+        const availableSubcategories = Array.isArray(selectedCategory.subcategories)
+          ? selectedCategory.subcategories.map((value) => value.trim()).filter((value) => value.length > 0)
+          : [];
+        const subcategoryStillExists = availableSubcategories.some(
+          (subcategory) => subcategory === selectedSubcategoryName,
+        );
+        if (!subcategoryStillExists) {
+          setSelectedSubcategoryName("");
+        }
+      }
+    } else if (selectedSubcategoryName.trim().length > 0) {
+      setSelectedSubcategoryName("");
+    }
+  }, [
+    isEditorOpen,
+    selectedCategoryId,
+    selectedSubcategoryName,
+    sortedCategories,
+  ]);
 
   const resolveCategoryLabel = (transaction: TransactionItem): string => {
     if (transaction.categoryId) {
@@ -345,7 +388,8 @@ export const useTransactionsPageModel = (
     setSelectedTransactionId(null);
     setSelectedAccountId("");
     setSelectedCurrency(appCurrency);
-    setSelectedCategoryId("");
+    setSelectedCategoryIdState("");
+    setSelectedSubcategoryName("");
     setEditingAmountSign("-");
     setAmountInput("");
     setDescriptionInput("");
@@ -357,7 +401,8 @@ export const useTransactionsPageModel = (
     setSelectedTransactionId(null);
     setSelectedAccountId(defaultAccountId);
     setSelectedCurrency(appCurrency);
-    setSelectedCategoryId("");
+    setSelectedCategoryIdState("");
+    setSelectedSubcategoryName("");
     setEditingAmountSign("-");
     setAmountInput("");
     setDescriptionInput("");
@@ -369,7 +414,8 @@ export const useTransactionsPageModel = (
     setSelectedTransactionId(transaction.id);
     setSelectedAccountId(transaction.accountId);
     setSelectedCurrency(appCurrency);
-    setSelectedCategoryId(transaction.categoryId ?? "");
+    setSelectedCategoryIdState(transaction.categoryId ?? "");
+    setSelectedSubcategoryName(transaction.subcategoryName ?? "");
     setEditingAmountSign(parseAmountSign(transaction.amount));
     setAmountInput(getAbsoluteAmountFromValue(transaction.amount));
     setDescriptionInput(transaction.name);
@@ -402,12 +448,16 @@ export const useTransactionsPageModel = (
       return;
     }
 
+    const selectedCategoryName = selectedCategoryId
+      ? categoriesById.get(selectedCategoryId)
+      : undefined;
+    if (!selectedCategoryName) {
+      return;
+    }
+
     if (editorMode === "create") {
       const todayIso = new Date().toISOString().slice(0, 10);
       const dateLabel = DATE_FORMATTER.format(new Date(`${todayIso}T00:00:00`));
-      const selectedCategoryName =
-        (selectedCategoryId ? categoriesById.get(selectedCategoryId) : undefined) ??
-        uncategorizedLabel;
       const isIncome = editingAmountSign === "+";
       const amountInArs = toArsTransactionAmount(amountValue, selectedCurrency);
 
@@ -418,6 +468,7 @@ export const useTransactionsPageModel = (
         accountId: selectedAccountId,
         category: selectedCategoryName,
         categoryId: selectedCategoryId || undefined,
+        subcategoryName: selectedSubcategoryName || undefined,
         date: todayIso,
         createdAt: new Date().toISOString(),
         amount: formatAmountWithSign(amountInArs, editingAmountSign),
@@ -434,15 +485,13 @@ export const useTransactionsPageModel = (
     }
 
     if (editorMode === "edit" && selectedTransactionId) {
-      const selectedCategoryName =
-        (selectedCategoryId ? categoriesById.get(selectedCategoryId) : undefined) ??
-        uncategorizedLabel;
       const amountInArs = toArsTransactionAmount(amountValue, selectedCurrency);
       const updated = await update(selectedTransactionId, {
         name: normalizedDescription,
         accountId: selectedAccountId,
         category: selectedCategoryName,
         categoryId: selectedCategoryId || undefined,
+        subcategoryName: selectedSubcategoryName || undefined,
         amount: formatAmountWithSign(amountInArs, editingAmountSign),
         amountColor: getAmountColorBySign(editingAmountSign),
       });
@@ -454,6 +503,11 @@ export const useTransactionsPageModel = (
       closeEditor();
       setShowSaved(true);
     }
+  };
+
+  const setSelectedCategoryId = (value: string) => {
+    setSelectedCategoryIdState(value);
+    setSelectedSubcategoryName("");
   };
 
   const requestDeleteTransaction = (id: string): void => {
@@ -512,6 +566,7 @@ export const useTransactionsPageModel = (
     editorMode,
     editingAmountSign,
     error,
+    handleCloseEditor: closeEditor,
     handleHeaderAction,
     handleSubmit,
     handleTransactionRowClick,
@@ -520,6 +575,7 @@ export const useTransactionsPageModel = (
     isAccountsLoading,
     isAmountValid,
     isCategoriesLoading,
+    isCategoryValid,
     isCuotasLoading,
     isDeleteConfirmOpen: deleteConfirmTransactionId !== null,
     isDescriptionValid,
@@ -536,6 +592,7 @@ export const useTransactionsPageModel = (
     selectedAccountId,
     selectedCurrency,
     selectedCategoryId,
+    selectedSubcategoryName,
     selectedTransaction,
     setAmountInput,
     setDescriptionInput,
@@ -543,6 +600,7 @@ export const useTransactionsPageModel = (
     setSelectedAccountId,
     setSelectedCurrency,
     setSelectedCategoryId,
+    setSelectedSubcategoryName,
     showSaved,
     showValidation,
     sortedAccounts,

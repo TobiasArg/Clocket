@@ -87,6 +87,11 @@ export { MoreOptionsWidget } from "./MoreOptionsWidget/MoreOptionsWidget";
 export type { MoreOptionsWidgetProps } from "./MoreOptionsWidget/MoreOptionsWidget";
 export { OptionGrid } from "./OptionGrid/OptionGrid";
 export type { OptionGridProps } from "./OptionGrid/OptionGrid";
+export { OptionPickerSheet } from "./OptionPickerSheet/OptionPickerSheet";
+export type {
+  OptionPickerItem,
+  OptionPickerSheetProps,
+} from "./OptionPickerSheet/OptionPickerSheet";
 export { PageHeader } from "./PageHeader/PageHeader";
 export type { PageHeaderProps } from "./PageHeader/PageHeader";
 export { PlanStatusCounter } from "./PlanStatusCounter/PlanStatusCounter";
