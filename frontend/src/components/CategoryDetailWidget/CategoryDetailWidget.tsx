@@ -78,7 +78,7 @@ export function CategoryDetailWidget({
   return (
     <SlideUpSheet
       isOpen={isOpen}
-      // title={category.name}
+      title={null}
       onRequestClose={onRequestClose}
       //backdropAriaLabel="Cerrar detalle de categoría"
       //handleAriaLabel="Desliza hacia arriba para cerrar"
