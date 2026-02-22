@@ -13,11 +13,21 @@ export type {
 } from "./app-settings/repository";
 
 export type {
+  BudgetScopeRule,
   BudgetPlanItem,
   BudgetsRepository,
   CreateBudgetInput,
   UpdateBudgetPatch,
 } from "./budgets/repository";
+export {
+  BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
+  doesBudgetScopeMatchTransaction,
+  doesBudgetScopeRuleMatchTransaction,
+  doBudgetScopeRulesOverlap,
+  getPrimaryBudgetCategoryId,
+  normalizeBudgetScopeRules,
+  resolveBudgetScopeRulesFromBudget,
+} from "./budgets/budgetScopeMatcher";
 
 export type {
   CategoriesRepository,

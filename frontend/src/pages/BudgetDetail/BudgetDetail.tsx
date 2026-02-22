@@ -1,3 +1,4 @@
+import { BudgetQuickAddWidget } from "@/components/BudgetQuickAddWidget/BudgetQuickAddWidget";
 import type { SubcategoryItem } from "@/modules/budget-detail";
 import {
   BudgetDetailProgressWidget,
@@ -31,7 +32,7 @@ export interface BudgetDetailProps {
 
 export function BudgetDetail({
   budgetId,
-  headerBg = "bg-[#DC2626]",
+  headerBg,
   budgetIcon,
   budgetName,
   budgetDescription,
@@ -39,7 +40,7 @@ export function BudgetDetail({
   spentValue,
   percentBadgeText,
   progressPercent,
-  progressColor = "bg-[#DC2626]",
+  progressColor,
   progressUsedLabel,
   progressRemainingLabel,
   subcategoriesTitle = "Subcategorías",
@@ -52,9 +53,27 @@ export function BudgetDetail({
   onAddSubcategory,
 }: BudgetDetailProps) {
   const {
+    budgetFormValidationLabel,
+    budgetNameInput,
+    categoriesError,
+    categoryColorOptions,
+    categoryIconOptions,
     detailSubcategories,
+    handleCloseEditor,
+    handleCreateCategory,
+    handleOpenEditor,
+    handleSubmitEdit,
+    isAmountValid,
+    isBudgetNameValid,
+    isCategoriesLoading,
+    isEditorOpen,
+    isEditorSubmitting,
     isEmpty,
+    isFormValid,
     isLoading,
+    isScopeValid,
+    limitAmountInput,
+    resolvedHeaderBg,
     resolvedBudgetDescription,
     resolvedBudgetIcon,
     resolvedBudgetName,
@@ -65,8 +84,15 @@ export function BudgetDetail({
     resolvedProgressTextColor,
     resolvedProgressUsedLabel,
     resolvedSpentValue,
+    selectedScopeRules,
+    setBudgetNameInput,
+    setLimitAmountInput,
+    setSelectedScopeRules,
+    showValidation,
+    sortedCategories,
   } = useBudgetDetailPageModel({
     budgetId,
+    headerBg,
     budgetIcon,
     budgetName,
     budgetDescription,
@@ -78,6 +104,11 @@ export function BudgetDetail({
     progressRemainingLabel,
     subcategories,
   });
+
+  const handleEditClick = () => {
+    handleOpenEditor();
+    onEditClick?.();
+  };
 
   if (isLoading) {
     return (
@@ -96,38 +127,78 @@ export function BudgetDetail({
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
-      <BudgetHero
-        headerBg={headerBg}
-        icon={resolvedBudgetIcon}
-        name={resolvedBudgetName}
-        description={resolvedBudgetDescription}
-        spentLabel={spentLabel}
-        spentValue={resolvedSpentValue}
-        percentBadgeText={resolvedPercentBadgeText}
-        onBackClick={onBackClick}
-        onEditClick={onEditClick}
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
+      <div className={`flex h-full flex-col ${isEditorOpen ? "pointer-events-none" : ""}`}>
+        <BudgetHero
+          headerBg={resolvedHeaderBg}
+          icon={resolvedBudgetIcon}
+          name={resolvedBudgetName}
+          description={resolvedBudgetDescription}
+          spentLabel={spentLabel}
+          spentValue={resolvedSpentValue}
+          percentBadgeText={resolvedPercentBadgeText}
+          onBackClick={onBackClick}
+          onEditClick={handleEditClick}
+        />
+
+        <div className="flex flex-col gap-2 px-5 pt-5">
+          <BudgetDetailProgressWidget
+            percent={resolvedProgressPercent}
+            progressColor={resolvedProgressColor}
+            usedLabel={resolvedProgressUsedLabel}
+            remainingLabel={resolvedProgressRemainingLabel}
+            usedTextColor={resolvedProgressTextColor}
+          />
+        </div>
+
+        <div className="flex-1 overflow-auto p-5">
+          <BudgetDetailSubcategoriesWidget
+            subcategoriesTitle={subcategoriesTitle}
+            addSubLabel={addSubLabel}
+            items={detailSubcategories}
+            emptyLabel={emptyLabel}
+            onAddSubcategory={onAddSubcategory}
+          />
+        </div>
+      </div>
+
+      <BudgetQuickAddWidget
+        isOpen={isEditorOpen}
+        title="Editar budget"
+        submitLabel="Guardar cambios"
+        budgetNameLabel="Nombre del budget"
+        budgetNamePlaceholder="Ej. Gastos fijos de casa"
+        budgetNameErrorLabel="Agrega un nombre para el budget."
+        budgetNameInput={budgetNameInput}
+        budgetFormValidationLabel={budgetFormValidationLabel}
+        categoryLabel="Categorías incluidas"
+        categoryErrorLabel="Selecciona al menos una categoría y subcategoría válida."
+        categoryCreateActionLabel="Nueva categoría"
+        amountLabel="Monto límite"
+        amountErrorLabel="Ingresa un monto mayor a 0."
+        categories={sortedCategories}
+        categoriesError={categoriesError}
+        categoryIconOptions={categoryIconOptions}
+        categoryColorOptions={categoryColorOptions}
+        selectedScopeRules={selectedScopeRules}
+        limitAmountInput={limitAmountInput}
+        showValidation={showValidation}
+        isAmountValid={isAmountValid}
+        isBudgetNameValid={isBudgetNameValid}
+        isCategoriesLoading={isCategoriesLoading}
+        isScopeValid={isScopeValid}
+        isFormValid={isFormValid}
+        isLoading={isEditorSubmitting}
+        onRequestClose={handleCloseEditor}
+        onBudgetNameChange={setBudgetNameInput}
+        onScopeRulesChange={setSelectedScopeRules}
+        onCreateCategory={handleCreateCategory}
+        onAmountChange={setLimitAmountInput}
+        onSubmit={() => {
+          void handleSubmitEdit();
+        }}
       />
 
-      <div className="flex flex-col gap-2 px-5 pt-5">
-        <BudgetDetailProgressWidget
-          percent={resolvedProgressPercent}
-          progressColor={resolvedProgressColor}
-          usedLabel={resolvedProgressUsedLabel}
-          remainingLabel={resolvedProgressRemainingLabel}
-          usedTextColor={resolvedProgressTextColor}
-        />
-      </div>
-
-      <div className="flex-1 overflow-auto p-5">
-        <BudgetDetailSubcategoriesWidget
-          subcategoriesTitle={subcategoriesTitle}
-          addSubLabel={addSubLabel}
-          items={detailSubcategories}
-          emptyLabel={emptyLabel}
-          onAddSubcategory={onAddSubcategory}
-        />
-      </div>
     </div>
   );
 }

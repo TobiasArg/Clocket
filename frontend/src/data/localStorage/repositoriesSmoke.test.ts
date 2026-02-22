@@ -159,6 +159,7 @@ describe("localStorage repositories smoke", () => {
     const created = await budgetsRepository.create({
       name: "Comida",
       categoryId: "category_food",
+      scopeRules: [{ categoryId: "category_food", mode: "all_subcategories" }],
       limitAmount: 150000,
       month: "2026-02",
     });

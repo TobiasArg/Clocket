@@ -1,6 +1,7 @@
 import type { Category } from "@/modules/categories";
 import {
   CategoriesListWidget,
+  CategoryDetailWidget,
   CategoryQuickAddWidget,
   PageHeader,
   useCategoriesPageModel,
@@ -65,31 +66,39 @@ export function Categories({
     colorOptions,
     categoryNameInput,
     deleteConfirmCategoryId,
-    expandedIndex,
+    handleCloseCategoryDetail,
     handleCloseQuickAdd,
     handleCreateCategory,
+    handleCreateSubcategory,
     handleDeleteCategory,
+    handleDeleteSubcategory,
     handleHeaderAction,
-    handleToggle,
+    handleOpenCategory,
+    isCategoryDetailOpen,
     isCategoryNameValid,
     isColorValid,
     isFormValid,
     isIconValid,
     isLoading,
+    isSubcategoryNameValid,
+    isTransactionsLoading,
     isQuickAddOpen,
     isUsingExternalCategories,
     iconOptions,
     resolvedCategories,
     selectedColorKey,
     selectedIcon,
+    selectedCategory,
+    selectedCategoryUsageCount,
     setCategoryNameInput,
     setDeleteConfirmCategoryId,
     setSelectedColorKey,
     setSelectedIcon,
+    setSubcategoryNameInput,
     showValidation,
     statusMessage,
+    subcategoryNameInput,
     transactionsError,
-    usageCountByCategoryId,
   } = useCategoriesPageModel({
     categories,
     checkingUsageLabel,
@@ -98,6 +107,8 @@ export function Categories({
     onAddClick,
     onCategoryClick,
   });
+
+  const isOverlayOpen = isQuickAddOpen || isCategoryDetailOpen;
 
   return (
     <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)] text-[var(--text-primary)]">
@@ -108,7 +119,7 @@ export function Categories({
         actionIcon={isQuickAddOpen ? "x" : "plus"}
       />
       <div className="relative flex-1 overflow-hidden">
-        <div className={`h-full overflow-auto px-5 py-4 ${isQuickAddOpen ? "pointer-events-none" : ""}`}>
+        <div className={`h-full overflow-auto px-5 py-4 ${isOverlayOpen ? "pointer-events-none" : ""}`}>
           <div className="flex flex-col gap-4">
             <CategoriesListWidget
               categories={resolvedCategories}
@@ -119,23 +130,40 @@ export function Categories({
               errorLabel={errorLabel}
               emptyTitle={emptyTitle}
               emptyHint={emptyHint}
-              expandedIndex={expandedIndex}
-              onToggle={handleToggle}
-              isUsingExternalCategories={isUsingExternalCategories}
-              usageCountByCategoryId={usageCountByCategoryId}
-              deleteActionLabel={deleteActionLabel}
-              deleteConfirmCategoryId={deleteConfirmCategoryId}
-              onDeleteConfirmCategoryIdChange={setDeleteConfirmCategoryId}
-              deleteConfirmTitle={deleteConfirmTitle}
-              deleteConfirmHint={deleteConfirmHint}
-              deleteCancelLabel={deleteCancelLabel}
-              deleteConfirmLabel={deleteConfirmLabel}
-              onDeleteCategory={(category) => {
-                void handleDeleteCategory(category);
-              }}
+              onCategorySelect={handleOpenCategory}
             />
           </div>
         </div>
+
+        <CategoryDetailWidget
+          isOpen={isCategoryDetailOpen}
+          category={selectedCategory}
+          usageCount={selectedCategoryUsageCount}
+          isLoading={isLoading}
+          isTransactionsLoading={isTransactionsLoading}
+          isUsingExternalCategories={isUsingExternalCategories}
+          subcategoryNameInput={subcategoryNameInput}
+          isSubcategoryNameValid={isSubcategoryNameValid}
+          onSubcategoryNameInputChange={setSubcategoryNameInput}
+          onAddSubcategory={() => {
+            void handleCreateSubcategory();
+          }}
+          onDeleteSubcategory={(subcategoryName) => {
+            void handleDeleteSubcategory(subcategoryName);
+          }}
+          checkingUsageLabel={checkingUsageLabel}
+          categoryDeleteLabel={deleteActionLabel}
+          deleteConfirmCategoryId={deleteConfirmCategoryId}
+          onDeleteConfirmCategoryIdChange={setDeleteConfirmCategoryId}
+          deleteConfirmTitle={deleteConfirmTitle}
+          deleteConfirmHint={deleteConfirmHint}
+          deleteCancelLabel={deleteCancelLabel}
+          deleteConfirmLabel={deleteConfirmLabel}
+          onRequestClose={handleCloseCategoryDetail}
+          onDeleteCategory={(category) => {
+            void handleDeleteCategory(category);
+          }}
+        />
 
         <CategoryQuickAddWidget
           isOpen={isQuickAddOpen && !isUsingExternalCategories}

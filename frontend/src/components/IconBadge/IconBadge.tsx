@@ -13,7 +13,7 @@ export interface IconBadgeProps {
 export function IconBadge({
   icon,
   bg = "bg-[var(--text-primary)]",
-  iconColor = "text-[var(--panel-bg)]",
+  iconColor = "text-white",
   iconSize = "text-[20px]",
   size = "w-[44px] h-[44px]",
   rounded = "rounded-xl",

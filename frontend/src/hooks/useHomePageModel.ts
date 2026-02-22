@@ -124,11 +124,12 @@ export const useHomePageModel = (
   } = useCuotas();
 
   const categoryInfoById = useMemo(() => {
-    const map = new Map<string, { name: string; color: string }>();
+    const map = new Map<string, { name: string; color: string; icon: string }>();
     categories.forEach((category) => {
       map.set(category.id, {
         name: category.name,
         color: category.iconBg || FALLBACK_SPENDING_COLOR,
+        icon: category.icon || "tag",
       });
     });
 
@@ -208,18 +209,23 @@ export const useHomePageModel = (
         return rightDate - leftDate;
       })
       .slice(0, 3)
-      .map((transaction) => ({
-        key: transaction.id,
-        icon: transaction.icon,
-        iconBg: transaction.iconBg,
-        name: transaction.name,
-        date: RECENT_DATE_FORMATTER.format(
-          getTransactionDateForMonthBalance(transaction) ?? new Date(),
-        ),
-        amount: transaction.amount,
-        amountColor: getAmountColor(transaction.amount, transaction.amountColor),
-      }));
-  }, [transactionItems, transactions]);
+      .map((transaction) => {
+        const categoryInfo = transaction.categoryId
+          ? categoryInfoById.get(transaction.categoryId)
+          : undefined;
+        return {
+          key: transaction.id,
+          icon: categoryInfo?.icon ?? transaction.icon,
+          iconBg: categoryInfo?.color ?? transaction.iconBg,
+          name: transaction.name,
+          date: RECENT_DATE_FORMATTER.format(
+            getTransactionDateForMonthBalance(transaction) ?? new Date(),
+          ),
+          amount: transaction.amount,
+          amountColor: getAmountColor(transaction.amount, transaction.amountColor),
+        };
+      });
+  }, [transactionItems, transactions, categoryInfoById]);
 
   const savedAmountByGoalId = useMemo(() => {
     const map = new Map<string, number>();

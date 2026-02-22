@@ -1,5 +1,50 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AssetType, EntryType } from "@/domain/investments/portfolioTypes";
+import { ActionButton } from "../ActionButton/ActionButton";
+import {
+  OptionPickerSheet,
+  type OptionPickerItem,
+} from "../OptionPickerSheet/OptionPickerSheet";
+import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
+import { SlideUpSheet } from "../SlideUpSheet/SlideUpSheet";
+
+const ENTRY_TYPE_OPTIONS: OptionPickerItem[] = [
+  {
+    id: "ingreso",
+    label: "Ingreso",
+    icon: "arrow-down",
+    iconBg: "bg-[#16A34A]",
+  },
+  {
+    id: "egreso",
+    label: "Egreso",
+    icon: "arrow-up",
+    iconBg: "bg-[#DC2626]",
+  },
+];
+
+const ASSET_TYPE_OPTIONS: OptionPickerItem[] = [
+  {
+    id: "stock",
+    label: "Acción",
+    icon: "chart-line-up",
+    iconBg: "bg-[#2563EB]",
+  },
+  {
+    id: "crypto",
+    label: "Cripto",
+    icon: "currency-dollar",
+    iconBg: "bg-[#D97706]",
+  },
+];
+
+const resolveEntryTypeLabel = (value: EntryType): string => {
+  return value === "ingreso" ? "Ingreso" : "Egreso";
+};
+
+const resolveAssetTypeLabel = (value: AssetType): string => {
+  return value === "crypto" ? "Cripto" : "Acción";
+};
 
 export interface InvestmentQuickAddWidgetProps {
   isOpen: boolean;
@@ -50,76 +95,83 @@ export function InvestmentQuickAddWidget({
   onBuyPriceChange,
   onCreatedAtChange,
 }: InvestmentQuickAddWidgetProps) {
+  const [isEntryTypePickerOpen, setIsEntryTypePickerOpen] = useState<boolean>(false);
+  const [isAssetTypePickerOpen, setIsAssetTypePickerOpen] = useState<boolean>(false);
+
+  const closePickers = useCallback(() => {
+    setIsEntryTypePickerOpen(false);
+    setIsAssetTypePickerOpen(false);
+  }, []);
+
   useEffect(() => {
     if (!isOpen) {
-      return;
+      closePickers();
     }
+  }, [closePickers, isOpen]);
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  const handleRequestClose = () => {
+    closePickers();
+    onClose();
+  };
 
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Cerrar formulario"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative w-full max-h-[88vh] max-w-[560px] overflow-auto rounded-2xl bg-[var(--panel-bg)] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+    <>
+      <SlideUpSheet
+        isOpen={isOpen}
+        title={isEditing ? "Nuevo movimiento" : "Nueva entrada"}
+        onRequestClose={handleRequestClose}
+        onSubmit={onSubmit}
+        backdropAriaLabel="Cerrar formulario"
+        handleAriaLabel="Desliza hacia arriba para cerrar"
+        footer={(
+          <ActionButton
+            type="submit"
+            icon={isEditing ? "check" : "plus"}
+            label={isEditing ? "Guardar movimiento" : "Guardar entrada"}
+            iconColor="text-white"
+            labelColor="text-white"
+            bg={isFormValid && !isLoading ? "bg-[#2563EB]" : "bg-[#93C5FD]"}
+            padding="px-4 py-3"
+            className={isFormValid && !isLoading ? "" : "opacity-80"}
+            disabled={!isFormValid || isLoading}
+          />
+        )}
       >
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-lg font-semibold text-[var(--text-primary)] font-['Outfit']">
-            {isEditing ? "Nuevo movimiento" : "Nueva entrada"}
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-[var(--surface-border)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
-          >
-            Cerrar
-          </button>
-        </div>
-
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-[var(--text-secondary)]">Tipo</span>
-            <select
-              value={entryTypeInput}
-              onChange={(event) => onEntryTypeChange(event.target.value as EntryType)}
-              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+            <button
+              type="button"
+              onClick={() => {
+                setIsAssetTypePickerOpen(false);
+                setIsEntryTypePickerOpen(true);
+              }}
+              disabled={isLoading}
+              className="flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-left text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] disabled:opacity-60"
             >
-              <option value="ingreso">Ingreso</option>
-              <option value="egreso">Egreso</option>
-            </select>
+              <span className="truncate">{resolveEntryTypeLabel(entryTypeInput)}</span>
+              <PhosphorIcon name="caret-right" size="text-[16px]" className="text-[var(--text-secondary)]" />
+            </button>
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-[var(--text-secondary)]">Activo</span>
-            <select
-              value={assetTypeInput}
-              onChange={(event) => onAssetTypeChange(event.target.value as AssetType)}
-              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+            <button
+              type="button"
+              onClick={() => {
+                setIsEntryTypePickerOpen(false);
+                setIsAssetTypePickerOpen(true);
+              }}
+              disabled={isLoading}
+              className="flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-left text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] disabled:opacity-60"
             >
-              <option value="stock">Acción</option>
-              <option value="crypto">Cripto</option>
-            </select>
+              <span className="truncate">{resolveAssetTypeLabel(assetTypeInput)}</span>
+              <PhosphorIcon name="caret-right" size="text-[16px]" className="text-[var(--text-secondary)]" />
+            </button>
           </label>
 
           <label className="flex flex-col gap-1">
@@ -129,7 +181,7 @@ export function InvestmentQuickAddWidget({
               value={tickerInput}
               onChange={(event) => onTickerChange(event.target.value.toUpperCase())}
               placeholder={assetTypeInput === "crypto" ? "BTC" : "AAPL"}
-              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             />
           </label>
 
@@ -142,7 +194,7 @@ export function InvestmentQuickAddWidget({
               value={usdSpentInput}
               onChange={(event) => onUsdSpentChange(event.target.value)}
               placeholder="1000"
-              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             />
           </label>
 
@@ -154,7 +206,7 @@ export function InvestmentQuickAddWidget({
               step="0.00000001"
               value={buyPriceInput}
               onChange={(event) => onBuyPriceChange(event.target.value)}
-              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             />
           </label>
 
@@ -164,7 +216,7 @@ export function InvestmentQuickAddWidget({
               type="datetime-local"
               value={createdAtInput}
               onChange={(event) => onCreatedAtChange(event.target.value)}
-              className="rounded-xl border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
             />
           </label>
         </div>
@@ -186,25 +238,39 @@ export function InvestmentQuickAddWidget({
             {validationMessage}
           </span>
         )}
+      </SlideUpSheet>
 
-        <div className="mt-4 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-[var(--surface-border)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={!isFormValid || isLoading}
-            className="rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] disabled:opacity-50"
-          >
-            {isEditing ? "Guardar movimiento" : "Guardar entrada"}
-          </button>
-        </div>
-      </div>
-    </div>
+      <OptionPickerSheet
+        isOpen={isEntryTypePickerOpen}
+        title="Seleccionar tipo"
+        items={ENTRY_TYPE_OPTIONS}
+        selectedId={entryTypeInput}
+        onRequestClose={() => {
+          setIsEntryTypePickerOpen(false);
+        }}
+        onSelect={(item) => {
+          if (item.id === "ingreso" || item.id === "egreso") {
+            onEntryTypeChange(item.id);
+            setIsEntryTypePickerOpen(false);
+          }
+        }}
+      />
+
+      <OptionPickerSheet
+        isOpen={isAssetTypePickerOpen}
+        title="Seleccionar activo"
+        items={ASSET_TYPE_OPTIONS}
+        selectedId={assetTypeInput}
+        onRequestClose={() => {
+          setIsAssetTypePickerOpen(false);
+        }}
+        onSelect={(item) => {
+          if (item.id === "stock" || item.id === "crypto") {
+            onAssetTypeChange(item.id);
+            setIsAssetTypePickerOpen(false);
+          }
+        }}
+      />
+    </>
   );
 }

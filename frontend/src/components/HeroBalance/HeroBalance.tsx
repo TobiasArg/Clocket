@@ -1,6 +1,4 @@
-import { Dot } from "@/components";
 import { PhosphorIcon } from "@/components";
-import { StatDisplay } from "@/components";
 import type { ReactNode } from "react";
 
 export interface HeroBalanceProps {
@@ -11,8 +9,6 @@ export interface HeroBalanceProps {
   expenseLabel?: string;
   expenseValue?: string;
   variant?: "mobile" | "desktop";
-  activeDot?: number;
-  totalDots?: number;
   className?: string;
 }
 
@@ -70,8 +66,6 @@ export function HeroBalance({
   expenseLabel = "Gastos",
   expenseValue,
   variant = "mobile",
-  activeDot = 0,
-  totalDots = 3,
   className = "",
 }: HeroBalanceProps) {
   const balanceSizeClass = getBalanceSizeClass(balance, variant);
@@ -115,32 +109,21 @@ export function HeroBalance({
       </span>
       <div className="flex gap-3 w-full">
         {incomeValue && (
-          <StatDisplay
-            label={incomeLabel}
-            value={incomeValue}
-            labelClassName="text-xs font-medium text-[var(--text-secondary)]"
-            valueClassName="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.125rem,5.2vw,1.5rem)] font-extrabold text-[var(--text-primary)] font-['Outfit']"
-            className="min-w-0 flex-1 bg-[var(--surface-muted)] rounded-2xl p-4"
-          />
+          <div className="min-w-0 flex-1 bg-[var(--panel-bg)] rounded-2xl p-4 flex items-center gap-1.5">
+            <PhosphorIcon name="arrow-up" className="text-emerald-500 shrink-0" size="text-[16px]" />
+            <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.125rem,5.2vw,1.5rem)] font-extrabold text-[var(--text-primary)] font-['Outfit']">
+              {incomeValue}
+            </span>
+          </div>
         )}
         {expenseValue && (
-          <StatDisplay
-            label={expenseLabel}
-            value={expenseValue}
-            labelClassName="text-xs font-medium text-[var(--text-secondary)]"
-            valueClassName="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.125rem,5.2vw,1.5rem)] font-extrabold text-[var(--text-primary)] font-['Outfit']"
-            className="min-w-0 flex-1 bg-[var(--surface-muted)] rounded-2xl p-4"
-          />
+          <div className="min-w-0 flex-1 bg-[var(--panel-bg)] rounded-2xl p-4 flex items-center gap-1.5">
+            <PhosphorIcon name="arrow-down" className="text-[var(--text-primary)] shrink-0" size="text-[16px]" />
+            <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.125rem,5.2vw,1.5rem)] font-extrabold text-[var(--text-primary)] font-['Outfit']">
+              {expenseValue}
+            </span>
+          </div>
         )}
-      </div>
-      <div className="flex items-center gap-2 justify-center">
-        {Array.from({ length: totalDots }).map((_, i) => (
-          <Dot
-            key={i}
-            size={i === activeDot ? "w-2 h-2" : "w-1.5 h-1.5"}
-            color={i === activeDot ? "bg-[var(--text-primary)]" : "bg-[var(--surface-border)]"}
-          />
-        ))}
       </div>
     </div>
   );

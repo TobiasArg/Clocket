@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { HeroBalance } from "@/components";
 
 export interface BalanceWidgetSlide {
@@ -23,36 +24,66 @@ export function BalanceWidget({
   onSlideChange,
   slides,
 }: BalanceWidgetProps) {
-  return (
-    <div className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4">
-      <div
-        className="flex overflow-x-auto snap-x snap-mandatory"
-        onScroll={(event) => {
-          const { scrollLeft, clientWidth } = event.currentTarget;
-          if (clientWidth <= 0) {
-            return;
-          }
+  const pointerStartX = useRef<number | null>(null);
 
-          const nextIndex = Math.round(scrollLeft / clientWidth);
-          const maxIndex = Math.max(0, slides.length - 1);
-          onSlideChange(Math.max(0, Math.min(nextIndex, maxIndex)));
+  const goTo = (index: number) => {
+    onSlideChange(Math.max(0, Math.min(index, slides.length - 1)));
+  };
+
+  return (
+    <div className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4 flex flex-col gap-4">
+      <div
+        className="overflow-hidden select-none touch-pan-y"
+        onPointerDown={(e) => {
+          pointerStartX.current = e.clientX;
+        }}
+        onPointerUp={(e) => {
+          if (pointerStartX.current === null) return;
+          const delta = e.clientX - pointerStartX.current;
+          pointerStartX.current = null;
+          if (Math.abs(delta) < 40) return;
+          goTo(delta < 0 ? activeSlide + 1 : activeSlide - 1);
+        }}
+        onPointerCancel={() => {
+          pointerStartX.current = null;
         }}
       >
-        {slides.map((slide) => (
-          <div key={slide.id} className="w-full shrink-0 snap-center">
-            <HeroBalance
-              label={slide.label}
-              balance={slide.balance}
-              incomeLabel={incomeLabel}
-              incomeValue={slide.incomeValue}
-              expenseLabel={expenseLabel}
-              expenseValue={slide.expenseValue}
-              activeDot={activeSlide}
-              totalDots={slides.length}
-            />
-          </div>
-        ))}
+        <div
+          className="flex transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+        >
+          {slides.map((slide) => (
+            <div key={slide.id} className="w-full shrink-0">
+              <HeroBalance
+                label={slide.label}
+                balance={slide.balance}
+                incomeLabel={incomeLabel}
+                incomeValue={slide.incomeValue}
+                expenseLabel={expenseLabel}
+                expenseValue={slide.expenseValue}
+              />
+            </div>
+          ))}
+        </div>
       </div>
+
+      {slides.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5">
+          {slides.map((slide, i) => (
+            <button
+              key={slide.id}
+              type="button"
+              onClick={() => goTo(i)}
+              aria-label={slide.label}
+              className={`h-2 rounded-full transition-all duration-300 ease-out ${
+                i === activeSlide
+                  ? "w-5 bg-[var(--text-primary)]"
+                  : "w-2 bg-[var(--surface-border)]"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
