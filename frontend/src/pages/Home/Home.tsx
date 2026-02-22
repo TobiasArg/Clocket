@@ -17,7 +17,6 @@ import {
   SpendingInfoWidget,
   useHomePageModel,
 } from "@/modules/home";
-import { TransactionEditorSlideUpMenu } from "@/components";
 import { TransactionEditorWidget, useTransactionsPageModel } from "@/modules/transactions";
 
 export interface HomeProps {
@@ -152,7 +151,7 @@ export function Home({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
           <Avatar initials={avatarInitials} size="w-[44px] h-[44px]" />
@@ -172,7 +171,7 @@ export function Home({
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 overflow-auto ${isEditorOpen ? "pointer-events-none" : ""}`}>
         <div className="flex flex-col gap-4 px-5 pb-5">
           <BalanceWidget
             activeSlide={activeBalanceSlide}
@@ -247,63 +246,58 @@ export function Home({
 
       <BottomNavigation items={navItems} onItemClick={onNavItemClick} />
 
-      <TransactionEditorSlideUpMenu
+      <TransactionEditorWidget
         isOpen={isEditorOpen}
-        onClose={handleHeaderAction}
-        title={editorMode === "create" ? "Agregar transacción" : "Editar transacción"}
-      >
-        <TransactionEditorWidget
-          isOpen={isEditorOpen}
-          editorMode={editorMode}
-          quickAddTitle="Nueva transacción"
-          editTitle="Editar transacción"
-          quickAddTypeLabel="Tipo"
-          quickAddExpenseLabel="Egreso"
-          quickAddIncomeLabel="Ingreso"
-          quickAddAmountLabel="Monto"
-          quickAddAmountPlaceholder="0.00"
-          quickAddAmountErrorLabel="Ingresa un monto mayor a 0."
-          quickAddDescriptionLabel="Descripción (opcional)"
-          quickAddDescriptionPlaceholder="Ej. Café, Uber, supermercado"
-          quickAddDescriptionErrorLabel="Puedes dejarlo vacío."
-          quickAddAccountLabel="Cuenta"
-          quickAddCurrencyLabel="Moneda"
-          quickAddAccountErrorLabel="Selecciona una cuenta."
-          quickAddCategoryLabel="Categoría"
-          quickAddSubmitLabel="Agregar transacción"
-          editSubmitLabel="Guardar cambios"
-          uncategorizedLabel="Sin categoría"
-          uncategorizedAccountLabel="Sin cuenta"
-          noAccountsLabel="Crea una cuenta en Más > Cuentas para registrar transacciones."
-          amountInput={amountInput}
-          descriptionInput={descriptionInput}
-          selectedAccountId={selectedAccountId}
-          selectedCurrency={selectedCurrency}
-          selectedCategoryId={selectedCategoryId}
-          editingAmountSign={editingAmountSign}
-          showValidation={showValidation}
-          isAmountValid={isAmountValid}
-          isDescriptionValid={isDescriptionValid}
-          isAccountValid={isAccountValid}
-          isFormValid={isFormValid}
-          isLoading={isLoading}
-          isAccountsLoading={isAccountsLoading}
-          isCategoriesLoading={isCategoriesLoading}
-          accountsError={accountsError}
-          categoriesError={categoriesError}
-          sortedAccounts={sortedAccounts}
-          sortedCategories={sortedCategories}
-          onAmountChange={setAmountInput}
-          onDescriptionChange={setDescriptionInput}
-          onSelectedAccountIdChange={setSelectedAccountId}
-          onCurrencyChange={setSelectedCurrency}
-          onSelectedCategoryIdChange={setSelectedCategoryId}
-          onSignChange={setEditingAmountSign}
-          onSubmit={() => {
-            void handleSubmit();
-          }}
-        />
-      </TransactionEditorSlideUpMenu>
+        editorMode={editorMode}
+        quickAddTitle="Nueva transacción"
+        editTitle="Editar transacción"
+        quickAddTypeLabel="Tipo"
+        quickAddExpenseLabel="Egreso"
+        quickAddIncomeLabel="Ingreso"
+        quickAddAmountLabel="Monto"
+        quickAddAmountPlaceholder="0.00"
+        quickAddAmountErrorLabel="Ingresa un monto mayor a 0."
+        quickAddDescriptionLabel="Descripción (opcional)"
+        quickAddDescriptionPlaceholder="Ej. Café, Uber, supermercado"
+        quickAddDescriptionErrorLabel="Puedes dejarlo vacío."
+        quickAddAccountLabel="Cuenta"
+        quickAddCurrencyLabel="Moneda"
+        quickAddAccountErrorLabel="Selecciona una cuenta."
+        quickAddCategoryLabel="Categoría"
+        quickAddSubmitLabel="Agregar transacción"
+        editSubmitLabel="Guardar cambios"
+        uncategorizedLabel="Sin categoría"
+        uncategorizedAccountLabel="Sin cuenta"
+        noAccountsLabel="Crea una cuenta en Más > Cuentas para registrar transacciones."
+        amountInput={amountInput}
+        descriptionInput={descriptionInput}
+        selectedAccountId={selectedAccountId}
+        selectedCurrency={selectedCurrency}
+        selectedCategoryId={selectedCategoryId}
+        editingAmountSign={editingAmountSign}
+        showValidation={showValidation}
+        isAmountValid={isAmountValid}
+        isDescriptionValid={isDescriptionValid}
+        isAccountValid={isAccountValid}
+        isFormValid={isFormValid}
+        isLoading={isLoading}
+        isAccountsLoading={isAccountsLoading}
+        isCategoriesLoading={isCategoriesLoading}
+        accountsError={accountsError}
+        categoriesError={categoriesError}
+        sortedAccounts={sortedAccounts}
+        sortedCategories={sortedCategories}
+        onAmountChange={setAmountInput}
+        onDescriptionChange={setDescriptionInput}
+        onSelectedAccountIdChange={setSelectedAccountId}
+        onCurrencyChange={setSelectedCurrency}
+        onSelectedCategoryIdChange={setSelectedCategoryId}
+        onSignChange={setEditingAmountSign}
+        onRequestClose={handleHeaderAction}
+        onSubmit={() => {
+          void handleSubmit();
+        }}
+      />
     </div>
   );
 }
