@@ -94,6 +94,27 @@ export function InvestmentPositionDetailPanel({
     };
   }, [clearCloseTimeout]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        requestClose();
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, requestClose]);
+
   if (!isOpen || !row) {
     return null;
   }
@@ -164,9 +185,14 @@ export function InvestmentPositionDetailPanel({
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ease-out ${backdropClassName}`} />
+      <button
+        type="button"
+        onClick={requestClose}
+        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ease-out ${backdropClassName}`}
+        aria-label="Cerrar detalle"
+      />
 
-      <div className="absolute inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center md:p-6">
+      <div className="absolute inset-x-0 bottom-0">
         <div
           ref={panelRef}
           onTouchStart={handleTouchStart}
@@ -175,10 +201,10 @@ export function InvestmentPositionDetailPanel({
           onTouchCancel={handleTouchCancel}
           role="dialog"
           aria-modal="true"
-          className="relative w-full max-h-[88vh] overflow-auto rounded-t-3xl bg-[var(--panel-bg)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out md:max-w-3xl md:rounded-3xl"
+          className="relative w-full max-h-[88vh] overflow-auto rounded-t-3xl bg-[var(--panel-bg)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out"
           style={{ transform: `translateY(${panelOffset}px)` }}
         >
-          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--surface-border)] md:hidden" />
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--surface-border)]" />
 
           <div>
             <span className="block text-2xl font-bold text-[var(--text-primary)] font-['Outfit']">{row.displayName}</span>
@@ -187,7 +213,7 @@ export function InvestmentPositionDetailPanel({
             </span>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="mt-5 grid grid-cols-1 gap-4">
             <section className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Resumen</span>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -297,7 +323,7 @@ export function InvestmentPositionDetailPanel({
             <span className="mt-1 block text-xs font-medium text-[#B91C1C]">{row.refreshError}</span>
           )}
 
-          <div className="mt-5 flex flex-col gap-2 md:flex-row md:justify-end">
+          <div className="mt-5 flex flex-col gap-2">
             <button
               type="button"
               onClick={() => onAddEntry(row.id)}

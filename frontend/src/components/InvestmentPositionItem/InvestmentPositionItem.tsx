@@ -8,14 +8,17 @@ export interface InvestmentPositionItemProps {
   onOpenDetail: (id: string) => void;
 }
 
-const moneyTone = (value: number): string => {
-  return value >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+const formatHeldAmount = (amount: number): string => {
+  return amount.toLocaleString("es-AR", {
+    maximumFractionDigits: 8,
+  });
 };
 
 export function InvestmentPositionItem({ item, onOpenDetail }: InvestmentPositionItemProps) {
   const { currency } = useCurrency();
   const currentPrice = currency === "ARS" ? item.currentPrice * getUsdRate() : item.currentPrice;
-  const priceLastUpdated = `${formatCurrency(currentPrice)} · ${item.lastUpdatedLabel}`;
+  const currentPriceLabel = formatCurrency(currentPrice);
+  const heldAmountLabel = formatHeldAmount(item.amount);
 
   return (
     <button
@@ -25,18 +28,19 @@ export function InvestmentPositionItem({ item, onOpenDetail }: InvestmentPositio
       aria-label={`Abrir detalle de ${item.displayName}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <span className="block truncate text-lg font-bold text-[var(--text-primary)] font-['Outfit']">
             {item.displayName}
           </span>
           <span className="mt-1 block truncate text-xs font-medium text-[var(--text-secondary)]">
-            {priceLastUpdated}
+            {item.lastUpdatedLabel}
           </span>
         </div>
-
-        <span className={`shrink-0 text-sm font-semibold ${moneyTone(item.pnlDailyPct)}`}>PnL diario {item.pnlDailyText}</span>
+        <div className="shrink-0 text-right">
+          <span className="mt-1 block text-base font-bold text-[var(--text-primary)]">{currentPriceLabel}</span>
+          <span className="mt-1 block truncate text-sm font-semibold text-[var(--text-secondary)]">{heldAmountLabel}</span>
+        </div>
       </div>
-
       <div className="mt-3 rounded-xl bg-[var(--surface-muted)] p-2">
         {item.hasHistoricalData ? (
           <TrendLine

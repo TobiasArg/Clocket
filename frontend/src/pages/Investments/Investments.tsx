@@ -51,6 +51,10 @@ export function Investments({
     handlePullTouchCancel,
     assetTypeInput,
     entryTypeInput,
+    saleInputMode,
+    saleSharesInput,
+    selectedAccountId,
+    sortedAccounts,
     tickerInput,
     usdSpentInput,
     buyPriceInput,
@@ -73,6 +77,9 @@ export function Investments({
     dismissUiMessage,
     setAssetTypeInput,
     setEntryTypeInput,
+    setSaleInputMode,
+    setSaleSharesInput,
+    setSelectedAccountId,
     setTickerInput,
     setUsdSpentInput,
     setBuyPriceInput,
@@ -160,6 +167,10 @@ export function Investments({
         showValidation={showValidation}
         assetTypeInput={assetTypeInput}
         entryTypeInput={entryTypeInput}
+        saleInputMode={saleInputMode}
+        saleSharesInput={saleSharesInput}
+        selectedAccountId={selectedAccountId}
+        sortedAccounts={sortedAccounts}
         tickerInput={tickerInput}
         usdSpentInput={usdSpentInput}
         buyPriceInput={buyPriceInput}
@@ -173,6 +184,9 @@ export function Investments({
         }}
         onAssetTypeChange={setAssetTypeInput}
         onEntryTypeChange={setEntryTypeInput}
+        onSaleInputModeChange={setSaleInputMode}
+        onSaleSharesChange={setSaleSharesInput}
+        onAccountChange={setSelectedAccountId}
         onTickerChange={setTickerInput}
         onUsdSpentChange={setUsdSpentInput}
         onBuyPriceChange={setBuyPriceInput}
