@@ -20,6 +20,7 @@ import {
   StatisticsSavingsWidget,
   useStatisticsPageModel,
 } from "@/modules/statistics";
+import { formatCurrency } from "@/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export interface StatisticsProps {
@@ -70,7 +71,7 @@ export function Statistics({
   totalExpenseColor = TRANSACTION_EXPENSE_TEXT_CLASS,
   categoryTitle = "Categorías",
   categoryTotal,
-  categoryTotalLabel = "",
+  categoryTotalLabel = "Total",
   categories,
   savingsTitle = "Tendencia",
   savingsBadge,
@@ -91,6 +92,7 @@ export function Statistics({
     donutSegments,
     hasError,
     isLoading,
+    monthlyBalance,
     monthlyTransactionsCount,
     scope,
     scopeLabel,
@@ -99,6 +101,8 @@ export function Statistics({
     resolvedSavingsBadge,
     resolvedSavingsGoalValue,
     resolvedSavingsValue,
+    resolvedTotalExpenseValue,
+    resolvedTotalIncomeValue,
     trendPointsByView,
   } = useStatisticsPageModel({
     categories,
@@ -117,6 +121,14 @@ export function Statistics({
     () => `${scope}-${monthlyTransactionsCount}`,
     [monthlyTransactionsCount, scope],
   );
+  const movementLabel = monthlyTransactionsCount === 1 ? "movimiento" : "movimientos";
+  const netValueClassName = monthlyBalance.net >= 0
+    ? TRANSACTION_INCOME_TEXT_CLASS
+    : TRANSACTION_EXPENSE_TEXT_CLASS;
+  const resolvedNetValue = useMemo(() => {
+    const absoluteValue = formatCurrency(Math.abs(monthlyBalance.net));
+    return `${monthlyBalance.net >= 0 ? "+" : "-"}${absoluteValue}`;
+  }, [monthlyBalance.net]);
   const scopeOptions: Array<{ label: string; value: StatisticsScope }> = [
     { label: "Histórico", value: "historical" },
     { label: "Este mes", value: "month" },
@@ -159,12 +171,12 @@ export function Statistics({
 
   return (
     <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
-      <div className="relative pr-[120px]" ref={scopeMenuContainerRef}>
+      <div className="relative border-b border-[var(--surface-border)]/70 pb-2 pr-[124px]" ref={scopeMenuContainerRef}>
         <PageHeader title={headerTitle} avatarInitials={avatarInitials} />
         <button
           type="button"
           onClick={handlePeriodButtonClick}
-          className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 bg-[var(--surface-muted)] rounded-xl px-3 py-2"
+          className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-2 shadow-[0_10px_18px_rgba(0,0,0,0.06)]"
           aria-label="Seleccionar periodo"
           aria-expanded={isScopeMenuOpen}
           aria-haspopup="menu"
@@ -198,28 +210,78 @@ export function Statistics({
         )}
       </div>
 
-      <div className="flex-1 overflow-auto px-5 py-2 pb-5">
-        <div className="flex flex-col gap-5">
+      <div className="flex-1 overflow-auto px-5 py-3 pb-6">
+        <div className="flex flex-col gap-4">
           {isLoading && monthlyTransactionsCount === 0 && (
-            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+            <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-4">
               <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
             </div>
           )}
 
           {!isLoading && hasError && (
-            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+            <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-4">
               <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
             </div>
           )}
 
-          <StatisticsCategoryWidget
-            categoryTitle={categoryTitle}
-            categoryTotal={resolvedCategoryTotal}
-            categoryTotalLabel={categoryTotalLabel}
-            donutSegments={donutSegments}
-            emptyLabel={emptyLabel}
-            chartAnimationKey={chartAnimationKey}
-          />
+          <section className="relative overflow-hidden rounded-[24px] border border-[var(--surface-border)] bg-[radial-gradient(120%_130%_at_10%_0%,rgba(34,197,94,0.16),rgba(255,255,255,0)_55%),radial-gradient(95%_120%_at_100%_100%,rgba(59,130,246,0.12),rgba(255,255,255,0)_60%),var(--surface-muted)] p-4">
+            <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[rgba(59,130,246,0.12)] blur-2xl" aria-hidden="true" />
+            <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-[rgba(34,197,94,0.12)] blur-2xl" aria-hidden="true" />
+            <div className="relative flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[1.2px] text-[var(--text-secondary)]">
+                    Radar financiero
+                  </span>
+                  <span className="block mt-1 text-lg font-bold text-[var(--text-primary)] font-['Outfit']">
+                    {monthlyTransactionsCount} {movementLabel}
+                  </span>
+                  <span className="block text-xs font-medium text-[var(--text-secondary)]">
+                    {resolvedPeriodLabel}
+                  </span>
+                </div>
+                <span className="rounded-xl bg-[var(--panel-bg)]/85 px-3 py-1.5 text-[11px] font-semibold text-[var(--text-primary)] shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+                  {scopeLabel}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/90 px-3 py-2">
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.9px] text-[var(--text-secondary)]">
+                    {totalIncomeLabel}
+                  </span>
+                  <span className={`mt-1 block text-sm font-semibold ${totalIncomeColor}`}>
+                    {resolvedTotalIncomeValue}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/90 px-3 py-2">
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.9px] text-[var(--text-secondary)]">
+                    {totalExpenseLabel}
+                  </span>
+                  <span className={`mt-1 block text-sm font-semibold ${totalExpenseColor}`}>
+                    {resolvedTotalExpenseValue}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/90 px-3 py-2">
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.9px] text-[var(--text-secondary)]">
+                    Neto
+                  </span>
+                  <span className={`mt-1 block text-sm font-semibold ${netValueClassName}`}>
+                    {resolvedNetValue}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                {balanceLegend.map((item) => (
+                  <div key={item.label} className="flex items-center gap-1.5">
+                    <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} aria-hidden="true" />
+                    <span className="text-[11px] font-medium text-[var(--text-secondary)]">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
 
           <StatisticsBalanceWidget
             balanceTitle={balanceTitle}
@@ -230,17 +292,29 @@ export function Statistics({
             chartAnimationKey={chartAnimationKey}
           />
 
-          <StatisticsSavingsWidget
-            savingsTitle={savingsTitle}
-            savingsBadge={resolvedSavingsBadge}
-            savingsLabel={savingsLabel}
-            savingsValue={resolvedSavingsValue}
-            savingsGoalLabel={savingsGoalLabel}
-            savingsGoalValue={resolvedSavingsGoalValue}
-            savingsBg={savingsBg}
-            trendPointsByView={trendPointsByView}
-            trendAnimationKey={chartAnimationKey}
-          />
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <StatisticsCategoryWidget
+              categoryTitle={categoryTitle}
+              categoryTotal={resolvedCategoryTotal}
+              categoryTotalLabel={categoryTotalLabel}
+              donutSegments={donutSegments}
+              emptyLabel={emptyLabel}
+              chartAnimationKey={chartAnimationKey}
+              chartType="pie"
+            />
+
+            <StatisticsSavingsWidget
+              savingsTitle={savingsTitle}
+              savingsBadge={resolvedSavingsBadge}
+              savingsLabel={savingsLabel}
+              savingsValue={resolvedSavingsValue}
+              savingsGoalLabel={savingsGoalLabel}
+              savingsGoalValue={resolvedSavingsGoalValue}
+              savingsBg={savingsBg}
+              trendPointsByView={trendPointsByView}
+              trendAnimationKey={chartAnimationKey}
+            />
+          </div>
         </div>
       </div>
 
