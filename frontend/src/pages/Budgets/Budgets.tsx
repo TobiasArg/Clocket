@@ -21,8 +21,13 @@ export interface BudgetsProps {
   summaryProgressLabel?: string;
   sectionTitle?: string;
   quickAddTitle?: string;
+  quickAddNameLabel?: string;
+  quickAddNamePlaceholder?: string;
+  quickAddNameErrorLabel?: string;
   quickAddCategoryLabel?: string;
   quickAddCategoryErrorLabel?: string;
+  quickAddDuplicateCategoryErrorLabel?: string;
+  quickAddCreateCategoryLabel?: string;
   quickAddAmountLabel?: string;
   quickAddSubmitLabel?: string;
   quickAddAmountErrorLabel?: string;
@@ -46,8 +51,13 @@ export function Budgets({
   summaryProgressLabel = "usado",
   sectionTitle = "Mis Budgets",
   quickAddTitle = "Nuevo budget",
+  quickAddNameLabel = "Nombre del budget",
+  quickAddNamePlaceholder = "Ej. Gastos fijos de casa",
+  quickAddNameErrorLabel = "Agrega un nombre para el budget.",
   quickAddCategoryLabel = "Categoría",
   quickAddCategoryErrorLabel = "Selecciona una categoría.",
+  quickAddDuplicateCategoryErrorLabel = "Ya existe un budget para esta categoría en el mes seleccionado.",
+  quickAddCreateCategoryLabel = "Nueva categoría",
   quickAddAmountLabel = "Monto límite",
   quickAddSubmitLabel = "Guardar budget",
   quickAddAmountErrorLabel = "Ingresa un monto mayor a 0.",
@@ -70,21 +80,32 @@ export function Budgets({
   const [isMonthDragging, setIsMonthDragging] = useState<boolean>(false);
 
   const {
+    budgetFormValidationLabel,
+    budgetNameInput,
+    categoriesError,
+    categoryColorOptions,
+    categoryIconOptions,
     categoryById,
     error,
     expensesByCategoryId,
+    handleCloseEditor,
+    handleCreateCategory,
     handleCreate,
     handleNextMonth,
     handleOpenEditor,
     handlePreviousMonth,
     handleHeaderAction,
     isAmountValid,
+    isBudgetNameValid,
+    isCategoriesLoading,
+    isDuplicateCategoryMonth,
     isCategoryValid,
     isEditorOpen,
     isFormValid,
     isLoading,
     limitAmountInput,
     selectedCategoryId,
+    setBudgetNameInput,
     setLimitAmountInput,
     setSelectedCategoryId,
     showValidation,
@@ -234,92 +255,112 @@ export function Budgets({
     }
   };
 
+  const resolvedBudgetFormValidationLabel = showValidation && isDuplicateCategoryMonth
+    ? quickAddDuplicateCategoryErrorLabel
+    : budgetFormValidationLabel;
+
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <PageHeader
         title={headerTitle}
         avatarInitials={avatarInitials}
         onActionClick={handleHeaderAction}
-        actionIcon={isEditorOpen ? "arrow-left" : "plus"}
+        actionIcon={isEditorOpen ? "x" : "plus"}
       />
-      <div className="flex-1 overflow-auto">
-        <div className="flex flex-col gap-4 py-5">
-          <div className="px-5">
-            <div
-              onTouchStart={handleMonthTouchStart}
-              onTouchMove={handleMonthTouchMove}
-              onTouchEnd={handleMonthTouchEnd}
-              onTouchCancel={resetMonthGesture}
-              onPointerDown={handleMonthPointerDown}
-              onPointerMove={handleMonthPointerMove}
-              onPointerUp={handleMonthPointerEnd}
-              onPointerCancel={handleMonthPointerEnd}
-              className="touch-pan-y select-none rounded-2xl bg-[var(--surface-muted)] px-3 py-2.5"
-              aria-label="Selector de mes por deslizamiento"
-            >
+      <div className="relative flex-1 overflow-hidden">
+        <div className={`h-full overflow-auto ${isEditorOpen ? "pointer-events-none" : ""}`}>
+          <div className="flex flex-col gap-4 py-5">
+            <div className="px-5">
               <div
-                className={`flex items-center justify-center ${isMonthDragging ? "" : "transition-transform duration-200 ease-out"}`}
-                style={{ transform: `translateX(${monthDragX}px)` }}
+                onTouchStart={handleMonthTouchStart}
+                onTouchMove={handleMonthTouchMove}
+                onTouchEnd={handleMonthTouchEnd}
+                onTouchCancel={resetMonthGesture}
+                onPointerDown={handleMonthPointerDown}
+                onPointerMove={handleMonthPointerMove}
+                onPointerUp={handleMonthPointerEnd}
+                onPointerCancel={handleMonthPointerEnd}
+                className="touch-pan-y select-none rounded-2xl bg-[var(--surface-muted)] px-3 py-2.5"
+                aria-label="Selector de mes por deslizamiento"
               >
-                <span className="block max-w-full truncate text-xs font-semibold tracking-[0.2px] text-[var(--text-secondary)]">
-                  {selectedMonthLabel}
-                </span>
+                <div
+                  className={`flex items-center justify-center ${isMonthDragging ? "" : "transition-transform duration-200 ease-out"}`}
+                  style={{ transform: `translateX(${monthDragX}px)` }}
+                >
+                  <span className="block max-w-full truncate text-xs font-semibold tracking-[0.2px] text-[var(--text-secondary)]">
+                    {selectedMonthLabel}
+                  </span>
+                </div>
               </div>
             </div>
+
+            <BudgetSummaryWidget
+              summaryTitle={summaryTitle}
+              totalSpentLabel={summaryLeftLabel}
+              totalBudgetLabel={summaryRightLabel}
+              progressLabel={summaryProgressLabel}
+              totalSpent={summary.totalSpent}
+              totalBudget={summary.totalBudget}
+              progress={summary.progress}
+              rawProgress={summary.rawProgress}
+              overspentAmount={summary.overspentAmount}
+            />
+
+            <BudgetListWidget
+              sectionTitle={sectionTitle}
+              isLoading={isLoading}
+              loadingLabel={loadingLabel}
+              errorLabel={errorLabel}
+              errorMessage={error}
+              emptyTitle={emptyTitle}
+              emptyHint={emptyHint}
+              emptyActionLabel={emptyActionLabel}
+              items={visibleBudgets}
+              expensesByCategoryId={expensesByCategoryId}
+              categoryById={categoryById}
+              onBudgetClick={onBudgetClick}
+              onEmptyAction={handleOpenEditor}
+            />
           </div>
-
-          <BudgetQuickAddWidget
-            isOpen={isEditorOpen}
-            onBackClick={handleHeaderAction}
-            title={quickAddTitle}
-            categoryLabel={quickAddCategoryLabel}
-            categoryErrorLabel={quickAddCategoryErrorLabel}
-            amountLabel={quickAddAmountLabel}
-            submitLabel={quickAddSubmitLabel}
-            amountErrorLabel={quickAddAmountErrorLabel}
-            categories={sortedCategories}
-            selectedCategoryId={selectedCategoryId}
-            limitAmountInput={limitAmountInput}
-            showValidation={showValidation}
-            isAmountValid={isAmountValid}
-            isCategoryValid={isCategoryValid}
-            isFormValid={isFormValid}
-            isLoading={isLoading}
-            onCategoryChange={setSelectedCategoryId}
-            onAmountChange={setLimitAmountInput}
-            onSubmit={() => {
-              void handleCreate();
-            }}
-          />
-
-          <BudgetSummaryWidget
-            summaryTitle={summaryTitle}
-            totalSpentLabel={summaryLeftLabel}
-            totalBudgetLabel={summaryRightLabel}
-            progressLabel={summaryProgressLabel}
-            totalSpent={summary.totalSpent}
-            totalBudget={summary.totalBudget}
-            progress={summary.progress}
-            rawProgress={summary.rawProgress}
-            overspentAmount={summary.overspentAmount}
-          />
-
-          <BudgetListWidget
-            sectionTitle={sectionTitle}
-            isLoading={isLoading}
-            loadingLabel={loadingLabel}
-            errorLabel={errorLabel}
-            errorMessage={error}
-            emptyTitle={emptyTitle}
-            emptyHint={emptyHint}
-            emptyActionLabel={emptyActionLabel}
-            items={visibleBudgets}
-            expensesByCategoryId={expensesByCategoryId}
-            categoryById={categoryById}
-            onBudgetClick={onBudgetClick}
-            onEmptyAction={handleOpenEditor}
-          />
         </div>
+
+        <BudgetQuickAddWidget
+          isOpen={isEditorOpen}
+          onRequestClose={handleCloseEditor}
+          title={quickAddTitle}
+          budgetNameLabel={quickAddNameLabel}
+          budgetNamePlaceholder={quickAddNamePlaceholder}
+          budgetNameErrorLabel={quickAddNameErrorLabel}
+          budgetNameInput={budgetNameInput}
+          budgetFormValidationLabel={resolvedBudgetFormValidationLabel}
+          categoryLabel={quickAddCategoryLabel}
+          categoryErrorLabel={quickAddCategoryErrorLabel}
+          categoryCreateActionLabel={quickAddCreateCategoryLabel}
+          amountLabel={quickAddAmountLabel}
+          submitLabel={quickAddSubmitLabel}
+          amountErrorLabel={quickAddAmountErrorLabel}
+          categories={sortedCategories}
+          categoryIconOptions={categoryIconOptions}
+          categoryColorOptions={categoryColorOptions}
+          selectedCategoryId={selectedCategoryId}
+          limitAmountInput={limitAmountInput}
+          showValidation={showValidation}
+          isAmountValid={isAmountValid}
+          isBudgetNameValid={isBudgetNameValid}
+          isCategoriesLoading={isCategoriesLoading}
+          isCategoryValid={isCategoryValid}
+          isDuplicateCategoryMonth={isDuplicateCategoryMonth}
+          isFormValid={isFormValid}
+          isLoading={isLoading}
+          categoriesError={categoriesError}
+          onBudgetNameChange={setBudgetNameInput}
+          onCategoryChange={setSelectedCategoryId}
+          onCreateCategory={handleCreateCategory}
+          onAmountChange={setLimitAmountInput}
+          onSubmit={() => {
+            void handleCreate();
+          }}
+        />
       </div>
       <BottomNavigation items={navItems} onItemClick={onNavItemClick} />
     </div>

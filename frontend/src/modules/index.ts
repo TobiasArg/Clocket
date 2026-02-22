@@ -11,8 +11,10 @@ export type {
 } from "./budget-detail";
 export { useBudgetsPageModel } from "./budgets";
 export type {
+  BudgetCategoryColorOption,
   BudgetCategoryMeta,
   BudgetCategoryOption,
+  BudgetCreateCategoryInput,
   BudgetsSummary,
   UseBudgetsPageModelOptions,
   UseBudgetsPageModelResult,

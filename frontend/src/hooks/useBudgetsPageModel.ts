@@ -1,8 +1,13 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useBudgets } from "./useBudgets";
 import { useCategories } from "./useCategories";
 import { useTransactions } from "./useTransactions";
 import {
+  CATEGORY_COLOR_OPTIONS,
+  CATEGORY_ICON_OPTIONS,
+  DEFAULT_CATEGORY_COLOR_KEY,
+  DEFAULT_CATEGORY_ICON,
+  getCategoryColorOption,
   getTransactionDateForMonthBalance,
   type BudgetPlanItem,
 } from "@/utils";
@@ -15,6 +20,20 @@ export interface BudgetCategoryMeta {
 
 export interface BudgetCategoryOption {
   id: string;
+  icon: string;
+  iconBg: string;
+  name: string;
+}
+
+export interface BudgetCategoryColorOption {
+  key: string;
+  label: string;
+  swatchClass: string;
+}
+
+export interface BudgetCreateCategoryInput {
+  colorKey: string;
+  icon: string;
   name: string;
 }
 
@@ -31,15 +50,25 @@ export interface UseBudgetsPageModelOptions {
 }
 
 export interface UseBudgetsPageModelResult {
+  budgetFormValidationLabel: string | null;
+  budgetNameInput: string;
+  categoryColorOptions: BudgetCategoryColorOption[];
+  categoryIconOptions: string[];
   categoryById: Map<string, BudgetCategoryMeta>;
+  categoriesError: string | null;
   error: string | null;
   expensesByCategoryId: Map<string, number>;
+  handleCloseEditor: () => void;
+  handleCreateCategory: (input: BudgetCreateCategoryInput) => Promise<BudgetCategoryOption | null>;
   handleCreate: () => Promise<void>;
   handleNextMonth: () => void;
   handleOpenEditor: () => void;
   handlePreviousMonth: () => void;
   handleHeaderAction: () => void;
   isAmountValid: boolean;
+  isBudgetNameValid: boolean;
+  isCategoriesLoading: boolean;
+  isDuplicateCategoryMonth: boolean;
   isCategoryValid: boolean;
   isEditorOpen: boolean;
   isFormValid: boolean;
@@ -48,6 +77,7 @@ export interface UseBudgetsPageModelResult {
   selectedCategoryId: string;
   selectedMonth: string;
   selectedMonthLabel: string;
+  setBudgetNameInput: (value: string) => void;
   setLimitAmountInput: (value: string) => void;
   setSelectedCategoryId: (value: string) => void;
   showValidation: boolean;
@@ -126,15 +156,21 @@ export const useBudgetsPageModel = (
 
   const {
     items: budgets,
-    isLoading,
-    error,
+    isLoading: isBudgetsLoading,
+    error: budgetsError,
     create,
   } = useBudgets();
-  const { items: categories } = useCategories();
+  const {
+    items: categories,
+    isLoading: isCategoriesLoading,
+    error: categoriesError,
+    create: createCategory,
+  } = useCategories();
   const { items: transactions } = useTransactions();
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [selectedCategoryId, setSelectedCategoryIdState] = useState<string>("");
+  const [budgetNameInput, setBudgetNameInput] = useState<string>("");
   const [limitAmountInput, setLimitAmountInput] = useState<string>("");
   const [showValidation, setShowValidation] = useState<boolean>(false);
   const [selectedMonth, setSelectedMonth] = useState<string>(() =>
@@ -171,6 +207,8 @@ export const useBudgetsPageModel = (
       .filter((category) => Boolean(category.id))
       .map((category) => ({
         id: category.id as string,
+        icon: category.icon,
+        iconBg: category.iconBg,
         name: category.name,
       }))
       .sort((left, right) => left.name.localeCompare(right.name)),
@@ -227,13 +265,54 @@ export const useBudgetsPageModel = (
     };
   }, [expensesByCategoryId, visibleBudgets]);
 
+  const categoryColorOptions = useMemo<BudgetCategoryColorOption[]>(
+    () => CATEGORY_COLOR_OPTIONS.map((option) => ({
+      key: option.key,
+      label: option.label,
+      swatchClass: option.iconBgClass,
+    })),
+    [],
+  );
+  const categoryIconOptions = useMemo<string[]>(
+    () => [...CATEGORY_ICON_OPTIONS],
+    [],
+  );
+
+  const setSelectedCategoryId = useCallback((value: string) => {
+    const nextId = value.trim();
+    setSelectedCategoryIdState(nextId);
+
+    if (nextId.length === 0) {
+      return;
+    }
+
+    setBudgetNameInput((current) => {
+      if (current.trim().length > 0) {
+        return current;
+      }
+
+      const selectedCategory = sortedCategories.find((category) => category.id === nextId);
+      return selectedCategory?.name ?? current;
+    });
+  }, [sortedCategories]);
+
   const limitAmountValue = Number(limitAmountInput);
+  const normalizedBudgetName = budgetNameInput.trim();
   const isAmountValid = Number.isFinite(limitAmountValue) && limitAmountValue > 0;
+  const isBudgetNameValid = normalizedBudgetName.length > 0;
   const isCategoryValid = selectedCategoryId.length > 0;
-  const isFormValid = isAmountValid && isCategoryValid;
+  const isDuplicateCategoryMonth = selectedCategoryId.length > 0
+    && budgets.some((budget) => (
+      budget.categoryId === selectedCategoryId && budget.month === selectedMonth
+    ));
+  const isFormValid = isAmountValid && isBudgetNameValid && isCategoryValid && !isDuplicateCategoryMonth;
+  const budgetFormValidationLabel = showValidation && isDuplicateCategoryMonth
+    ? "Ya existe un budget para esta categoría en el mes seleccionado."
+    : null;
 
   const resetEditor = () => {
-    setSelectedCategoryId("");
+    setSelectedCategoryIdState("");
+    setBudgetNameInput("");
     setLimitAmountInput("");
     setShowValidation(false);
   };
@@ -242,6 +321,11 @@ export const useBudgetsPageModel = (
     setIsEditorOpen(true);
     setShowValidation(false);
     onAddClick?.();
+  };
+
+  const handleCloseEditor = () => {
+    setIsEditorOpen(false);
+    resetEditor();
   };
 
   const handlePreviousMonth = () => {
@@ -254,14 +338,44 @@ export const useBudgetsPageModel = (
 
   const handleHeaderAction = () => {
     if (isEditorOpen) {
-      setIsEditorOpen(false);
-      resetEditor();
+      handleCloseEditor();
+      onAddClick?.();
     } else {
       handleOpenEditor();
-      return;
+    }
+  };
+
+  const handleCreateCategory = async (
+    input: BudgetCreateCategoryInput,
+  ): Promise<BudgetCategoryOption | null> => {
+    const normalizedName = input.name.trim();
+    if (normalizedName.length === 0) {
+      return null;
     }
 
-    onAddClick?.();
+    const normalizedIcon = input.icon.trim().length > 0 ? input.icon.trim() : DEFAULT_CATEGORY_ICON;
+    const resolvedColorKey = CATEGORY_COLOR_OPTIONS.find((option) => option.key === input.colorKey)?.key
+      ?? DEFAULT_CATEGORY_COLOR_KEY;
+    const iconBg = getCategoryColorOption(resolvedColorKey).iconBgClass;
+
+    const created = await createCategory({
+      name: normalizedName,
+      icon: normalizedIcon,
+      iconBg,
+    });
+    if (!created?.id) {
+      return null;
+    }
+
+    setSelectedCategoryIdState(created.id);
+    setBudgetNameInput((current) => current.trim().length > 0 ? current : created.name);
+
+    return {
+      id: created.id,
+      name: created.name,
+      icon: created.icon,
+      iconBg: created.iconBg,
+    };
   };
 
   const handleCreate = async () => {
@@ -273,7 +387,7 @@ export const useBudgetsPageModel = (
     const selectedCategory = categoryById.get(selectedCategoryId);
     const created = await create({
       categoryId: selectedCategoryId,
-      name: selectedCategory?.name ?? "Uncategorized",
+      name: normalizedBudgetName || selectedCategory?.name || "Uncategorized",
       limitAmount: limitAmountValue,
       month: selectedMonth,
     });
@@ -283,29 +397,38 @@ export const useBudgetsPageModel = (
     }
 
     setIsEditorOpen(false);
-    setSelectedCategoryId("");
-    setLimitAmountInput("");
-    setShowValidation(false);
+    resetEditor();
   };
 
   return {
     categoryById,
-    error,
+    categoriesError,
+    budgetFormValidationLabel,
+    budgetNameInput,
+    categoryColorOptions,
+    categoryIconOptions,
+    error: budgetsError,
     expensesByCategoryId,
+    handleCloseEditor,
+    handleCreateCategory,
     handleCreate,
     handleNextMonth,
     handleOpenEditor,
     handlePreviousMonth,
     handleHeaderAction,
     isAmountValid,
+    isBudgetNameValid,
+    isCategoriesLoading,
+    isDuplicateCategoryMonth,
     isCategoryValid,
     isEditorOpen,
     isFormValid,
-    isLoading,
+    isLoading: isBudgetsLoading,
     limitAmountInput,
     selectedCategoryId,
     selectedMonth,
     selectedMonthLabel,
+    setBudgetNameInput,
     setLimitAmountInput,
     setSelectedCategoryId,
     showValidation,

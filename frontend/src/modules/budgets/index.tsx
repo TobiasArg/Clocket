@@ -1,7 +1,9 @@
 export { useBudgetsPageModel } from "@/hooks";
 export type {
+  BudgetCategoryColorOption,
   BudgetCategoryMeta,
   BudgetCategoryOption,
+  BudgetCreateCategoryInput,
   BudgetsSummary,
   UseBudgetsPageModelOptions,
   UseBudgetsPageModelResult,
