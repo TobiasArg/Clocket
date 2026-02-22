@@ -146,6 +146,7 @@ export function TransactionEditorWidget({
   const [isAccountPickerOpen, setIsAccountPickerOpen] = useState<boolean>(false);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState<boolean>(false);
   const [isSubcategoryPickerOpen, setIsSubcategoryPickerOpen] = useState<boolean>(false);
+  const [shouldOpenSubcategoryPicker, setShouldOpenSubcategoryPicker] = useState<boolean>(false);
 
   const selectedCategory = useMemo(
     () => sortedCategories.find((category) => category.id === selectedCategoryId) ?? null,
@@ -233,8 +234,25 @@ export function TransactionEditorWidget({
       setIsAccountPickerOpen(false);
       setIsCategoryPickerOpen(false);
       setIsSubcategoryPickerOpen(false);
+      setShouldOpenSubcategoryPicker(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!shouldOpenSubcategoryPicker) {
+      return;
+    }
+
+    if (!selectedCategory) {
+      return;
+    }
+
+    if (availableSubcategories.length > 0) {
+      setIsSubcategoryPickerOpen(true);
+    }
+
+    setShouldOpenSubcategoryPicker(false);
+  }, [availableSubcategories.length, selectedCategory, shouldOpenSubcategoryPicker]);
 
   useEffect(() => {
     if (!isSubcategoryPickerOpen) {
@@ -486,7 +504,9 @@ export function TransactionEditorWidget({
 
           const nextSubcategories = normalizeSubcategories(nextCategory.subcategories);
           if (nextSubcategories.length > 0) {
-            setIsSubcategoryPickerOpen(true);
+            setShouldOpenSubcategoryPicker(true);
+          } else {
+            setShouldOpenSubcategoryPicker(false);
           }
         }}
       />
