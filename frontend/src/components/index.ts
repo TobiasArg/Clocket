@@ -33,6 +33,8 @@ export { CardSection } from "./CardSection/CardSection";
 export type { CardSectionProps } from "./CardSection/CardSection";
 export { CategoriesListWidget } from "./CategoriesListWidget/CategoriesListWidget";
 export type { CategoriesListWidgetProps } from "./CategoriesListWidget/CategoriesListWidget";
+export { CategoryDetailWidget } from "./CategoryDetailWidget/CategoryDetailWidget";
+export type { CategoryDetailWidgetProps } from "./CategoryDetailWidget/CategoryDetailWidget";
 export { CategoryQuickAddWidget } from "./CategoryQuickAddWidget/CategoryQuickAddWidget";
 export type { CategoryQuickAddWidgetProps } from "./CategoryQuickAddWidget/CategoryQuickAddWidget";
 export { CategoryIconPicker } from "./CategoryIconPicker/CategoryIconPicker";
@@ -43,8 +45,6 @@ export { CategoryItem } from "./CategoryItem/CategoryItem";
 export type { CategoryItemProps } from "./CategoryItem/CategoryItem";
 export { Divider } from "./Divider/Divider";
 export type { DividerProps } from "./Divider/Divider";
-export { DonutChart } from "./DonutChart/DonutChart";
-export type { DonutChartProps } from "./DonutChart/DonutChart";
 export { Dot } from "./Dot/Dot";
 export type { DotProps } from "./Dot/Dot";
 export { ExpandableListItem } from "./ExpandableListItem/ExpandableListItem";
@@ -87,6 +87,11 @@ export { MoreOptionsWidget } from "./MoreOptionsWidget/MoreOptionsWidget";
 export type { MoreOptionsWidgetProps } from "./MoreOptionsWidget/MoreOptionsWidget";
 export { OptionGrid } from "./OptionGrid/OptionGrid";
 export type { OptionGridProps } from "./OptionGrid/OptionGrid";
+export { OptionPickerSheet } from "./OptionPickerSheet/OptionPickerSheet";
+export type {
+  OptionPickerItem,
+  OptionPickerSheetProps,
+} from "./OptionPickerSheet/OptionPickerSheet";
 export { PageHeader } from "./PageHeader/PageHeader";
 export type { PageHeaderProps } from "./PageHeader/PageHeader";
 export { PlanStatusCounter } from "./PlanStatusCounter/PlanStatusCounter";
@@ -128,6 +133,8 @@ export { SettingsGroup } from "./SettingsGroup/SettingsGroup";
 export type { SettingsGroupProps } from "./SettingsGroup/SettingsGroup";
 export { SidebarNav } from "./SidebarNav/SidebarNav";
 export type { SidebarNavProps } from "./SidebarNav/SidebarNav";
+export { SlideUpSheet } from "./SlideUpSheet/SlideUpSheet";
+export type { SlideUpSheetProps } from "./SlideUpSheet/SlideUpSheet";
 export { SpendingBar } from "./SpendingBar/SpendingBar";
 export type { SpendingBarProps } from "./SpendingBar/SpendingBar";
 export { SpendingInfoWidget } from "./SpendingInfoWidget/SpendingInfoWidget";

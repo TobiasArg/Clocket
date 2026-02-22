@@ -1,12 +1,14 @@
-import type { BudgetPlan } from "@/types";
+import type { BudgetPlan, BudgetScopeRule } from "@/types";
 
 export type BudgetPlanItem = BudgetPlan;
+export type { BudgetScopeRule };
 
 export interface CreateBudgetInput {
-  categoryId: string;
   name: string;
   limitAmount: number;
   month?: string;
+  scopeRules: BudgetScopeRule[];
+  categoryId?: string;
 }
 
 export interface UpdateBudgetPatch {
@@ -14,6 +16,7 @@ export interface UpdateBudgetPatch {
   name?: string;
   limitAmount?: number;
   month?: string;
+  scopeRules?: BudgetScopeRule[];
 }
 
 export interface BudgetsRepository {

@@ -4,6 +4,10 @@ import type {
   DonutSegment,
   StatisticsFlowDay,
 } from "@/types";
+import {
+  TRANSACTION_EXPENSE_SOLID_COLOR,
+  TRANSACTION_INCOME_SOLID_COLOR,
+} from "@/constants";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
@@ -56,16 +60,8 @@ export interface UseStatisticsPageModelResult {
 }
 
 const DONUT_COLORS = ["#DC2626", "#2563EB", "#EA580C", "#71717A"] as const;
-const FLOW_EXPENSE_COLORS = [
-  "#DC2626",
-  "#EA580C",
-  "#D97706",
-  "#2563EB",
-  "#7C3AED",
-  "#0891B2",
-  "#52525B",
-] as const;
-const FLOW_INCOME_COLOR = "#16A34A";
+const FLOW_EXPENSE_COLORS = [TRANSACTION_EXPENSE_SOLID_COLOR] as const;
+const FLOW_INCOME_COLOR = TRANSACTION_INCOME_SOLID_COLOR;
 const STATISTICS_SCOPE_STORAGE_KEY = "clocket.statistics.scope";
 const DEFAULT_SCOPE: StatisticsScope = "month";
 const SCOPE_LABELS: Record<StatisticsScope, string> = {
@@ -97,6 +93,10 @@ const clampPercent = (value: number): number => {
   }
 
   return Math.max(0, Math.min(100, Math.round(value)));
+};
+
+const isGoalSavingTransaction = (transaction: TransactionItem): boolean => {
+  return transaction.transactionType === "saving" || Boolean(transaction.goalId);
 };
 
 const parsePercentFromLabel = (value: string): number => {
@@ -361,7 +361,7 @@ const buildFlowRows = (
   buckets: FlowBucket[],
 ): StatisticsFlowDay[] => {
   transactions.forEach((transaction) => {
-    if (transaction.transactionType === "saving") {
+    if (isGoalSavingTransaction(transaction)) {
       return;
     }
 
@@ -473,11 +473,11 @@ export const useStatisticsPageModel = (
   }, [categoriesData]);
 
   const balanceTransactions = useMemo(
-    () => transactions.filter((transaction) => transaction.transactionType !== "saving"),
+    () => transactions.filter((transaction) => !isGoalSavingTransaction(transaction)),
     [transactions],
   );
   const savingsTransactions = useMemo(
-    () => transactions.filter((transaction) => transaction.transactionType === "saving"),
+    () => transactions.filter((transaction) => isGoalSavingTransaction(transaction)),
     [transactions],
   );
 

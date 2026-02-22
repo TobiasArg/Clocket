@@ -4,7 +4,7 @@ import type { AccountFlow } from "@/hooks";
 
 export interface AccountsListWidgetProps {
   accountFlowsById?: Map<string, AccountFlow>;
-  accounts?: Array<{ id: string; name: string; balance: number; updatedAt: string }>;
+  accounts?: Array<{ id: string; icon: string; name: string; balance: number; updatedAt: string }>;
   deleteActionLabel?: string;
   emptyHint?: string;
   emptyTitle?: string;

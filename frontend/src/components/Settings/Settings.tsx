@@ -280,6 +280,7 @@ export function Settings({
                     left={(
                       <IconBadge
                         icon={item.icon}
+                        iconColor="text-[var(--panel-bg)]"
                         size="w-[36px] h-[36px]"
                         rounded="rounded-[10px]"
                       />

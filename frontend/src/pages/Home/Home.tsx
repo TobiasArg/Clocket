@@ -157,7 +157,7 @@ export function Home({
         <div className="flex items-center gap-3">
           <Avatar initials={avatarInitials} size="w-[44px] h-[44px]" />
           <div className="flex flex-col">
-            <span className="text-[13px] font-normal text-[var(--text-secondary)]">{greeting}</span>
+            <span className="text-sm font-normal text-[var(--text-secondary)]">{greeting}</span>
             <span className="text-lg font-bold text-[var(--text-primary)] font-['Outfit']">{userName}</span>
           </div>
         </div>

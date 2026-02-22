@@ -1,7 +1,10 @@
-import { CardSection, TextBadge } from "@/components";
+import { CardSection } from "@/components";
 import { IconBadge } from "../IconBadge/IconBadge";
-import { ProgressSection } from "../ProgressSection/ProgressSection";
-import { formatCurrency, type BudgetPlanItem } from "@/utils";
+import {
+  formatCurrency,
+  getPrimaryBudgetCategoryId,
+  type BudgetPlanItem,
+} from "@/utils";
 import type { BudgetCategoryMeta } from "@/hooks";
 
 export interface BudgetListWidgetProps {
@@ -11,7 +14,7 @@ export interface BudgetListWidgetProps {
   emptyTitle: string;
   errorLabel: string;
   errorMessage: string | null;
-  expensesByCategoryId: Map<string, number>;
+  expensesByBudgetId: Map<string, number>;
   items: BudgetPlanItem[];
   isLoading: boolean;
   loadingLabel: string;
@@ -20,34 +23,7 @@ export interface BudgetListWidgetProps {
   sectionTitle: string;
 }
 
-const BUDGET_COLORS = [
-  {
-    percentColor: "text-[#DC2626]",
-    percentBg: "bg-[#FEE2E2]",
-    barColor: "bg-[#DC2626]",
-  },
-  {
-    percentColor: "text-[#2563EB]",
-    percentBg: "bg-[#DBEAFE]",
-    barColor: "bg-[#2563EB]",
-  },
-  {
-    percentColor: "text-[#7C3AED]",
-    percentBg: "bg-[#EDE9FE]",
-    barColor: "bg-[#7C3AED]",
-  },
-  {
-    percentColor: "text-[#059669]",
-    percentBg: "bg-[#D1FAE5]",
-    barColor: "bg-[#059669]",
-  },
-] as const;
-
-const OVER_BUDGET_COLORS = {
-  percentColor: "text-[#991B1B]",
-  percentBg: "bg-[#FEE2E2]",
-  barColor: "bg-[#DC2626]",
-} as const;
+const DEFAULT_ACCENT_COLOR = "#2563EB";
 
 const YEAR_MONTH_FORMATTER = new Intl.DateTimeFormat("es-ES", {
   month: "long",
@@ -69,6 +45,19 @@ const formatMonthLabel = (yearMonth: string): string => {
   return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
 };
 
+const resolveCssColorFromBgClass = (bgClass: string | undefined): string | null => {
+  if (!bgClass) {
+    return null;
+  }
+
+  const match = bgClass.trim().match(/^bg-\[(.+)\]$/);
+  if (!match) {
+    return null;
+  }
+
+  return match[1]?.trim() || null;
+};
+
 export function BudgetListWidget({
   categoryById,
   emptyActionLabel,
@@ -76,7 +65,7 @@ export function BudgetListWidget({
   emptyTitle,
   errorLabel,
   errorMessage,
-  expensesByCategoryId,
+  expensesByBudgetId,
   items,
   isLoading,
   loadingLabel,
@@ -116,8 +105,8 @@ export function BudgetListWidget({
         </div>
       )}
 
-      {items.map((budget, index) => {
-        const spentAmount = expensesByCategoryId.get(budget.categoryId) ?? 0;
+      {items.map((budget) => {
+        const spentAmount = expensesByBudgetId.get(budget.id) ?? 0;
         const rawPercent = budget.limitAmount > 0
           ? Math.round((spentAmount / budget.limitAmount) * 100)
           : 0;
@@ -126,10 +115,10 @@ export function BudgetListWidget({
           : 0;
         const overspentAmount = Math.max(0, spentAmount - budget.limitAmount);
         const isOverBudget = overspentAmount > 0;
-        const colorSet = isOverBudget
-          ? OVER_BUDGET_COLORS
-          : BUDGET_COLORS[index % BUDGET_COLORS.length];
-        const categoryMeta = categoryById.get(budget.categoryId);
+
+        const primaryCategoryId = getPrimaryBudgetCategoryId(budget.scopeRules, budget.categoryId);
+        const categoryMeta = primaryCategoryId ? categoryById.get(primaryCategoryId) : undefined;
+        const accentColor = resolveCssColorFromBgClass(categoryMeta?.iconBg) ?? DEFAULT_ACCENT_COLOR;
 
         return (
           <button
@@ -155,24 +144,34 @@ export function BudgetListWidget({
                   </span>
                 </div>
               </div>
-              <TextBadge
-                text={`${isOverBudget ? rawPercent : percent}%`}
-                bg={colorSet.percentBg}
-                textColor={colorSet.percentColor}
-                rounded="rounded-[10px]"
-                fontWeight="font-semibold"
-                className="shrink-0"
-              />
+              <div className="inline-flex shrink-0 items-center rounded-[10px] border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-1.5">
+                <span
+                  className="text-sm font-semibold"
+                  style={{ color: accentColor }}
+                >
+                  {`${isOverBudget ? rawPercent : percent}%`}
+                </span>
+              </div>
             </div>
-            <ProgressSection
-              percent={percent}
-              barColor={colorSet.barColor}
-              trackColor="bg-[var(--surface-border)]"
-              leftLabel={formatCurrency(spentAmount)}
-              rightLabel={formatCurrency(budget.limitAmount)}
-              leftLabelClassName="block max-w-[48%] truncate text-sm font-semibold text-[var(--text-primary)] font-['Outfit']"
-              rightLabelClassName="block max-w-[48%] truncate text-right text-sm font-normal text-[var(--text-secondary)]"
-            />
+            <div className="flex w-full flex-col gap-2">
+              <div className="h-2 w-full overflow-hidden rounded bg-[var(--surface-border)]">
+                <div
+                  className="h-full rounded transition-[width] duration-200 ease-out"
+                  style={{
+                    width: `${percent}%`,
+                    backgroundColor: accentColor,
+                  }}
+                />
+              </div>
+              <div className="flex justify-between w-full">
+                <span className="block max-w-[48%] truncate text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">
+                  {formatCurrency(spentAmount)}
+                </span>
+                <span className="block max-w-[48%] truncate text-right text-sm font-normal text-[var(--text-secondary)]">
+                  {formatCurrency(budget.limitAmount)}
+                </span>
+              </div>
+            </div>
             {isOverBudget && (
               <span className="block truncate text-xs font-semibold text-[#B91C1C]">
                 Excedido por {formatCurrency(overspentAmount)}

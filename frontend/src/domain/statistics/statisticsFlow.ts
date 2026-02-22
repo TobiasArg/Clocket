@@ -1,18 +1,13 @@
 import type { StatisticsFlowDay } from "@/types";
 import type { TransactionItem } from "@/domain/transactions/repository";
+import {
+  TRANSACTION_EXPENSE_SOLID_COLOR,
+  TRANSACTION_INCOME_SOLID_COLOR,
+} from "@/constants";
 import { getTransactionDateForMonthBalance } from "@/domain/transactions/monthlyBalance";
 
-const FLOW_EXPENSE_COLORS = [
-  "#DC2626",
-  "#EA580C",
-  "#D97706",
-  "#2563EB",
-  "#7C3AED",
-  "#0891B2",
-  "#52525B",
-] as const;
-
-const FLOW_INCOME_COLOR = "#16A34A";
+const FLOW_EXPENSE_COLORS = [TRANSACTION_EXPENSE_SOLID_COLOR] as const;
+const FLOW_INCOME_COLOR = TRANSACTION_INCOME_SOLID_COLOR;
 
 const parseSignedAmount = (value: string): number => {
   const normalized = value.replace(/[^0-9+.-]/g, "");
@@ -38,6 +33,10 @@ const buildDateLabel = (date: Date): string => (
 const sortByAmountDesc = (entries: [string, number][]): [string, number][] => (
   entries.sort((left, right) => right[1] - left[1])
 );
+
+const isGoalSavingTransaction = (transaction: TransactionItem): boolean => {
+  return transaction.transactionType === "saving" || Boolean(transaction.goalId);
+};
 
 interface BuildStatisticsDailyFlowOptions {
   categoryNameById: Map<string, string>;
@@ -73,7 +72,7 @@ export const buildStatisticsDailyFlow = ({
   rangeEnd.setDate(rangeEnd.getDate() + 1);
 
   transactions.forEach((transaction) => {
-    if (transaction.transactionType === "saving") {
+    if (isGoalSavingTransaction(transaction)) {
       return;
     }
 

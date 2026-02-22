@@ -1,4 +1,8 @@
 import { useMemo, useState } from "react";
+import {
+  ACCOUNT_ICON_OPTIONS,
+  DEFAULT_ACCOUNT_ICON,
+} from "@/utils";
 import { useAccounts } from "./useAccounts";
 import { useTransactions } from "./useTransactions";
 
@@ -13,26 +17,31 @@ export interface UseAccountsPageModelOptions {
 
 export interface UseAccountsPageModelResult {
   accountFlowsById: Map<string, AccountFlow>;
+  accountIconOptions: string[];
   balanceInput: string;
   cancelDeleteAccount: () => void;
   confirmDeleteAccount: () => Promise<void>;
   deleteConfirmAccountName: string;
   deleteConfirmTransactionsCount: number;
   error: string | null;
+  handleCloseEditor: () => void;
   handleCreate: () => Promise<void>;
   handleHeaderAction: () => void;
   isBalanceValid: boolean;
   isDeleteConfirmOpen: boolean;
   isEditorOpen: boolean;
   isFormValid: boolean;
+  isIconValid: boolean;
   isLoading: boolean;
   isNameValid: boolean;
   itemsCount: number;
   nameInput: string;
   pendingDeleteAccountId: string | null;
   requestDeleteAccount: (id: string) => void;
+  selectedIcon: string;
   setBalanceInput: (value: string) => void;
   setNameInput: (value: string) => void;
+  setSelectedIcon: (value: string) => void;
   showValidation: boolean;
   totalBalance: number;
   visibleAccounts: ReturnType<typeof useAccounts>["items"];
@@ -55,15 +64,20 @@ export const useAccountsPageModel = (
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [nameInput, setNameInput] = useState<string>("");
   const [balanceInput, setBalanceInput] = useState<string>("");
+  const [selectedIcon, setSelectedIcon] = useState<string>("");
   const [showValidation, setShowValidation] = useState<boolean>(false);
   const [pendingDeleteAccountId, setPendingDeleteAccountId] = useState<string | null>(null);
   const [deleteConfirmAccountId, setDeleteConfirmAccountId] = useState<string | null>(null);
 
+  const accountIconOptions = useMemo(() => [...ACCOUNT_ICON_OPTIONS], []);
+
   const normalizedName = nameInput.trim();
+  const normalizedIcon = selectedIcon.trim();
   const balanceValue = Number(balanceInput);
   const isNameValid = normalizedName.length > 0;
   const isBalanceValid = Number.isFinite(balanceValue);
-  const isFormValid = isNameValid && isBalanceValid;
+  const isIconValid = normalizedIcon.length > 0;
+  const isFormValid = isNameValid && isBalanceValid && isIconValid;
 
   const accountFlowsById = useMemo(() => {
     const map = new Map<string, AccountFlow>();
@@ -116,22 +130,32 @@ export const useAccountsPageModel = (
     [deleteConfirmAccountId, transactions],
   );
 
-  const resetEditor = () => {
-    setIsEditorOpen(false);
+  const resetEditorFields = () => {
     setNameInput("");
     setBalanceInput("");
+    setSelectedIcon("");
     setShowValidation(false);
+  };
+
+  const handleCloseEditor = () => {
+    setIsEditorOpen(false);
+    resetEditorFields();
+  };
+
+  const handleOpenEditor = () => {
+    setIsEditorOpen(true);
+    setSelectedIcon(DEFAULT_ACCOUNT_ICON);
+    setShowValidation(false);
+    onAddClick?.();
   };
 
   const handleHeaderAction = () => {
     if (isEditorOpen) {
-      resetEditor();
-    } else {
-      setIsEditorOpen(true);
-      setShowValidation(false);
+      handleCloseEditor();
+      return;
     }
 
-    onAddClick?.();
+    handleOpenEditor();
   };
 
   const handleCreate = async () => {
@@ -143,13 +167,14 @@ export const useAccountsPageModel = (
     const created = await create({
       name: normalizedName,
       balance: balanceValue,
+      icon: normalizedIcon,
     });
 
     if (!created) {
       return;
     }
 
-    resetEditor();
+    handleCloseEditor();
   };
 
   const requestDeleteAccount = (id: string): void => {
@@ -189,26 +214,31 @@ export const useAccountsPageModel = (
 
   return {
     accountFlowsById,
+    accountIconOptions,
     balanceInput,
     cancelDeleteAccount,
     confirmDeleteAccount,
     deleteConfirmAccountName: deleteConfirmAccount?.name ?? "",
     deleteConfirmTransactionsCount,
     error,
+    handleCloseEditor,
     handleCreate,
     handleHeaderAction,
     isBalanceValid,
     isDeleteConfirmOpen: deleteConfirmAccountId !== null,
     isEditorOpen,
     isFormValid,
+    isIconValid,
     isLoading,
     isNameValid,
     itemsCount: items.length,
     nameInput,
     pendingDeleteAccountId,
     requestDeleteAccount,
+    selectedIcon,
     setBalanceInput,
     setNameInput,
+    setSelectedIcon,
     showValidation,
     totalBalance,
     visibleAccounts,

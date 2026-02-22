@@ -5,11 +5,13 @@ export type {
 } from "@/hooks";
 export {
   CategoriesListWidget,
+  CategoryDetailWidget,
   CategoryQuickAddWidget,
   PageHeader,
 } from "@/components";
 export type {
   CategoriesListWidgetProps,
+  CategoryDetailWidgetProps,
   CategoryQuickAddWidgetProps,
   PageHeaderProps,
 } from "@/components";

@@ -1,4 +1,5 @@
 import { ActionButton } from "../ActionButton/ActionButton";
+import { SlideUpSheet } from "../SlideUpSheet/SlideUpSheet";
 import type { TransactionInputCurrency } from "@/utils";
 
 const getCurrentDateInputValue = (): string => {
@@ -31,6 +32,7 @@ export interface PlansQuickAddWidgetProps {
   onInstallmentsCountChange?: (value: string) => void;
   onNameChange?: (value: string) => void;
   onCurrencyChange?: (value: TransactionInputCurrency) => void;
+  onRequestClose?: () => void;
   onSubmit?: () => void;
   onTotalAmountChange?: (value: string) => void;
   showValidation?: boolean;
@@ -65,6 +67,7 @@ export function PlansQuickAddWidget({
   onInstallmentsCountChange,
   onNameChange,
   onCurrencyChange,
+  onRequestClose,
   onSubmit,
   onTotalAmountChange,
   showValidation = false,
@@ -76,107 +79,110 @@ export function PlansQuickAddWidget({
   totalAmountPlaceholder = "0.00",
   currencyLabel = "Moneda",
 }: PlansQuickAddWidgetProps) {
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div className="flex flex-col gap-3 rounded-[20px] p-4 bg-[var(--surface-muted)]">
-      <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">
-        {title}
-      </span>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--text-secondary)]">{nameLabel}</span>
-        <input
-          type="text"
-          value={nameInput}
-          onChange={(event) => onNameChange?.(event.target.value)}
-          placeholder={namePlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
+    <SlideUpSheet
+      isOpen={isOpen}
+      title={title}
+      onRequestClose={onRequestClose}
+      onSubmit={onSubmit}
+      backdropAriaLabel="Cerrar formulario de cuotas"
+      handleAriaLabel="Desliza hacia arriba para cerrar"
+      footer={(
+        <ActionButton
+          type="submit"
+          icon="plus"
+          label={isLoading ? "Guardando..." : submitLabel}
+          iconColor="text-[var(--text-primary)]"
+          labelColor="text-[var(--text-primary)]"
+          bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
+          padding="px-4 py-3"
+          className={isFormValid && !isLoading ? "" : "opacity-70"}
+          disabled={!isFormValid || isLoading}
         />
-      </label>
+      )}
+    >
+      <div className="flex flex-col gap-3">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{nameLabel}</span>
+          <input
+            type="text"
+            value={nameInput}
+            onChange={(event) => onNameChange?.(event.target.value)}
+            placeholder={namePlaceholder}
+            className="w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] focus:border-[#A1A1AA]"
+          />
+        </label>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--text-secondary)]">{currencyLabel}</span>
-        <select
-          value={selectedCurrency}
-          onChange={(event) => onCurrencyChange?.(event.target.value as TransactionInputCurrency)}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
-        >
-          <option value="ARS">ARS</option>
-          <option value="USD">USD</option>
-        </select>
-      </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{currencyLabel}</span>
+          <select
+            value={selectedCurrency}
+            onChange={(event) => onCurrencyChange?.(event.target.value as TransactionInputCurrency)}
+            className="w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none focus:border-[#A1A1AA]"
+          >
+            <option value="ARS">ARS</option>
+            <option value="USD">USD</option>
+          </select>
+        </label>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--text-secondary)]">
-          {totalAmountLabel}
-        </span>
-        <input
-          type="number"
-          min="0.01"
-          step="0.01"
-          value={totalAmountInput}
-          onChange={(event) => onTotalAmountChange?.(event.target.value)}
-          placeholder={totalAmountPlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
-        />
-        {showValidation && !isTotalAmountValid && (
-          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
-            {totalAmountErrorLabel}
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-[var(--text-secondary)]">
+            {totalAmountLabel}
           </span>
-        )}
-      </label>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={totalAmountInput}
+            onChange={(event) => onTotalAmountChange?.(event.target.value)}
+            placeholder={totalAmountPlaceholder}
+            className="w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none focus:border-[#A1A1AA]"
+          />
+          {showValidation && !isTotalAmountValid && (
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+              {totalAmountErrorLabel}
+            </span>
+          )}
+        </label>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--text-secondary)]">
-          {installmentsLabel}
-        </span>
-        <input
-          type="number"
-          min="1"
-          step="1"
-          value={installmentsCountInput}
-          onChange={(event) => onInstallmentsCountChange?.(event.target.value)}
-          placeholder={installmentsPlaceholder}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
-        />
-        {showValidation && !isInstallmentsCountValid && (
-          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
-            {installmentsErrorLabel}
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-[var(--text-secondary)]">
+            {installmentsLabel}
           </span>
-        )}
-      </label>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={installmentsCountInput}
+            onChange={(event) => onInstallmentsCountChange?.(event.target.value)}
+            placeholder={installmentsPlaceholder}
+            className="w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none focus:border-[#A1A1AA]"
+          />
+          {showValidation && !isInstallmentsCountValid && (
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+              {installmentsErrorLabel}
+            </span>
+          )}
+        </label>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--text-secondary)]">
-          {creationDateLabel}
-        </span>
-        <input
-          type="date"
-          max={getCurrentDateInputValue()}
-          value={creationDateInput}
-          onChange={(event) => onCreationDateChange?.(event.target.value)}
-          className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[var(--surface-border)]"
-        />
-        {showValidation && !isCreationDateValid && (
-          <span className="text-[11px] font-medium text-[var(--text-secondary)]">
-            {creationDateErrorLabel}
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-[var(--text-secondary)]">
+            {creationDateLabel}
           </span>
-        )}
-      </label>
-
-      <ActionButton
-        icon="plus"
-        label={submitLabel}
-        iconColor="text-[var(--text-primary)]"
-        labelColor="text-[var(--text-primary)]"
-        bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
-        padding="px-4 py-3"
-        className={isFormValid && !isLoading ? "" : "opacity-70 pointer-events-none"}
-        onClick={onSubmit}
-      />
-    </div>
+          <input
+            type="date"
+            max={getCurrentDateInputValue()}
+            value={creationDateInput}
+            onChange={(event) => onCreationDateChange?.(event.target.value)}
+            className="w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none focus:border-[#A1A1AA]"
+          />
+          {showValidation && !isCreationDateValid && (
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+              {creationDateErrorLabel}
+            </span>
+          )}
+        </label>
+      </div>
+    </SlideUpSheet>
   );
 }

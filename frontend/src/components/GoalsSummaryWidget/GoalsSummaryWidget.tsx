@@ -22,17 +22,36 @@ export function GoalsSummaryWidget({
   percent = 0,
 }: GoalsSummaryWidgetProps) {
   return (
-    <SummaryPanel title={summaryTitle}>
-      <div className="flex justify-between w-full">
-        <StatDisplay label={totalLabel} value={formatCurrency(totalSaved)} />
-        <StatDisplay label={goalLabel} value={formatCurrency(totalTarget)} align="end" />
+    <SummaryPanel
+      title={summaryTitle}
+      bg="bg-[var(--surface-muted)]"
+      rounded="rounded-2xl"
+      className="mx-5 border border-[var(--surface-border)]"
+      titleClassName="block truncate text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1.5px]"
+    >
+      <div className="flex w-full justify-between gap-3">
+        <StatDisplay
+          label={totalLabel}
+          value={formatCurrency(totalSaved)}
+          labelClassName="text-[11px] font-medium text-[var(--text-secondary)]"
+          valueClassName="text-[clamp(1.25rem,6vw,1.9rem)] leading-none font-bold text-[var(--text-primary)] font-['Outfit']"
+          className="max-w-[48%]"
+        />
+        <StatDisplay
+          label={goalLabel}
+          value={formatCurrency(totalTarget)}
+          align="end"
+          labelClassName="text-[11px] font-medium text-[var(--text-secondary)]"
+          valueClassName="text-[clamp(1.25rem,6vw,1.9rem)] leading-none font-bold text-[var(--text-primary)] font-['Outfit']"
+          className="max-w-[48%]"
+        />
       </div>
       <ProgressSection
         percent={percent}
         barColor="bg-[#10B981]"
-        trackColor="bg-[#3F3F46]"
+        trackColor="bg-[var(--surface-border)]"
         leftLabel={`${percent}% ${progressLabel}`}
-        leftLabelClassName="text-xs font-normal text-[#10B981]"
+        leftLabelClassName="block max-w-full truncate text-[11px] font-medium text-[#10B981]"
       />
     </SummaryPanel>
   );
