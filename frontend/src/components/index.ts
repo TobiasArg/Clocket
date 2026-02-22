@@ -150,6 +150,8 @@ export { TransactionDeleteConfirmDialog } from "./TransactionDeleteConfirmDialog
 export type { TransactionDeleteConfirmDialogProps } from "./TransactionDeleteConfirmDialog/TransactionDeleteConfirmDialog";
 export { TransactionEditorWidget } from "./TransactionEditorWidget/TransactionEditorWidget";
 export type { TransactionEditorWidgetProps } from "./TransactionEditorWidget/TransactionEditorWidget";
+export { TransactionEditorSlideUpMenu } from "./TransactionEditorWidget/TransactionEditorSlideUpMenu";
+export type { TransactionEditorSlideUpMenuProps } from "./TransactionEditorWidget/TransactionEditorSlideUpMenu";
 export { TransactionsMonthListWidget } from "./TransactionsMonthListWidget/TransactionsMonthListWidget";
 export type { TransactionsMonthListWidgetProps } from "./TransactionsMonthListWidget/TransactionsMonthListWidget";
 export { TransactionsMonthlyBalanceWidget } from "./TransactionsMonthlyBalanceWidget/TransactionsMonthlyBalanceWidget";
