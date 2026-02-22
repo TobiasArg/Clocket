@@ -115,8 +115,8 @@ export function Categories({
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
-        onActionClick={isUsingExternalCategories ? undefined : handleHeaderAction}
-        actionIcon={isQuickAddOpen ? "x" : "plus"}
+        onActionClick={isUsingExternalCategories || isQuickAddOpen ? undefined : handleHeaderAction}
+        actionIcon="plus"
       />
       <div className="relative flex-1 overflow-hidden">
         <div className={`h-full overflow-auto px-5 py-4 ${isOverlayOpen ? "pointer-events-none" : ""}`}>

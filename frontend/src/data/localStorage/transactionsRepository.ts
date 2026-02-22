@@ -6,6 +6,9 @@ import type {
   UpdateTransactionPatch,
 } from "@/domain/transactions/repository";
 import { DEFAULT_ACCOUNT_ID } from "@/domain/accounts/repository";
+import { GOALS_PARENT_CATEGORY_NAME } from "@/domain/goals/goalAppearance";
+import { categoriesRepository } from "@/data/localStorage/categoriesRepository";
+import { goalsRepository } from "@/data/localStorage/goalsRepository";
 
 const LEGACY_STORAGE_VERSION_1 = 1 as const;
 const LEGACY_STORAGE_VERSION_2 = 2 as const;
@@ -45,6 +48,11 @@ interface TransactionsStorageV4 {
   items: TransactionItem[];
 }
 
+interface GoalLinkLookup {
+  goalCategoryIds: Set<string>;
+  goalIdBySubcategory: Map<string, string>;
+}
+
 const cloneItem = (item: TransactionItem): TransactionItem => ({ ...item });
 const cloneItems = (items: TransactionItem[]): TransactionItem[] => items.map(cloneItem);
 
@@ -52,6 +60,15 @@ const buildInitialState = (): TransactionsStorageV4 => ({
   version: STORAGE_VERSION_V4,
   items: [],
 });
+
+const normalizeLookupKey = (value?: string): string => {
+  const normalized = value?.trim();
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized.toLocaleLowerCase("es-ES");
+};
 
 const toLocalIsoDate = (date: Date): string => {
   const year = date.getFullYear();
@@ -295,6 +312,23 @@ const createTransactionId = (): string => {
   return `tx_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
 };
 
+const resolveGoalIdByCategorySubcategory = (
+  item: { categoryId?: string; subcategoryName?: string },
+  lookup: GoalLinkLookup,
+): string | undefined => {
+  const categoryId = item.categoryId?.trim();
+  if (!categoryId || !lookup.goalCategoryIds.has(categoryId)) {
+    return undefined;
+  }
+
+  const subcategoryKey = normalizeLookupKey(item.subcategoryName);
+  if (!subcategoryKey) {
+    return undefined;
+  }
+
+  return lookup.goalIdBySubcategory.get(subcategoryKey);
+};
+
 export class LocalStorageTransactionsRepository implements TransactionsRepository {
   private readonly storageKey: string;
 
@@ -306,21 +340,27 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
   }
 
   public async list(): Promise<TransactionItem[]> {
-    return cloneItems(this.readState().items);
+    const state = await this.readAndSynchronizeState();
+    return cloneItems(state.items);
   }
 
   public async getById(id: string): Promise<TransactionItem | null> {
-    const found = this.readState().items.find((item) => item.id === id);
+    const state = await this.readAndSynchronizeState();
+    const found = state.items.find((item) => item.id === id);
     return found ? cloneItem(found) : null;
   }
 
   public async create(input: CreateTransactionInput): Promise<TransactionItem> {
-    const state = this.readState();
-    const created = normalizeTransactionItem({
+    const state = await this.readAndSynchronizeState();
+    const goalLookup = await this.buildGoalLinkLookup();
+
+    const createdDraft = this.applyGoalLinkOnCreate({
       ...input,
       createdAt: input.createdAt ?? new Date().toISOString(),
       id: createTransactionId(),
-    });
+    }, goalLookup);
+
+    const created = normalizeTransactionItem(createdDraft);
 
     state.items.push(created);
     this.writeState(state);
@@ -329,17 +369,17 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
   }
 
   public async update(id: string, patch: UpdateTransactionPatch): Promise<TransactionItem | null> {
-    const state = this.readState();
+    const state = await this.readAndSynchronizeState();
     const index = state.items.findIndex((item) => item.id === id);
 
     if (index === -1) {
       return null;
     }
 
-    const updated = normalizeTransactionItem({
-      ...state.items[index],
-      ...patch,
-    });
+    const goalLookup = await this.buildGoalLinkLookup();
+    const updatedDraft = this.applyGoalLinkOnUpdate(state.items[index], patch, goalLookup);
+
+    const updated = normalizeTransactionItem(updatedDraft);
 
     state.items[index] = updated;
     this.writeState(state);
@@ -363,6 +403,166 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
 
   public async clearAll(): Promise<void> {
     this.writeState(buildInitialState());
+  }
+
+  private applyGoalLinkOnCreate(
+    input: Omit<TransactionItem, "date" | "meta" | "accountId"> & {
+      accountId?: string;
+      transactionType?: string;
+      goalId?: string;
+      date?: string;
+      meta: string;
+    },
+    goalLookup: GoalLinkLookup,
+  ): Omit<TransactionItem, "date" | "meta" | "accountId"> & {
+    accountId?: string;
+    transactionType?: string;
+    goalId?: string;
+    date?: string;
+    meta: string;
+  } {
+    const autoGoalId = resolveGoalIdByCategorySubcategory(input, goalLookup);
+    if (autoGoalId) {
+      return {
+        ...input,
+        goalId: autoGoalId,
+        transactionType: TRANSACTION_TYPE_SAVING,
+      };
+    }
+
+    return input;
+  }
+
+  private applyGoalLinkOnUpdate(
+    current: TransactionItem,
+    patch: UpdateTransactionPatch,
+    goalLookup: GoalLinkLookup,
+  ): Omit<TransactionItem, "date" | "meta" | "accountId"> & {
+    accountId?: string;
+    transactionType?: string;
+    goalId?: string;
+    date?: string;
+    meta: string;
+  } {
+    const merged = {
+      ...current,
+      ...patch,
+    };
+
+    const autoGoalId = resolveGoalIdByCategorySubcategory(merged, goalLookup);
+    if (autoGoalId) {
+      return {
+        ...merged,
+        goalId: autoGoalId,
+        transactionType: TRANSACTION_TYPE_SAVING,
+      };
+    }
+
+    const categoryRelatedPatch = patch.categoryId !== undefined || patch.subcategoryName !== undefined;
+    const shouldResetGoalLink = categoryRelatedPatch && patch.goalId === undefined;
+
+    if (shouldResetGoalLink) {
+      return {
+        ...merged,
+        goalId: undefined,
+        transactionType:
+          merged.transactionType === TRANSACTION_TYPE_SAVING
+            ? TRANSACTION_TYPE_REGULAR
+            : merged.transactionType,
+      };
+    }
+
+    return merged;
+  }
+
+  private async readAndSynchronizeState(): Promise<TransactionsStorageV4> {
+    const state = this.readState();
+    const goalLookup = await this.buildGoalLinkLookup();
+
+    if (goalLookup.goalCategoryIds.size === 0) {
+      return state;
+    }
+
+    let hasChanges = false;
+    const synchronizedItems = state.items.map((item) => {
+      const autoGoalId = resolveGoalIdByCategorySubcategory(item, goalLookup);
+      const categoryId = item.categoryId?.trim();
+      const isGoalsCategory = Boolean(categoryId) && goalLookup.goalCategoryIds.has(categoryId as string);
+
+      if (autoGoalId) {
+        if (
+          item.goalId === autoGoalId &&
+          item.transactionType === TRANSACTION_TYPE_SAVING
+        ) {
+          return item;
+        }
+
+        hasChanges = true;
+        return normalizeTransactionItem({
+          ...item,
+          goalId: autoGoalId,
+          transactionType: TRANSACTION_TYPE_SAVING,
+        });
+      }
+
+      if (!isGoalsCategory || item.goalId === undefined) {
+        return item;
+      }
+
+      hasChanges = true;
+      return normalizeTransactionItem({
+        ...item,
+        goalId: undefined,
+        transactionType:
+          item.transactionType === TRANSACTION_TYPE_SAVING
+            ? TRANSACTION_TYPE_REGULAR
+            : item.transactionType,
+      });
+    });
+
+    if (!hasChanges) {
+      return state;
+    }
+
+    const nextState: TransactionsStorageV4 = {
+      version: state.version,
+      items: synchronizedItems,
+    };
+
+    this.writeState(nextState);
+    return nextState;
+  }
+
+  private async buildGoalLinkLookup(): Promise<GoalLinkLookup> {
+    const [categories, goals] = await Promise.all([
+      categoriesRepository.list(),
+      goalsRepository.list(),
+    ]);
+
+    const goalsCategoryIds = new Set<string>(
+      categories
+        .filter((category) => normalizeLookupKey(category.name) === normalizeLookupKey(GOALS_PARENT_CATEGORY_NAME))
+        .map((category) => category.id),
+    );
+
+    goals.forEach((goal) => {
+      goalsCategoryIds.add(goal.categoryId);
+    });
+
+    const goalIdBySubcategory = new Map<string, string>();
+    goals.forEach((goal) => {
+      const key = normalizeLookupKey(goal.title);
+      if (!key) {
+        return;
+      }
+
+      goalIdBySubcategory.set(key, goal.id);
+    });
+
+    return {
+      goalCategoryIds: goalsCategoryIds,
+      goalIdBySubcategory,
+    };
   }
 
   private getStorage(): Storage | null {

@@ -163,8 +163,8 @@ export function Transactions({
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
-        onActionClick={handleHeaderAction}
-        actionIcon={isEditorOpen ? "x" : "plus"}
+        onActionClick={isEditorOpen ? undefined : handleHeaderAction}
+        actionIcon="plus"
       />
       <div className="relative flex-1 overflow-hidden">
         <div className={`h-full overflow-auto px-5 py-2 ${isEditorOpen ? "pointer-events-none" : ""}`}>

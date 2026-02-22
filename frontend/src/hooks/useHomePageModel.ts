@@ -227,7 +227,7 @@ export const useHomePageModel = (
     const map = new Map<string, number>();
 
     transactionItems.forEach((transaction) => {
-      if (transaction.transactionType !== "saving" || !transaction.goalId) {
+      if (!transaction.goalId) {
         return;
       }
 
@@ -267,7 +267,7 @@ export const useHomePageModel = (
     const grouped = new Map<string, { label: string; amount: number; color: string }>();
 
     transactionItems.forEach((transaction) => {
-      if (transaction.transactionType === "saving") {
+      if (transaction.transactionType === "saving" || transaction.goalId) {
         return;
       }
 

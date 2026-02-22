@@ -92,8 +92,8 @@ export function Accounts({
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
-        onActionClick={handleHeaderAction}
-        actionIcon={isEditorOpen ? "x" : "plus"}
+        onActionClick={isEditorOpen ? undefined : handleHeaderAction}
+        actionIcon="plus"
       />
 
       <div className="relative flex-1 overflow-hidden">

@@ -115,6 +115,7 @@ export function Plans({
     totalCount,
     totalAmountInput,
     error,
+    handleCloseEditor,
     handleCreate,
     handleDeletePlan,
     handleHeaderAction,
@@ -133,106 +134,109 @@ export function Plans({
       : emptyFinishedHint;
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
-        onActionClick={handleHeaderAction}
-        actionIcon={isEditorOpen ? "x" : "plus"}
+        onActionClick={isEditorOpen ? undefined : handleHeaderAction}
+        actionIcon="plus"
       />
-      <div className="flex-1 overflow-auto px-5 py-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex min-w-0 gap-2">
-            <PlanStatusCounter
-              status="all"
-              label={totalStatusLabel}
-              count={totalCount}
-              isSelected={statusFilter === "all"}
-              onClick={() => setStatusFilter("all")}
-            />
-            <PlanStatusCounter
-              status="active"
-              label={activeStatusLabel}
-              count={activeCount}
-              isSelected={statusFilter === "active"}
-              onClick={() => setStatusFilter("active")}
-            />
-            <PlanStatusCounter
-              status="finished"
-              label={finishedStatusLabel}
-              count={finishedCount}
-              isSelected={statusFilter === "finished"}
-              onClick={() => setStatusFilter("finished")}
+      <div className="relative flex-1 overflow-hidden">
+        <div className={`h-full overflow-auto px-5 py-4 ${isEditorOpen ? "pointer-events-none" : ""}`}>
+          <div className="flex flex-col gap-4">
+            <div className="flex min-w-0 gap-2">
+              <PlanStatusCounter
+                status="all"
+                label={totalStatusLabel}
+                count={totalCount}
+                isSelected={statusFilter === "all"}
+                onClick={() => setStatusFilter("all")}
+              />
+              <PlanStatusCounter
+                status="active"
+                label={activeStatusLabel}
+                count={activeCount}
+                isSelected={statusFilter === "active"}
+                onClick={() => setStatusFilter("active")}
+              />
+              <PlanStatusCounter
+                status="finished"
+                label={finishedStatusLabel}
+                count={finishedCount}
+                isSelected={statusFilter === "finished"}
+                onClick={() => setStatusFilter("finished")}
+              />
+            </div>
+
+            <PlansListWidget
+              items={filteredPlans}
+              isLoading={isLoading}
+              hasError={Boolean(error)}
+              loadingLabel={loadingLabel}
+              errorLabel={errorLabel}
+              emptyTitle={resolvedEmptyTitle}
+              emptyHint={resolvedEmptyHint}
+              cuotaLabel={cuotaLabel}
+              totalLabel={totalLabel}
+              markInstallmentAriaLabel={markInstallmentAriaLabel}
+              pendingPaidPlanId={pendingPaidPlanId}
+              paidFeedbackPlanId={paidFeedbackPlanId}
+              invalidDatePlanId={invalidDatePlanId}
+              invalidDateErrorLabel={invalidDateErrorLabel}
+              deleteActionLabel={deleteActionLabel}
+              deleteConfirmPlanId={deleteConfirmPlanId}
+              deleteConfirmTitle={deleteConfirmTitle}
+              deleteConfirmHint={deleteConfirmHint}
+              deleteCancelLabel={deleteCancelLabel}
+              deleteConfirmLabel={deleteConfirmLabel}
+              onDeleteConfirmPlanIdChange={setDeleteConfirmPlanId}
+              onDeletePlan={(id) => {
+                void handleDeletePlan(id);
+              }}
+              onMarkInstallmentPaid={(id) => {
+                void handleMarkInstallmentPaid(id);
+              }}
+              onPlanClick={onPlanClick}
             />
           </div>
-
-          <PlansQuickAddWidget
-            isOpen={isEditorOpen}
-            title={quickAddTitle}
-            nameLabel={quickAddNameLabel}
-            totalAmountLabel={quickAddTotalAmountLabel}
-            currencyLabel={quickAddCurrencyLabel}
-            installmentsLabel={quickAddInstallmentsLabel}
-            creationDateLabel={quickAddCreationDateLabel}
-            namePlaceholder={quickAddNamePlaceholder}
-            totalAmountPlaceholder={quickAddTotalAmountPlaceholder}
-            installmentsPlaceholder={quickAddInstallmentsPlaceholder}
-            submitLabel={quickAddSubmitLabel}
-            totalAmountErrorLabel={totalAmountErrorLabel}
-            installmentsErrorLabel={installmentsErrorLabel}
-            creationDateErrorLabel={creationDateErrorLabel}
-            nameInput={nameInput}
-            totalAmountInput={totalAmountInput}
-            installmentsCountInput={installmentsCountInput}
-            creationDateInput={creationDateInput}
-            selectedCurrency={selectedCurrency}
-            showValidation={showValidation}
-            isTotalAmountValid={isTotalAmountValid}
-            isInstallmentsCountValid={isInstallmentsCountValid}
-            isCreationDateValid={isCreationDateValid}
-            isFormValid={isFormValid}
-            isLoading={isLoading}
-            onNameChange={setNameInput}
-            onTotalAmountChange={setTotalAmountInput}
-            onInstallmentsCountChange={setInstallmentsCountInput}
-            onCurrencyChange={setSelectedCurrency}
-            onCreationDateChange={setCreationDateInput}
-            onSubmit={() => {
-              void handleCreate();
-            }}
-          />
-
-          <PlansListWidget
-            items={filteredPlans}
-            isLoading={isLoading}
-            hasError={Boolean(error)}
-            loadingLabel={loadingLabel}
-            errorLabel={errorLabel}
-            emptyTitle={resolvedEmptyTitle}
-            emptyHint={resolvedEmptyHint}
-            cuotaLabel={cuotaLabel}
-            totalLabel={totalLabel}
-            markInstallmentAriaLabel={markInstallmentAriaLabel}
-            pendingPaidPlanId={pendingPaidPlanId}
-            paidFeedbackPlanId={paidFeedbackPlanId}
-            invalidDatePlanId={invalidDatePlanId}
-            invalidDateErrorLabel={invalidDateErrorLabel}
-            deleteActionLabel={deleteActionLabel}
-            deleteConfirmPlanId={deleteConfirmPlanId}
-            deleteConfirmTitle={deleteConfirmTitle}
-            deleteConfirmHint={deleteConfirmHint}
-            deleteCancelLabel={deleteCancelLabel}
-            deleteConfirmLabel={deleteConfirmLabel}
-            onDeleteConfirmPlanIdChange={setDeleteConfirmPlanId}
-            onDeletePlan={(id) => {
-              void handleDeletePlan(id);
-            }}
-            onMarkInstallmentPaid={(id) => {
-              void handleMarkInstallmentPaid(id);
-            }}
-            onPlanClick={onPlanClick}
-          />
         </div>
+
+        <PlansQuickAddWidget
+          isOpen={isEditorOpen}
+          title={quickAddTitle}
+          nameLabel={quickAddNameLabel}
+          totalAmountLabel={quickAddTotalAmountLabel}
+          currencyLabel={quickAddCurrencyLabel}
+          installmentsLabel={quickAddInstallmentsLabel}
+          creationDateLabel={quickAddCreationDateLabel}
+          namePlaceholder={quickAddNamePlaceholder}
+          totalAmountPlaceholder={quickAddTotalAmountPlaceholder}
+          installmentsPlaceholder={quickAddInstallmentsPlaceholder}
+          submitLabel={quickAddSubmitLabel}
+          totalAmountErrorLabel={totalAmountErrorLabel}
+          installmentsErrorLabel={installmentsErrorLabel}
+          creationDateErrorLabel={creationDateErrorLabel}
+          nameInput={nameInput}
+          totalAmountInput={totalAmountInput}
+          installmentsCountInput={installmentsCountInput}
+          creationDateInput={creationDateInput}
+          selectedCurrency={selectedCurrency}
+          showValidation={showValidation}
+          isTotalAmountValid={isTotalAmountValid}
+          isInstallmentsCountValid={isInstallmentsCountValid}
+          isCreationDateValid={isCreationDateValid}
+          isFormValid={isFormValid}
+          isLoading={isLoading}
+          onNameChange={setNameInput}
+          onTotalAmountChange={setTotalAmountInput}
+          onInstallmentsCountChange={setInstallmentsCountInput}
+          onCurrencyChange={setSelectedCurrency}
+          onCreationDateChange={setCreationDateInput}
+          onRequestClose={handleCloseEditor}
+          onSubmit={() => {
+            void handleCreate();
+          }}
+        />
       </div>
     </div>
   );

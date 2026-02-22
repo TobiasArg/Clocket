@@ -264,8 +264,8 @@ export function Budgets({
       <PageHeader
         title={headerTitle}
         avatarInitials={avatarInitials}
-        onActionClick={handleHeaderAction}
-        actionIcon={isEditorOpen ? "x" : "plus"}
+        onActionClick={isEditorOpen ? undefined : handleHeaderAction}
+        actionIcon="plus"
       />
       <div className="relative flex-1 overflow-hidden">
         <div className={`h-full overflow-auto ${isEditorOpen ? "pointer-events-none" : ""}`}>

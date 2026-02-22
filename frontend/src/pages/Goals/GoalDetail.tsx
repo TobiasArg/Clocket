@@ -1,10 +1,11 @@
-import { ActionButton } from "@/components/ActionButton/ActionButton";
+import { GoalsQuickAddWidget } from "@/components/GoalsQuickAddWidget/GoalsQuickAddWidget";
 import { IconBadge } from "@/components/IconBadge/IconBadge";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
 import { PhosphorIcon } from "@/components/PhosphorIcon/PhosphorIcon";
 import { ProgressBar } from "@/components/ProgressBar/ProgressBar";
 import { useGoalDetailPageModel } from "@/hooks/useGoalDetailPageModel";
 import { formatCurrency, getGoalColorOption } from "@/utils";
+import type { GoalColorKey } from "@/types";
 
 export interface GoalDetailProps {
   goalId: string;
@@ -17,32 +18,47 @@ export function GoalDetail({
 }: GoalDetailProps) {
   const {
     canConfirmDelete,
+    colorOptions,
+    deadlineDateInput,
     deleteResolution,
+    descriptionInput,
     entries,
-    entryAmountInput,
-    entryDateInput,
-    entryNoteInput,
     goal,
-    handleAddEntry,
+    handleCloseEdit,
     handleDeleteGoal,
+    handleOpenEdit,
+    handleSaveEdit,
+    iconOptions,
+    isDeadlineValid,
     isDeleteDialogOpen,
-    isEntryFormValid,
+    isDescriptionValid,
+    isEditFormValid,
+    isEditSheetOpen,
+    isLoading,
+    isTargetValid,
+    isTitleValid,
     progressPercent,
     redirectAccountId,
     redirectGoalId,
     savedAmount,
-    selectedEntryAccountId,
-    selectedEntryCurrency,
+    selectedColorKey,
+    selectedCurrency,
+    selectedIcon,
+    setDeadlineDateInput,
     setDeleteResolution,
-    setEntryAmountInput,
-    setEntryDateInput,
-    setEntryNoteInput,
+    setDescriptionInput,
     setIsDeleteDialogOpen,
     setRedirectAccountId,
     setRedirectGoalId,
-    setSelectedEntryAccountId,
-    setSelectedEntryCurrency,
+    setSelectedColorKey,
+    setSelectedCurrency,
+    setSelectedIcon,
+    setTargetAmountInput,
+    setTitleInput,
+    showEditValidation,
     targetAmount,
+    targetAmountInput,
+    titleInput,
     visibleAccounts,
     visibleGoalsForRedirect,
   } = useGoalDetailPageModel({ goalId });
@@ -59,21 +75,22 @@ export function GoalDetail({
   }
 
   const color = getGoalColorOption(goal.colorKey);
+  const remainingAmount = Math.max(0, targetAmount - savedAmount);
 
   return (
     <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
       <PageHeader title="Meta" onBackClick={onBackClick} />
 
       <div className="flex-1 overflow-auto px-5 py-3">
-        <div className="flex flex-col gap-4">
-          <div className="rounded-2xl bg-[var(--surface-muted)] p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-4 pb-8">
+          <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4 flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <IconBadge
                   icon={goal.icon}
                   bg={color.iconBgClass}
                   iconColor="text-white"
-                  size="w-[44px] h-[44px]"
+                  size="w-[48px] h-[48px]"
                   rounded="rounded-xl"
                 />
                 <div className="min-w-0">
@@ -85,26 +102,65 @@ export function GoalDetail({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="h-9 w-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center"
-                aria-label="Eliminar meta"
-              >
-                <PhosphorIcon name="trash" className="text-[#DC2626]" size="text-[16px]" />
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenEdit}
+                  className="h-9 w-9 rounded-lg bg-[var(--panel-bg)] border border-[var(--surface-border)] flex items-center justify-center"
+                  aria-label="Editar meta"
+                >
+                  <PhosphorIcon name="pencil-simple" className="text-[var(--text-secondary)]" size="text-[16px]" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="h-9 w-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center"
+                  aria-label="Eliminar meta"
+                >
+                  <PhosphorIcon name="trash" className="text-[#DC2626]" size="text-[16px]" />
+                </button>
+              </div>
             </div>
 
             <span className="text-sm font-medium text-[var(--text-secondary)]">{goal.description}</span>
 
-            <div className="flex items-end justify-between">
-              <span className="text-lg font-bold text-[var(--text-primary)] font-['Outfit']">
-                {formatCurrency(savedAmount)}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl bg-[var(--panel-bg)] border border-[var(--surface-border)] px-3 py-2">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.8px] text-[var(--text-secondary)]">
+                  Guardado
+                </span>
+                <span className="block mt-1 text-sm font-semibold text-[var(--text-primary)]">
+                  {formatCurrency(savedAmount)}
+                </span>
+              </div>
+              <div className="rounded-xl bg-[var(--panel-bg)] border border-[var(--surface-border)] px-3 py-2">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.8px] text-[var(--text-secondary)]">
+                  Objetivo
+                </span>
+                <span className="block mt-1 text-sm font-semibold text-[var(--text-primary)]">
+                  {formatCurrency(targetAmount)}
+                </span>
+              </div>
+              <div className="rounded-xl bg-[var(--panel-bg)] border border-[var(--surface-border)] px-3 py-2">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.8px] text-[var(--text-secondary)]">
+                  Restante
+                </span>
+                <span className="block mt-1 text-sm font-semibold text-[var(--text-primary)]">
+                  {formatCurrency(remainingAmount)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-end justify-between gap-3">
+              <span className={`text-sm font-semibold ${color.textClass}`}>
+                {progressPercent}% completado
               </span>
-              <span className="text-sm font-medium text-[var(--text-secondary)]">
-                {`${progressPercent}% · ${formatCurrency(targetAmount)}`}
+              <span className="text-xs font-medium text-[var(--text-secondary)]">
+                {entries.length} movimientos vinculados
               </span>
             </div>
+
             <ProgressBar
               percent={progressPercent}
               barColor={color.barClass}
@@ -112,95 +168,20 @@ export function GoalDetail({
             />
           </div>
 
-          <div className="rounded-2xl bg-[var(--surface-muted)] p-4 flex flex-col gap-3">
-            <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">NUEVA ENTRADA</span>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">Monto</span>
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={entryAmountInput}
-                onChange={(event) => setEntryAmountInput(event.target.value)}
-                className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
-                placeholder="0.00"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">Cuenta origen</span>
-              <select
-                value={selectedEntryAccountId}
-                onChange={(event) => setSelectedEntryAccountId(event.target.value)}
-                className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
-              >
-                <option value="">Seleccionar cuenta</option>
-                {visibleAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">Moneda</span>
-              <select
-                value={selectedEntryCurrency}
-                onChange={(event) => setSelectedEntryCurrency(event.target.value as "ARS" | "USD")}
-                className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
-              >
-                <option value="ARS">ARS</option>
-                <option value="USD">USD</option>
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">Fecha</span>
-              <input
-                type="date"
-                value={entryDateInput}
-                onChange={(event) => setEntryDateInput(event.target.value)}
-                className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">Nota</span>
-              <input
-                type="text"
-                value={entryNoteInput}
-                onChange={(event) => setEntryNoteInput(event.target.value)}
-                className="w-full bg-[var(--panel-bg)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none border border-transparent focus:border-[#D4D4D8]"
-                placeholder="Ej. Transferencia mensual"
-              />
-            </label>
-
-            <ActionButton
-              icon="plus"
-              label="Agregar entrada"
-              iconColor="text-[var(--text-primary)]"
-              labelColor="text-[var(--text-primary)]"
-              bg={isEntryFormValid ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
-              padding="px-4 py-3"
-              className={isEntryFormValid ? "" : "opacity-70 pointer-events-none"}
-              onClick={() => {
-                void handleAddEntry();
-              }}
-            />
-          </div>
-
-          <div className="rounded-2xl bg-[var(--surface-muted)] p-4 flex flex-col gap-3">
-            <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">ENTRADAS</span>
+          <div className="rounded-2xl bg-[var(--surface-muted)] p-4 flex flex-col gap-3 border border-[var(--surface-border)]">
+            <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">
+              MOVIMIENTOS DEL GOAL
+            </span>
             {entries.length === 0 ? (
-              <span className="text-sm font-medium text-[var(--text-secondary)]">No hay entradas todavía.</span>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">
+                Este goal todavía no tiene movimientos asociados.
+              </span>
             ) : (
               <div className="flex flex-col">
                 {entries.map((entry, index) => (
                   <div
                     key={entry.id}
-                    className={`py-2 flex items-center justify-between gap-2 ${
+                    className={`py-2.5 flex items-center justify-between gap-2 ${
                       index < entries.length - 1 ? "border-b border-[var(--surface-border)]" : ""
                     }`}
                   >
@@ -222,6 +203,39 @@ export function GoalDetail({
           </div>
         </div>
       </div>
+
+      <GoalsQuickAddWidget
+        isOpen={isEditSheetOpen}
+        title="Editar meta"
+        onRequestClose={handleCloseEdit}
+        onSubmit={() => {
+          void handleSaveEdit();
+        }}
+        isFormValid={isEditFormValid}
+        isLoading={isLoading}
+        showValidation={showEditValidation}
+        titleInput={titleInput}
+        onTitleChange={setTitleInput}
+        isTitleValid={isTitleValid}
+        descriptionInput={descriptionInput}
+        onDescriptionChange={setDescriptionInput}
+        isDescriptionValid={isDescriptionValid}
+        targetAmountInput={targetAmountInput}
+        onTargetAmountChange={setTargetAmountInput}
+        isTargetValid={isTargetValid}
+        selectedCurrency={selectedCurrency}
+        onCurrencyChange={setSelectedCurrency}
+        deadlineDateInput={deadlineDateInput}
+        onDeadlineDateChange={setDeadlineDateInput}
+        isDeadlineValid={isDeadlineValid}
+        selectedIcon={selectedIcon}
+        onIconChange={setSelectedIcon}
+        iconOptions={iconOptions}
+        selectedColorKey={selectedColorKey}
+        onColorKeyChange={(value) => setSelectedColorKey(value as GoalColorKey)}
+        colorOptions={colorOptions}
+        quickAddSubmitLabel="Guardar cambios"
+      />
 
       {isDeleteDialogOpen && (
         <div className="fixed inset-0 z-50 bg-black/25 flex items-center justify-center px-5">

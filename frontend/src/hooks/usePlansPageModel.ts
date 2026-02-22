@@ -49,6 +49,7 @@ export interface UsePlansPageModelResult {
   totalCount: number;
   totalAmountInput: string;
   error: string | null;
+  handleCloseEditor: () => void;
   handleCreate: () => Promise<void>;
   handleHeaderAction: () => void;
   handleDeletePlan: (id: string) => Promise<void>;
@@ -211,15 +212,18 @@ export const usePlansPageModel = (
     setShowValidation(false);
   };
 
+  const handleCloseEditor = () => {
+    resetEditor();
+  };
+
   const handleHeaderAction = () => {
     if (isEditorOpen) {
-      resetEditor();
+      handleCloseEditor();
     } else {
       setIsEditorOpen(true);
       setShowValidation(false);
+      onAddClick?.();
     }
-
-    onAddClick?.();
   };
 
   const handleCreate = async () => {
@@ -352,6 +356,7 @@ export const usePlansPageModel = (
     totalCount,
     totalAmountInput,
     error,
+    handleCloseEditor,
     handleCreate,
     handleDeletePlan,
     handleHeaderAction,

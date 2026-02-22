@@ -92,8 +92,8 @@ export function Investments({
         <PageHeader
           title={headerTitle}
           avatarInitials={avatarInitials}
-          onActionClick={handleHeaderAction}
-          actionIcon={isEditorOpen ? "x" : "plus"}
+          onActionClick={isEditorOpen ? undefined : handleHeaderAction}
+          actionIcon="plus"
           actionAriaLabel={isEditorOpen ? "Cerrar editor" : "Agregar entrada"}
         />
       </div>

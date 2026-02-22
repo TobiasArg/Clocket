@@ -8,9 +8,13 @@ import {
   formatCurrency,
   getGoalCategoryName,
   getGoalColorOption,
+  GOAL_COLOR_OPTIONS,
+  GOAL_ICON_OPTIONS,
   toArsTransactionAmount,
+  getUsdRate,
   type TransactionInputCurrency,
 } from "@/utils";
+import type { GoalColorKey } from "@/types";
 
 export type GoalDeleteResolution = "redirect_goal" | "redirect_account" | "delete_entries";
 
@@ -27,37 +31,48 @@ export interface UseGoalDetailPageModelOptions {
 
 export interface UseGoalDetailPageModelResult {
   canConfirmDelete: boolean;
+  colorOptions: Array<{ key: GoalColorKey; label: string; swatchClass: string }>;
+  deadlineDateInput: string;
   deleteResolution: GoalDeleteResolution;
-  entryAmountInput: string;
-  entryDateInput: string;
-  entryNoteInput: string;
+  descriptionInput: string;
   entries: GoalEntryPresentation[];
   error: string | null;
   goal: ReturnType<typeof useGoals>["items"][number] | null;
-  handleAddEntry: () => Promise<void>;
+  handleCloseEdit: () => void;
   handleDeleteGoal: () => Promise<boolean>;
+  handleOpenEdit: () => void;
+  handleSaveEdit: () => Promise<void>;
+  iconOptions: string[];
+  isDeadlineValid: boolean;
   isDeleteDialogOpen: boolean;
-  isEntryAccountValid: boolean;
-  isEntryAmountValid: boolean;
-  isEntryDateValid: boolean;
-  isEntryFormValid: boolean;
+  isDescriptionValid: boolean;
+  isEditFormValid: boolean;
+  isEditSheetOpen: boolean;
   isLoading: boolean;
+  isTargetValid: boolean;
+  isTitleValid: boolean;
   progressPercent: number;
   redirectAccountId: string;
   redirectGoalId: string;
   savedAmount: number;
-  selectedEntryAccountId: string;
-  selectedEntryCurrency: TransactionInputCurrency;
+  selectedColorKey: GoalColorKey;
+  selectedCurrency: TransactionInputCurrency;
+  selectedIcon: string;
+  setDeadlineDateInput: (value: string) => void;
   setDeleteResolution: (value: GoalDeleteResolution) => void;
-  setEntryAmountInput: (value: string) => void;
-  setEntryDateInput: (value: string) => void;
-  setEntryNoteInput: (value: string) => void;
+  setDescriptionInput: (value: string) => void;
   setIsDeleteDialogOpen: (value: boolean) => void;
   setRedirectAccountId: (value: string) => void;
   setRedirectGoalId: (value: string) => void;
-  setSelectedEntryAccountId: (value: string) => void;
-  setSelectedEntryCurrency: (value: TransactionInputCurrency) => void;
+  setSelectedColorKey: (value: GoalColorKey) => void;
+  setSelectedCurrency: (value: TransactionInputCurrency) => void;
+  setSelectedIcon: (value: string) => void;
+  setTargetAmountInput: (value: string) => void;
+  setTitleInput: (value: string) => void;
+  showEditValidation: boolean;
   targetAmount: number;
+  targetAmountInput: string;
+  titleInput: string;
   visibleAccounts: ReturnType<typeof useAccounts>["items"];
   visibleGoalsForRedirect: ReturnType<typeof useGoals>["items"];
 }
@@ -68,13 +83,6 @@ const parseSignedAmount = (value: string): number => {
   const normalized = value.replace(/[^0-9+.-]/g, "");
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const toIsoDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 };
 
 const formatEntryDate = (value: string): string => {
@@ -88,6 +96,32 @@ const formatEntryDate = (value: string): string => {
     month: "short",
     year: "numeric",
   }).format(new Date(Number(year), Number(month) - 1, Number(day)));
+};
+
+const formatAmountInput = (value: number): string => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const rounded = Math.round(value * 100) / 100;
+  return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(2);
+};
+
+const convertArsToCurrency = (amountArs: number, currency: TransactionInputCurrency): number => {
+  if (!Number.isFinite(amountArs) || amountArs <= 0) {
+    return 0;
+  }
+
+  if (currency === "USD") {
+    const rate = getUsdRate();
+    if (!Number.isFinite(rate) || rate <= 0) {
+      return amountArs;
+    }
+
+    return amountArs / rate;
+  }
+
+  return amountArs;
 };
 
 const ensureUncategorizedCategory = async (
@@ -116,12 +150,18 @@ export const useGoalDetailPageModel = (
 ): UseGoalDetailPageModelResult => {
   const { goalId } = options;
   const { currency: appCurrency } = useCurrency();
-  const { items: goals, remove: removeGoal } = useGoals();
+  const {
+    items: goals,
+    isLoading: isGoalsLoading,
+    error: goalsError,
+    remove: removeGoal,
+    update: updateGoal,
+  } = useGoals();
   const { items: accounts } = useAccounts();
   const { items: categories, create: createCategory } = useCategories();
   const {
     items: transactions,
-    create: createTransaction,
+    isLoading: isTransactionsLoading,
     update: updateTransaction,
     remove: removeTransaction,
   } = useTransactions();
@@ -131,10 +171,7 @@ export const useGoalDetailPageModel = (
     [goalId, goals],
   );
   const goalEntries = useMemo(
-    () => transactions.filter((transaction) => (
-      transaction.transactionType === "saving" &&
-      transaction.goalId === goalId
-    )),
+    () => transactions.filter((transaction) => transaction.goalId === goalId),
     [goalId, transactions],
   );
 
@@ -150,21 +187,30 @@ export const useGoalDetailPageModel = (
     ? Math.max(0, Math.min(100, Math.round((savedAmount / targetAmount) * 100)))
     : 0;
 
-  const [entryAmountInput, setEntryAmountInput] = useState<string>("");
-  const [entryDateInput, setEntryDateInput] = useState<string>(toIsoDate(new Date()));
-  const [entryNoteInput, setEntryNoteInput] = useState<string>("");
-  const [selectedEntryAccountId, setSelectedEntryAccountId] = useState<string>("");
-  const [selectedEntryCurrency, setSelectedEntryCurrency] = useState<TransactionInputCurrency>(appCurrency);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [deleteResolution, setDeleteResolution] = useState<GoalDeleteResolution>("delete_entries");
   const [redirectGoalId, setRedirectGoalId] = useState<string>("");
   const [redirectAccountId, setRedirectAccountId] = useState<string>("");
 
-  const entryAmountValue = Number(entryAmountInput);
-  const isEntryAmountValid = Number.isFinite(entryAmountValue) && entryAmountValue > 0;
-  const isEntryDateValid = ISO_DATE_PATTERN.test(entryDateInput);
-  const isEntryAccountValid = selectedEntryAccountId.trim().length > 0;
-  const isEntryFormValid = isEntryAmountValid && isEntryDateValid && isEntryAccountValid && Boolean(goal);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState<boolean>(false);
+  const [titleInput, setTitleInput] = useState<string>("");
+  const [descriptionInput, setDescriptionInput] = useState<string>("");
+  const [targetAmountInput, setTargetAmountInput] = useState<string>("");
+  const [selectedCurrency, setSelectedCurrencyState] = useState<TransactionInputCurrency>(appCurrency);
+  const [deadlineDateInput, setDeadlineDateInput] = useState<string>("");
+  const [selectedIcon, setSelectedIcon] = useState<string>(GOAL_ICON_OPTIONS[0] ?? "target");
+  const [selectedColorKey, setSelectedColorKey] = useState<GoalColorKey>("emerald");
+  const [showEditValidation, setShowEditValidation] = useState<boolean>(false);
+
+  const normalizedTitle = titleInput.trim();
+  const normalizedDescription = descriptionInput.trim();
+  const targetAmountValue = Number(targetAmountInput);
+
+  const isTitleValid = normalizedTitle.length > 0;
+  const isDescriptionValid = normalizedDescription.length > 0;
+  const isTargetValid = Number.isFinite(targetAmountValue) && targetAmountValue > 0;
+  const isDeadlineValid = ISO_DATE_PATTERN.test(deadlineDateInput);
+  const isEditFormValid = isTitleValid && isDescriptionValid && isTargetValid && isDeadlineValid;
 
   const canConfirmDelete = (
     (deleteResolution === "delete_entries") ||
@@ -188,37 +234,96 @@ export const useGoalDetailPageModel = (
     [goalId, goals],
   );
 
-  const handleAddEntry = async (): Promise<void> => {
-    if (!goal || !isEntryFormValid) {
+  const colorOptions = useMemo(
+    () => GOAL_COLOR_OPTIONS.map((option) => ({
+      key: option.key,
+      label: option.label,
+      swatchClass: option.iconBgClass,
+    })),
+    [],
+  );
+
+  const closeEdit = () => {
+    setIsEditSheetOpen(false);
+    setShowEditValidation(false);
+  };
+
+  const handleOpenEdit = () => {
+    if (!goal) {
       return;
     }
 
-    const amount = toArsTransactionAmount(Number(entryAmountInput), selectedEntryCurrency);
-    const note = entryNoteInput.trim();
-    const color = getGoalColorOption(goal.colorKey);
+    const editCurrency = appCurrency;
+    const displayTarget = convertArsToCurrency(goal.targetAmount, editCurrency);
 
-    const created = await createTransaction({
-      icon: goal.icon,
-      iconBg: color.iconBgClass,
-      name: note || `Aporte ${goal.title}`,
-      accountId: selectedEntryAccountId,
-      category: getGoalCategoryName(goal.title),
-      categoryId: goal.categoryId,
-      date: entryDateInput,
-      createdAt: new Date(`${entryDateInput}T12:00:00`).toISOString(),
-      amount: `-$${amount.toFixed(2)}`,
-      amountColor: "text-[#DC2626]",
-      meta: `${entryDateInput} • ${note || "Entrada Goal"}`,
-      transactionType: "saving",
-      goalId: goal.id,
+    setTitleInput(goal.title);
+    setDescriptionInput(goal.description);
+    setTargetAmountInput(formatAmountInput(displayTarget));
+    setSelectedCurrencyState(editCurrency);
+    setDeadlineDateInput(goal.deadlineDate);
+    setSelectedIcon(goal.icon);
+    setSelectedColorKey(goal.colorKey);
+    setShowEditValidation(false);
+    setIsEditSheetOpen(true);
+  };
+
+  const handleCloseEdit = () => {
+    closeEdit();
+  };
+
+  const setSelectedCurrency = (value: TransactionInputCurrency) => {
+    if (value === selectedCurrency) {
+      return;
+    }
+
+    const currentValue = Number(targetAmountInput);
+    if (Number.isFinite(currentValue) && currentValue > 0) {
+      const amountInArs = toArsTransactionAmount(currentValue, selectedCurrency);
+      const converted = convertArsToCurrency(amountInArs, value);
+      setTargetAmountInput(formatAmountInput(converted));
+    }
+
+    setSelectedCurrencyState(value);
+  };
+
+  const handleSaveEdit = async (): Promise<void> => {
+    if (!goal) {
+      return;
+    }
+
+    setShowEditValidation(true);
+    if (!isEditFormValid) {
+      return;
+    }
+
+    const normalizedTargetAmount = toArsTransactionAmount(targetAmountValue, selectedCurrency);
+    const updated = await updateGoal(goal.id, {
+      title: normalizedTitle,
+      description: normalizedDescription,
+      targetAmount: normalizedTargetAmount,
+      deadlineDate: deadlineDateInput,
+      icon: selectedIcon,
+      colorKey: selectedColorKey,
     });
 
-    if (!created) {
+    if (!updated) {
       return;
     }
 
-    setEntryAmountInput("");
-    setEntryNoteInput("");
+    const updatedColor = getGoalColorOption(updated.colorKey);
+    for (const entry of goalEntries) {
+      await updateTransaction(entry.id, {
+        goalId: updated.id,
+        categoryId: updated.categoryId,
+        category: getGoalCategoryName(updated.title),
+        subcategoryName: updated.title,
+        transactionType: "saving",
+        icon: updated.icon,
+        iconBg: updatedColor.iconBgClass,
+      });
+    }
+
+    closeEdit();
   };
 
   const handleDeleteGoal = async (): Promise<boolean> => {
@@ -233,11 +338,15 @@ export const useGoalDetailPageModel = (
       }
 
       for (const entry of goalEntries) {
+        const redirectColor = getGoalColorOption(targetGoal.colorKey);
         await updateTransaction(entry.id, {
           goalId: targetGoal.id,
           categoryId: targetGoal.categoryId,
           category: getGoalCategoryName(targetGoal.title),
+          subcategoryName: targetGoal.title,
           transactionType: "saving",
+          icon: targetGoal.icon,
+          iconBg: redirectColor.iconBgClass,
         });
       }
     }
@@ -253,6 +362,7 @@ export const useGoalDetailPageModel = (
           accountId: redirectAccountId,
           categoryId: fallbackCategory.id,
           category: fallbackCategory.name,
+          subcategoryName: undefined,
           transactionType: "regular",
           goalId: undefined,
         });
@@ -274,41 +384,50 @@ export const useGoalDetailPageModel = (
     return true;
   };
 
-  const isLoading = false;
-
   return {
     canConfirmDelete,
+    colorOptions,
+    deadlineDateInput,
     deleteResolution,
-    entryAmountInput,
-    entryDateInput,
-    entryNoteInput,
+    descriptionInput,
     entries,
-    error: null,
+    error: goalsError,
     goal,
-    handleAddEntry,
+    handleCloseEdit,
     handleDeleteGoal,
+    handleOpenEdit,
+    handleSaveEdit,
+    iconOptions: GOAL_ICON_OPTIONS,
+    isDeadlineValid,
     isDeleteDialogOpen,
-    isEntryAccountValid,
-    isEntryAmountValid,
-    isEntryDateValid,
-    isEntryFormValid,
-    isLoading,
+    isDescriptionValid,
+    isEditFormValid,
+    isEditSheetOpen,
+    isLoading: isGoalsLoading || isTransactionsLoading,
+    isTargetValid,
+    isTitleValid,
     progressPercent,
     redirectAccountId,
     redirectGoalId,
     savedAmount,
-    selectedEntryAccountId,
-    selectedEntryCurrency,
+    selectedColorKey,
+    selectedCurrency,
+    selectedIcon,
+    setDeadlineDateInput,
     setDeleteResolution,
-    setEntryAmountInput,
-    setEntryDateInput,
-    setEntryNoteInput,
+    setDescriptionInput,
     setIsDeleteDialogOpen,
     setRedirectAccountId,
     setRedirectGoalId,
-    setSelectedEntryAccountId,
-    setSelectedEntryCurrency,
+    setSelectedColorKey,
+    setSelectedCurrency,
+    setSelectedIcon,
+    setTargetAmountInput,
+    setTitleInput,
+    showEditValidation,
     targetAmount,
+    targetAmountInput,
+    titleInput,
     visibleAccounts: accounts,
     visibleGoalsForRedirect,
   };

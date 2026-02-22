@@ -75,6 +75,9 @@ export type {
 
 export {
   DEFAULT_GOAL_COLOR_KEY,
+  GOALS_PARENT_CATEGORY_ICON,
+  GOALS_PARENT_CATEGORY_ICON_BG,
+  GOALS_PARENT_CATEGORY_NAME,
   getGoalCategoryName,
   getGoalColorOption,
   GOAL_COLOR_OPTIONS,

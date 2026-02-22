@@ -25,8 +25,8 @@ export function BottomNavigation({
   };
 
   return (
-    <div className="border-t border-[var(--surface-border)]">
-      <div className="flex items-center h-[80px] px-4 bg-[var(--panel-bg)]">
+    <div className="border-t border-[var(--surface-border)] bg-[var(--panel-bg)] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-center h-[80px] px-4">
         {items.map((item, i) => {
           const isActive = item.to ? isPathActive(item.to) : Boolean(item.active);
           const baseClassName =

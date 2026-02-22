@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_ACCOUNT_ID } from "@/domain/accounts/repository";
 import { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
-import { getGoalCategoryName, getGoalColorOption } from "@/domain/goals/goalAppearance";
+import { GOALS_PARENT_CATEGORY_NAME, getGoalCategoryName } from "@/domain/goals/goalAppearance";
 import { LocalStorageAppSettingsRepository, appSettingsRepository } from "@/data/localStorage/appSettingsRepository";
 import { accountsRepository } from "@/data/localStorage/accountsRepository";
 import { budgetsRepository } from "@/data/localStorage/budgetsRepository";
@@ -175,9 +175,7 @@ describe("localStorage repositories smoke", () => {
     expect(await budgetsRepository.remove(created.id)).toBe(false);
   });
 
-  it("goals repository creates/syncs/removes linked category and rejects duplicate titles", async () => {
-    const beforeCategories = await categoriesRepository.list();
-
+  it("goals repository creates goals under Goals category and syncs subcategories", async () => {
     const created = await goalsRepository.create({
       title: "Viaje",
       description: "Ahorro para vacaciones",
@@ -189,7 +187,7 @@ describe("localStorage repositories smoke", () => {
 
     const createdCategory = await categoriesRepository.getById(created.categoryId);
     expect(createdCategory?.name).toBe(getGoalCategoryName("Viaje"));
-    expect(createdCategory?.iconBg).toBe(getGoalColorOption("sky").iconBgClass);
+    expect(createdCategory?.subcategories).toEqual(["Viaje"]);
 
     await expect(goalsRepository.create({
       title: "  viaje ",
@@ -200,22 +198,31 @@ describe("localStorage repositories smoke", () => {
       colorKey: "rose",
     })).rejects.toThrow("Goal title must be unique.");
 
+    const second = await goalsRepository.create({
+      title: "Casa",
+      description: "Ahorro para vivienda",
+      targetAmount: 300000,
+      deadlineDate: "2026-12-31",
+      icon: "house",
+      colorKey: "rose",
+    });
+    expect(second.categoryId).toBe(created.categoryId);
+
     const updated = await goalsRepository.update(created.id, {
       title: "Viaje Europa",
       colorKey: "rose",
     });
 
     expect(updated?.title).toBe("Viaje Europa");
+    expect(updated?.categoryId).toBe(created.categoryId);
 
     const syncedCategory = await categoriesRepository.getById(updated!.categoryId);
-    expect(syncedCategory?.name).toBe(getGoalCategoryName("Viaje Europa"));
-    expect(syncedCategory?.iconBg).toBe(getGoalColorOption("rose").iconBgClass);
+    expect(syncedCategory?.name).toBe(GOALS_PARENT_CATEGORY_NAME);
+    expect(syncedCategory?.subcategories).toEqual(["Casa", "Viaje Europa"]);
 
     expect(await goalsRepository.remove(created.id)).toBe(true);
-    expect(await categoriesRepository.getById(updated!.categoryId)).toBeNull();
-
-    const afterCategories = await categoriesRepository.list();
-    expect(afterCategories.length).toBe(beforeCategories.length);
+    const categoryAfterRemove = await categoriesRepository.getById(updated!.categoryId);
+    expect(categoryAfterRemove?.subcategories).toEqual(["Casa"]);
   });
 
   it("investments repository aggregates entries per ticker and supports entry delete", async () => {
@@ -269,7 +276,7 @@ describe("localStorage repositories smoke", () => {
     expect(refs.monthRefPrice).toBe(255);
   });
 
-  it("transactions repository migrates legacy payload, emits change event and validates saving goalId", async () => {
+  it("transactions repository migrates payload and auto-links goals by Goals + subcategory", async () => {
     const legacyKey = "clocket.transactions.legacy-smoke";
     window.localStorage.setItem(legacyKey, JSON.stringify({
       version: 1,
@@ -307,6 +314,35 @@ describe("localStorage repositories smoke", () => {
       date: "2026-01-01",
       transactionType: "saving",
     })).rejects.toThrow("Saving transactions require a goalId.");
+
+    const goal = await goalsRepository.create({
+      title: "Fondo Emergencia",
+      description: "Reserva para imprevistos",
+      targetAmount: 1000,
+      deadlineDate: "2026-12-31",
+      icon: "target",
+      colorKey: "emerald",
+    });
+    const goalsCategory = await categoriesRepository.getById(goal.categoryId);
+
+    const linked = await legacyRepository.create({
+      icon: "target",
+      iconBg: "bg-[#0EA5E9]",
+      name: "Aporte manual",
+      category: GOALS_PARENT_CATEGORY_NAME,
+      categoryId: goal.categoryId,
+      subcategoryName: "Fondo Emergencia",
+      amount: "-$250",
+      amountColor: "text-[#DC2626]",
+      meta: "2026-01-03 • aporte",
+      accountId: DEFAULT_ACCOUNT_ID,
+      date: "2026-01-03",
+      transactionType: "regular",
+    });
+
+    expect(goalsCategory?.name).toBe(GOALS_PARENT_CATEGORY_NAME);
+    expect(linked.goalId).toBe(goal.id);
+    expect(linked.transactionType).toBe("saving");
 
     const eventsKey = "clocket.transactions.events-smoke";
     const eventRepository = new LocalStorageTransactionsRepository(eventsKey);

@@ -39,6 +39,10 @@ const sortByAmountDesc = (entries: [string, number][]): [string, number][] => (
   entries.sort((left, right) => right[1] - left[1])
 );
 
+const isGoalSavingTransaction = (transaction: TransactionItem): boolean => {
+  return transaction.transactionType === "saving" || Boolean(transaction.goalId);
+};
+
 interface BuildStatisticsDailyFlowOptions {
   categoryNameById: Map<string, string>;
   now?: Date;
@@ -73,7 +77,7 @@ export const buildStatisticsDailyFlow = ({
   rangeEnd.setDate(rangeEnd.getDate() + 1);
 
   transactions.forEach((transaction) => {
-    if (transaction.transactionType === "saving") {
+    if (isGoalSavingTransaction(transaction)) {
       return;
     }
 
