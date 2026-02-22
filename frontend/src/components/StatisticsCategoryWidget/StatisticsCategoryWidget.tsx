@@ -72,7 +72,7 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
             </span>
           )}
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-start">
+          <div className="grid grid-cols-1 gap-3">
             <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-3">
               <span className="block text-[10px] font-semibold uppercase tracking-[0.8px] text-[var(--text-secondary)]">
                 {resolvedCategoryTotalLabel}

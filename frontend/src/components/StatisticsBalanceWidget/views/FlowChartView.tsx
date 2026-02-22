@@ -1,6 +1,6 @@
 import type { StatisticsFlowDay } from "@/types";
 import { useAppSettings } from "@/hooks";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatCurrency } from "@/utils";
 
 export type FlowChartMode = "stacked" | "net";
@@ -63,25 +63,57 @@ export const FlowChartView = memo(function FlowChartView({
     onSelectDay(clickedDay);
   }, [flowDays, onSelectDay]);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [responsiveWidth, setResponsiveWidth] = useState<number>(0);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) {
+      return;
+    }
+
+    const evaluateSize = () => {
+      setResponsiveWidth(node.getBoundingClientRect().width);
+    };
+
+    evaluateSize();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      evaluateSize();
+    });
+
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   if (!hasFlowData) {
     return <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>;
   }
 
+  const svgWidth = Math.max(280, Math.round(responsiveWidth || 360));
+  const svgHeight = 210;
+
   return (
-    <div className="h-[220px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/70 px-2 py-2">
-      <svg key={animationKey} viewBox="0 0 360 210" className="h-full w-full" aria-label="Flow chart">
+    <div ref={containerRef} className="h-[220px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/70 px-2 py-2">
+      <svg key={animationKey} viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="h-full w-full" aria-label="Flow chart">
         {(() => {
           const padding = { bottom: 24, left: 10, right: 10, top: 8 };
-          const chartWidth = 360 - padding.left - padding.right;
-          const chartHeight = 210 - padding.top - padding.bottom;
-          const groupWidth = chartRows.length > 0 ? chartWidth / chartRows.length : chartWidth;
-          const labelY = 204;
+          const plotWidth = svgWidth - padding.left - padding.right;
+          const plotHeight = svgHeight - padding.top - padding.bottom;
+          const groupWidth = chartRows.length > 0 ? plotWidth / chartRows.length : plotWidth;
+          const labelY = svgHeight - 6;
 
           if (chartMode === "net") {
             const maxAbsNet = Math.max(1, ...chartRows.map((row) => Math.abs(row.net)));
             const axisLabelX = padding.left + 2;
-            const zeroY = padding.top + chartHeight / 2;
-            const verticalReach = chartHeight / 2 - 14;
+            const zeroY = padding.top + plotHeight / 2;
+            const verticalReach = plotHeight / 2 - 14;
 
             const points = chartRows.map((row, index) => {
               const x = padding.left + groupWidth * index + groupWidth / 2;
@@ -109,13 +141,13 @@ export const FlowChartView = memo(function FlowChartView({
                 </defs>
 
                 {[0.25, 0.5, 0.75].map((step) => {
-                  const y = padding.top + chartHeight * step;
+                  const y = padding.top + plotHeight * step;
                   return (
                     <line
                       key={`grid-${step}`}
                       x1={padding.left}
                       y1={y}
-                      x2={padding.left + chartWidth}
+                      x2={padding.left + plotWidth}
                       y2={y}
                       stroke={gridColor}
                       strokeWidth="1"
@@ -126,7 +158,7 @@ export const FlowChartView = memo(function FlowChartView({
                 <line
                   x1={padding.left}
                   y1={zeroY}
-                  x2={padding.left + chartWidth}
+                  x2={padding.left + plotWidth}
                   y2={zeroY}
                   stroke={zeroLineColor}
                   strokeWidth="1"
@@ -152,7 +184,7 @@ export const FlowChartView = memo(function FlowChartView({
                 </text>
                 <text
                   x={axisLabelX}
-                  y={padding.top + chartHeight - 2}
+                  y={padding.top + plotHeight - 2}
                   fill={tickColor}
                   fontSize="9"
                   fontWeight="700"
@@ -160,7 +192,7 @@ export const FlowChartView = memo(function FlowChartView({
                   {`-${formatCurrency(maxAbsNet)}`}
                 </text>
                 <text
-                  x={padding.left + chartWidth}
+                  x={padding.left + plotWidth}
                   y={padding.top + 8}
                   textAnchor="end"
                   fill={netPositiveColor}
@@ -233,21 +265,21 @@ export const FlowChartView = memo(function FlowChartView({
             ...chartRows.map((row) => Math.max(row.incomeTotal, row.expenseTotal)),
           );
           const axisLabelX = padding.left + 2;
-          const positiveHeight = chartHeight * 0.44;
-          const negativeHeight = chartHeight * 0.44;
-          const zeroY = padding.top + positiveHeight;
+            const positiveHeight = plotHeight * 0.44;
+            const negativeHeight = plotHeight * 0.44;
+            const zeroY = padding.top + positiveHeight;
           const barWidth = clampNumber(groupWidth * 0.38, 10, 24);
 
           return (
             <>
               {[0.15, 0.85].map((step) => {
-                const y = padding.top + chartHeight * step;
+                const y = padding.top + plotHeight * step;
                 return (
                   <line
                     key={`grid-${step}`}
                     x1={padding.left}
                     y1={y}
-                    x2={padding.left + chartWidth}
+                    x2={padding.left + plotWidth}
                     y2={y}
                     stroke={gridColor}
                     strokeWidth="1"
@@ -258,7 +290,7 @@ export const FlowChartView = memo(function FlowChartView({
               <line
                 x1={padding.left}
                 y1={zeroY}
-                x2={padding.left + chartWidth}
+                x2={padding.left + plotWidth}
                 y2={zeroY}
                 stroke={zeroLineColor}
                 strokeWidth="1"
@@ -283,7 +315,7 @@ export const FlowChartView = memo(function FlowChartView({
               </text>
               <text
                 x={axisLabelX}
-                y={padding.top + chartHeight - 2}
+                y={padding.top + plotHeight - 2}
                 fill={tickColor}
                 fontSize="9"
                 fontWeight="700"
@@ -291,7 +323,7 @@ export const FlowChartView = memo(function FlowChartView({
                 {`-${formatCurrency(maxFlowValue)}`}
               </text>
               <text
-                x={padding.left + chartWidth}
+                x={padding.left + plotWidth}
                 y={padding.top + 8}
                 textAnchor="end"
                 fill={incomeColor}
@@ -301,8 +333,8 @@ export const FlowChartView = memo(function FlowChartView({
                 Ingresos
               </text>
               <text
-                x={padding.left + chartWidth}
-                y={padding.top + chartHeight - 2}
+                x={padding.left + plotWidth}
+                y={padding.top + plotHeight - 2}
                 textAnchor="end"
                 fill={expenseColor}
                 fontSize="9"

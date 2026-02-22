@@ -43,7 +43,7 @@ export const TrendLine = memo(function TrendLine({
   const resolvedTickColor = tickColor ?? (isDark ? "#a1a1aa" : "#71717a");
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [isContainerReady, setIsContainerReady] = useState<boolean>(false);
+  const [chartSize, setChartSize] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -53,7 +53,9 @@ export const TrendLine = memo(function TrendLine({
 
     const evaluateSize = () => {
       const { width, height } = node.getBoundingClientRect();
-      setIsContainerReady(width > 0 && height > 0);
+      if (width > 0 && height > 0) {
+        setChartSize({ width, height });
+      }
     };
 
     evaluateSize();
@@ -74,12 +76,12 @@ export const TrendLine = memo(function TrendLine({
 
   return (
     <div ref={containerRef} className={`relative h-[88px] w-full ${className}`}>
-      {isContainerReady ? (
-        <svg key={animationKey} viewBox="0 0 320 88" className="h-full w-full" aria-label="Trend chart">
+      {chartSize ? (
+        <svg key={animationKey} viewBox={`0 0 ${chartSize.width} ${chartSize.height}`} className="h-full w-full" aria-label="Trend chart">
           {(() => {
             const padding = { bottom: 18, left: 10, right: 10, top: 8 };
-            const chartWidth = 320 - padding.left - padding.right;
-            const chartHeight = 88 - padding.top - padding.bottom;
+            const chartWidth = chartSize.width - padding.left - padding.right;
+            const chartHeight = chartSize.height - padding.top - padding.bottom;
 
             const values = points.map((point) => point.value);
             const minValue = Math.min(...values);
@@ -114,7 +116,7 @@ export const TrendLine = memo(function TrendLine({
                     <circle cx={mapX(index)} cy={mapY(point.value)} r="2.5" fill={resolvedDotColor} />
                     <text
                       x={mapX(index)}
-                      y={82}
+                      y={chartSize.height - 6}
                       textAnchor="middle"
                       fill={resolvedTickColor}
                       fontSize="10"

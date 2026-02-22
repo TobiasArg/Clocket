@@ -51,7 +51,7 @@ body {
 }
 
 @media (min-width: 768px) {
-  .app-device-shell {
+  .app-device-shell--framed {
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   }
 }

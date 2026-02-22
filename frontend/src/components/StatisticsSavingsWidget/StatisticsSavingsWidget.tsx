@@ -211,7 +211,7 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="grid grid-cols-1 gap-3">
           <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-2 py-2">
             <StatisticsViewCarousel
               activeView={activeView}

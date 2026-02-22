@@ -176,7 +176,7 @@ export function InvestmentQuickAddWidget({
           />
         )}
       >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-[var(--text-secondary)]">Tipo</span>
             <button

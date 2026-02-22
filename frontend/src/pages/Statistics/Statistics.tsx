@@ -169,7 +169,7 @@ export function Statistics({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <div className="relative border-b border-[var(--surface-border)]/70 pb-2 pr-[124px]" ref={scopeMenuContainerRef}>
         <PageHeader title={headerTitle} avatarInitials={avatarInitials} />
         <button
@@ -291,7 +291,7 @@ export function Statistics({
             chartAnimationKey={chartAnimationKey}
           />
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4">
             <StatisticsCategoryWidget
               categoryTitle={categoryTitle}
               categoryTotal={resolvedCategoryTotal}

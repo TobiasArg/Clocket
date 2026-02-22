@@ -1,5 +1,6 @@
 import { useAppSettings } from "@/hooks";
 import type { StatisticsTrendPoint } from "@/hooks/useStatisticsPageModel";
+import { useEffect, useRef, useState } from "react";
 
 export type TrendChartMode = "line" | "bars";
 
@@ -38,6 +39,35 @@ export function TrendChartView({
   const markerRing = isDark ? "rgba(74,222,128,0.35)" : "rgba(22,163,74,0.26)";
   const selectedStroke = isDark ? "#f4f4f5" : "#18181b";
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [responsiveWidth, setResponsiveWidth] = useState<number>(0);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) {
+      return;
+    }
+
+    const evaluateSize = () => {
+      setResponsiveWidth(node.getBoundingClientRect().width);
+    };
+
+    evaluateSize();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      evaluateSize();
+    });
+
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   if (points.length === 0) {
     return (
       <div className="flex h-[172px] w-full items-center justify-center rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-3">
@@ -46,7 +76,7 @@ export function TrendChartView({
     );
   }
 
-  const width = 340;
+  const width = Math.max(260, Math.round(responsiveWidth || 340));
   const height = 172;
   const padding = { bottom: 34, left: 24, right: 10, top: 14 };
   const chartWidth = width - padding.left - padding.right;
@@ -91,7 +121,7 @@ export function TrendChartView({
   };
 
   return (
-    <div className="h-[172px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-2 py-2">
+    <div ref={containerRef} className="h-[172px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-2 py-2">
       <svg key={animationKey} viewBox={`0 0 ${width} ${height}`} className="h-full w-full" aria-label="Trend chart">
         {[0, 0.25, 0.5, 0.75, 1].map((step) => {
           const y = padding.top + chartHeight * step;

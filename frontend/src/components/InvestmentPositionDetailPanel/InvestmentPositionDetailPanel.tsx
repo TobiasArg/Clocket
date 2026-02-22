@@ -184,7 +184,7 @@ export function InvestmentPositionDetailPanel({
   const backdropClassName = isClosing ? "opacity-0" : "opacity-100";
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="absolute inset-0 z-50">
       <button
         type="button"
         onClick={requestClose}

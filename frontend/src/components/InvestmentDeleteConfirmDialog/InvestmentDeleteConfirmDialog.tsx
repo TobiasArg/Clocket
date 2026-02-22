@@ -37,7 +37,7 @@ export function InvestmentDeleteConfirmDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/25 px-5">
+    <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/25 px-5">
       <button
         type="button"
         className="absolute inset-0"
