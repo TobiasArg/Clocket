@@ -1,5 +1,6 @@
 import type { StatisticsFlowDay } from "@/types";
 import { useAppSettings } from "@/hooks";
+import { TRANSACTION_INCOME_SOLID_COLOR } from "@/constants";
 import { memo, useCallback, useMemo } from "react";
 
 export interface FlowChartViewProps {
@@ -144,7 +145,14 @@ export const FlowChartView = memo(function FlowChartView({
                     }}
                   >
                     {incomeHeight > 0 && (
-                      <rect x={barLeft} y={incomeTop} width={barWidth} height={incomeHeight} rx={6} fill="#16A34A" />
+                      <rect
+                        x={barLeft}
+                        y={incomeTop}
+                        width={barWidth}
+                        height={incomeHeight}
+                        rx={6}
+                        fill={TRANSACTION_INCOME_SOLID_COLOR}
+                      />
                     )}
                     {expenseBars.map((bar, expenseIndex) => (
                       <rect

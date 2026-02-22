@@ -4,6 +4,10 @@ import type {
   DonutSegment,
   StatisticsFlowDay,
 } from "@/types";
+import {
+  TRANSACTION_EXPENSE_SOLID_COLOR,
+  TRANSACTION_INCOME_SOLID_COLOR,
+} from "@/constants";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
@@ -56,16 +60,8 @@ export interface UseStatisticsPageModelResult {
 }
 
 const DONUT_COLORS = ["#DC2626", "#2563EB", "#EA580C", "#71717A"] as const;
-const FLOW_EXPENSE_COLORS = [
-  "#DC2626",
-  "#EA580C",
-  "#D97706",
-  "#2563EB",
-  "#7C3AED",
-  "#0891B2",
-  "#52525B",
-] as const;
-const FLOW_INCOME_COLOR = "#16A34A";
+const FLOW_EXPENSE_COLORS = [TRANSACTION_EXPENSE_SOLID_COLOR] as const;
+const FLOW_INCOME_COLOR = TRANSACTION_INCOME_SOLID_COLOR;
 const STATISTICS_SCOPE_STORAGE_KEY = "clocket.statistics.scope";
 const DEFAULT_SCOPE: StatisticsScope = "month";
 const SCOPE_LABELS: Record<StatisticsScope, string> = {

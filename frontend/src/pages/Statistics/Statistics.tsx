@@ -1,4 +1,10 @@
-import { DEFAULT_NAV_ITEMS } from "@/constants";
+import {
+  DEFAULT_NAV_ITEMS,
+  TRANSACTION_EXPENSE_BG_CLASS,
+  TRANSACTION_EXPENSE_TEXT_CLASS,
+  TRANSACTION_INCOME_BG_CLASS,
+  TRANSACTION_INCOME_TEXT_CLASS,
+} from "@/constants";
 import type {
   CategoryBreakdown,
   LegendItem,
@@ -53,15 +59,15 @@ export function Statistics({
   periodLabel,
   balanceTitle = "Flujo",
   balanceLegend = [
-    { color: "bg-[#16A34A]", label: "Ingresos" },
-    { color: "bg-[#DC2626]", label: "Gastos" },
+    { color: TRANSACTION_INCOME_BG_CLASS, label: "Ingresos" },
+    { color: TRANSACTION_EXPENSE_BG_CLASS, label: "Gastos" },
   ],
   totalIncomeLabel = "Ingresos",
   totalIncomeValue,
-  totalIncomeColor = "text-[#16A34A]",
+  totalIncomeColor = TRANSACTION_INCOME_TEXT_CLASS,
   totalExpenseLabel = "Egresos",
   totalExpenseValue,
-  totalExpenseColor = "text-[#DC2626]",
+  totalExpenseColor = TRANSACTION_EXPENSE_TEXT_CLASS,
   categoryTitle = "Categorías",
   categoryTotal,
   categoryTotalLabel = "",

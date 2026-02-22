@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { TRANSACTION_EXPENSE_TEXT_CLASS } from "@/constants";
 import { useCurrency } from "./useCurrency";
 import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
@@ -207,7 +208,7 @@ export const useGoalDetailPageModel = (
       date: entryDateInput,
       createdAt: new Date(`${entryDateInput}T12:00:00`).toISOString(),
       amount: `-$${amount.toFixed(2)}`,
-      amountColor: "text-[#DC2626]",
+      amountColor: TRANSACTION_EXPENSE_TEXT_CLASS,
       meta: `${entryDateInput} • ${note || "Entrada Goal"}`,
       transactionType: "saving",
       goalId: goal.id,

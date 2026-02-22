@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CuotaItem, GoalCardSimple, SpendingCategory, Transaction } from "@/types";
+import {
+  TRANSACTION_EXPENSE_TEXT_CLASS,
+  TRANSACTION_INCOME_TEXT_CLASS,
+} from "@/constants";
 import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
 import { useCuotas } from "./useCuotas";
@@ -80,11 +84,11 @@ const parseSignedAmount = (value: string): number => {
 const getAmountColor = (amount: string, amountColor?: string): string => {
   const normalizedAmount = amount.trim();
   if (normalizedAmount.startsWith("+")) {
-    return "text-[#16A34A]";
+    return TRANSACTION_INCOME_TEXT_CLASS;
   }
 
   if (normalizedAmount.startsWith("-")) {
-    return "text-[#DC2626]";
+    return TRANSACTION_EXPENSE_TEXT_CLASS;
   }
 
   return amountColor ?? "text-[var(--text-primary)]";

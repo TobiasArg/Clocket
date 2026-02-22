@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  TRANSACTION_EXPENSE_TEXT_CLASS,
+  TRANSACTION_INCOME_TEXT_CLASS,
+} from "@/constants";
 import { useCurrency } from "./useCurrency";
 import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
@@ -129,7 +133,7 @@ const formatAmountWithSign = (value: number, sign: AmountSign): string => {
 };
 
 const getAmountColorBySign = (sign: AmountSign): string => {
-  return sign === "+" ? "text-[#16A34A]" : "text-[#DC2626]";
+  return sign === "+" ? TRANSACTION_INCOME_TEXT_CLASS : TRANSACTION_EXPENSE_TEXT_CLASS;
 };
 
 const getAbsoluteAmountFromValue = (value: string): string => {
@@ -328,9 +332,9 @@ export const useTransactionsPageModel = (
         total: formatTotalAmount(group.total, appCurrency),
         totalColor:
           group.total < 0
-            ? "text-[#DC2626]"
+            ? TRANSACTION_EXPENSE_TEXT_CLASS
             : group.total > 0
-              ? "text-[#16A34A]"
+              ? TRANSACTION_INCOME_TEXT_CLASS
               : "text-[var(--text-primary)]",
         transactions: dedupeTransactionsById(group.transactions).sort((left, right) => {
           const leftTime = getTransactionDateForMonthBalance(left)?.getTime() ?? 0;
