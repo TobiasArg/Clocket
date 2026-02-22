@@ -31,6 +31,7 @@ const CREDIT_CARD_CATEGORY_NAME = "Tarjeta de Credito";
 const CREDIT_CARD_CATEGORY_ICON = "credit-card";
 const CREDIT_CARD_CATEGORY_ICON_BG = "bg-[#18181B]";
 const CREDIT_CARD_ACCOUNT_NAME = "Tarjeta de Credito";
+const CREDIT_CARD_ACCOUNT_ICON = "credit-card";
 const CREDIT_CARD_TRANSACTION_ICON = "credit-card";
 const CREDIT_CARD_TRANSACTION_ICON_BG = "bg-[#18181B]";
 const CREDIT_CARD_TRANSACTION_AMOUNT_COLOR = "text-[#DC2626]";
@@ -284,6 +285,7 @@ const ensureCreditCardAccount = async (): Promise<AccountItem> => {
   const created = await accountsRepository.create({
     name: CREDIT_CARD_ACCOUNT_NAME,
     balance: 0,
+    icon: CREDIT_CARD_ACCOUNT_ICON,
   });
 
   return created;

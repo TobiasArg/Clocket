@@ -12,6 +12,7 @@ import { formatCurrency } from "@/utils";
 
 interface AccountRowItem {
   id: string;
+  icon: string;
   name: string;
   balance: number;
   updatedAt: string;
@@ -45,6 +46,7 @@ const DEFAULT_ICON_OPACITY = 0.5;
 const DEFAULT_ICON_SCALE = 0.92;
 const ICON_REVEAL_OPACITY_DELTA = 0.5;
 const ICON_REVEAL_SCALE_DELTA = 0.12;
+const ACCOUNT_ICON_NEUTRAL_BG = "bg-[var(--surface-border)]";
 
 type AxisLock = "horizontal" | "vertical" | null;
 
@@ -287,9 +289,9 @@ export function AccountSwipeDeleteRow({
         <ListItemRow
           left={(
             <IconBadge
-              icon="wallet"
-              bg="bg-[var(--text-primary)]"
-              iconColor="text-[var(--panel-bg)]"
+              icon={account.icon || "wallet"}
+              bg={ACCOUNT_ICON_NEUTRAL_BG}
+              iconColor="text-[var(--text-primary)]"
               size="w-[40px] h-[40px]"
               rounded="rounded-xl"
             />

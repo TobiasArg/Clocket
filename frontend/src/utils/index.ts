@@ -96,6 +96,12 @@ export type {
   CreateAccountInput,
   UpdateAccountPatch,
 } from "@/domain/accounts/repository";
+export {
+  ACCOUNT_ICON_OPTIONS,
+  DEFAULT_ACCOUNT_ICON,
+  DEFAULT_ACCOUNT_ID,
+  DEFAULT_ACCOUNT_NAME,
+} from "@/domain/accounts/repository";
 
 export type {
   AppSettingsItem,

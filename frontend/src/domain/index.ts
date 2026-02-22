@@ -1,4 +1,9 @@
-export { DEFAULT_ACCOUNT_ID, DEFAULT_ACCOUNT_NAME } from "./accounts/repository";
+export {
+  ACCOUNT_ICON_OPTIONS,
+  DEFAULT_ACCOUNT_ICON,
+  DEFAULT_ACCOUNT_ID,
+  DEFAULT_ACCOUNT_NAME,
+} from "./accounts/repository";
 export type {
   AccountItem,
   AccountsRepository,

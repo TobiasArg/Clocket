@@ -331,6 +331,7 @@ export interface Account {
   id: string;
   name: string;
   balance: number;
+  icon: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -109,6 +109,7 @@ describe("localStorage repositories smoke", () => {
     const account = await accountsRepository.create({
       name: "Cuenta temporal",
       balance: 0,
+      icon: "wallet",
     });
 
     await transactionsRepository.create({

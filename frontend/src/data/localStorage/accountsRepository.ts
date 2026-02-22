@@ -5,14 +5,29 @@ import type {
   UpdateAccountPatch,
 } from "@/domain/accounts/repository";
 import {
+  DEFAULT_ACCOUNT_ICON,
   DEFAULT_ACCOUNT_ID,
   DEFAULT_ACCOUNT_NAME,
 } from "@/domain/accounts/repository";
 
-const STORAGE_VERSION = 1 as const;
+const LEGACY_STORAGE_VERSION_1 = 1 as const;
+const STORAGE_VERSION = 2 as const;
 const DEFAULT_STORAGE_KEY = "clocket.accounts";
 
+interface LegacyAccountItem {
+  id: string;
+  name: string;
+  balance: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AccountsStorageV1 {
+  version: typeof LEGACY_STORAGE_VERSION_1;
+  items: LegacyAccountItem[];
+}
+
+interface AccountsStorageV2 {
   version: typeof STORAGE_VERSION;
   items: AccountItem[];
 }
@@ -22,13 +37,14 @@ interface TransactionsStorageShape {
   items: Array<{ accountId?: string }>;
 }
 
-const buildInitialState = (): AccountsStorageV1 => ({
+const buildInitialState = (): AccountsStorageV2 => ({
   version: STORAGE_VERSION,
   items: [
     {
       id: DEFAULT_ACCOUNT_ID,
       name: DEFAULT_ACCOUNT_NAME,
       balance: 0,
+      icon: DEFAULT_ACCOUNT_ICON,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -55,12 +71,37 @@ const normalizeBalance = (value: number): number => {
   return Math.round(value * 100) / 100;
 };
 
+const normalizeIcon = (value: string): string => {
+  const normalized = value.trim();
+  if (!normalized) {
+    throw new Error("Account icon is required.");
+  }
+
+  return normalized;
+};
+
 const createAccountId = (): string => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
 
   return `account_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
+};
+
+const isLegacyAccountItem = (value: unknown): value is LegacyAccountItem => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const item = value as Partial<LegacyAccountItem>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.name === "string" &&
+    typeof item.balance === "number" &&
+    Number.isFinite(item.balance) &&
+    typeof item.createdAt === "string" &&
+    typeof item.updatedAt === "string"
+  );
 };
 
 const isAccountItem = (value: unknown): value is AccountItem => {
@@ -74,22 +115,47 @@ const isAccountItem = (value: unknown): value is AccountItem => {
     typeof item.name === "string" &&
     typeof item.balance === "number" &&
     Number.isFinite(item.balance) &&
+    typeof item.icon === "string" &&
+    item.icon.trim().length > 0 &&
     typeof item.createdAt === "string" &&
     typeof item.updatedAt === "string"
   );
 };
 
-const isStorageShape = (value: unknown): value is AccountsStorageV1 => {
+const isStorageShapeV1 = (value: unknown): value is AccountsStorageV1 => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const state = value as Partial<AccountsStorageV1>;
   return (
+    state.version === LEGACY_STORAGE_VERSION_1 &&
+    Array.isArray(state.items) &&
+    state.items.every(isLegacyAccountItem)
+  );
+};
+
+const isStorageShapeV2 = (value: unknown): value is AccountsStorageV2 => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const state = value as Partial<AccountsStorageV2>;
+  return (
     state.version === STORAGE_VERSION &&
     Array.isArray(state.items) &&
     state.items.every(isAccountItem)
   );
+};
+
+const migrateStorageV1 = (state: AccountsStorageV1): AccountsStorageV2 => {
+  return {
+    version: STORAGE_VERSION,
+    items: state.items.map((account) => ({
+      ...account,
+      icon: DEFAULT_ACCOUNT_ICON,
+    })),
+  };
 };
 
 const buildCreatedAccount = (input: CreateAccountInput): AccountItem => {
@@ -99,6 +165,7 @@ const buildCreatedAccount = (input: CreateAccountInput): AccountItem => {
     id: createAccountId(),
     name: normalizeName(input.name),
     balance: normalizeBalance(input.balance),
+    icon: normalizeIcon(input.icon),
     createdAt: nowIso,
     updatedAt: nowIso,
   };
@@ -114,6 +181,7 @@ const buildUpdatedAccount = (
     ...(patch.balance !== undefined
       ? { balance: normalizeBalance(patch.balance) }
       : {}),
+    ...(patch.icon !== undefined ? { icon: normalizeIcon(patch.icon) } : {}),
     updatedAt: new Date().toISOString(),
   };
 };
@@ -121,7 +189,7 @@ const buildUpdatedAccount = (
 export class LocalStorageAccountsRepository implements AccountsRepository {
   private readonly storageKey: string;
 
-  private memoryState: AccountsStorageV1;
+  private memoryState: AccountsStorageV2;
 
   public constructor(storageKey: string = DEFAULT_STORAGE_KEY) {
     this.storageKey = storageKey;
@@ -236,7 +304,7 @@ export class LocalStorageAccountsRepository implements AccountsRepository {
     }
   }
 
-  private readState(): AccountsStorageV1 {
+  private readState(): AccountsStorageV2 {
     const storage = this.getStorage();
 
     if (!storage) {
@@ -255,11 +323,17 @@ export class LocalStorageAccountsRepository implements AccountsRepository {
 
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (isStorageShape(parsed)) {
+      if (isStorageShapeV2(parsed)) {
         return {
           version: parsed.version,
           items: cloneAccounts(parsed.items),
         };
+      }
+
+      if (isStorageShapeV1(parsed)) {
+        const migrated = migrateStorageV1(parsed);
+        this.writeState(migrated);
+        return migrated;
       }
     } catch {
       // Invalid storage payload is reset to keep behavior predictable.
@@ -270,8 +344,8 @@ export class LocalStorageAccountsRepository implements AccountsRepository {
     return reset;
   }
 
-  private writeState(state: AccountsStorageV1): void {
-    const next: AccountsStorageV1 = {
+  private writeState(state: AccountsStorageV2): void {
+    const next: AccountsStorageV2 = {
       version: state.version,
       items: cloneAccounts(state.items),
     };
