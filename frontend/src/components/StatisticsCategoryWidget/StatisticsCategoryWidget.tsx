@@ -55,7 +55,6 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
   }, [donutSegments]);
 
   const hasSegments = normalizedSegments.length > 0;
-  const topSegment = normalizedSegments[0] ?? null;
 
   return (
     <CardSection
@@ -95,19 +94,6 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
             </div>
 
             <div className="flex flex-col gap-2">
-              {topSegment && (
-                <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5">
-                  <span className="block text-[10px] font-semibold uppercase tracking-[0.8px] text-[var(--text-secondary)]">
-                    Categoría dominante
-                  </span>
-                  <div className="mt-1 flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-semibold text-[var(--text-primary)]">{topSegment.name}</span>
-                    <span className="text-xs font-semibold text-[var(--text-secondary)]">{topSegment.percentage}%</span>
-                  </div>
-                  <span className="block text-xs font-medium text-[var(--text-secondary)]">{topSegment.value}</span>
-                </div>
-              )}
-
               <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5">
                 <div className="flex flex-col gap-2">
                   {normalizedSegments.map((segment) => (

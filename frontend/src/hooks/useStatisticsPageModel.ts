@@ -13,17 +13,30 @@ import {
   getTransactionDateForMonthBalance,
 } from "@/utils";
 import type { TransactionItem } from "@/domain/transactions/repository";
+import { getGoalColorOption } from "@/domain/goals/goalAppearance";
 import {
   DEFAULT_CATEGORY_FLOW_COLOR,
   resolveCssColorFromBgClass,
 } from "@/domain/categories/categoryColorResolver";
 
-export interface StatisticsTrendPoint {
+export interface StatisticsTrendGoalSegment {
+  amount: number;
+  color: string;
+  goalId: string | null;
   label: string;
+  percentOfBucket: number;
+}
+
+export interface StatisticsTrendPoint {
+  bucketSaved: number;
+  cumulativeSaved: number;
+  goalSegments: StatisticsTrendGoalSegment[];
+  label: string;
+  rangeLabel: string;
   value: number;
 }
 
-export type StatisticsScope = "historical" | "month" | "year";
+export type StatisticsScope = "historical" | "month";
 export type StatisticsChartView = "day" | "week" | "month";
 
 export interface UseStatisticsPageModelOptions {
@@ -65,11 +78,10 @@ const DEFAULT_SCOPE: StatisticsScope = "month";
 const SCOPE_LABELS: Record<StatisticsScope, string> = {
   historical: "Histórico",
   month: "Este mes",
-  year: "Este año",
 };
 
 const isStatisticsScope = (value: string): value is StatisticsScope =>
-  value === "historical" || value === "month" || value === "year";
+  value === "historical" || value === "month";
 
 const parseSignedAmount = (value: string): number => {
   const normalized = value.replace(/[^0-9+.-]/g, "");
@@ -184,16 +196,9 @@ const getScopeRange = (scope: StatisticsScope, now: Date): ScopeRange | null => 
     return null;
   }
 
-  if (scope === "month") {
-    return {
-      start: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
-      end: new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0),
-    };
-  }
-
   return {
-    start: new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0),
-    end: new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0),
+    start: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
+    end: new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0),
   };
 };
 
@@ -209,6 +214,11 @@ interface TrendBucket {
   end: Date;
   label: string;
   start: Date;
+}
+
+interface GoalTrendMeta {
+  color: string;
+  title: string;
 }
 
 const buildDayTrendBuckets = (now: Date): TrendBucket[] => {
@@ -254,12 +264,14 @@ const buildMonthTrendBuckets = (now: Date): TrendBucket[] => {
 
 const buildGoalSavingsTrendPoints = (
   transactions: TransactionItem[],
+  goalMetaById: Map<string, GoalTrendMeta>,
   totalGoalAmount: number,
   buckets: TrendBucket[],
 ): StatisticsTrendPoint[] => {
   let cumulativeSaved = 0;
 
   return buckets.map((bucket) => {
+    const savedByGoalKey = new Map<string, { amount: number; color: string; goalId: string | null; label: string }>();
     const bucketSaved = transactions.reduce((sum, transaction) => {
       const date = getTransactionDateForMonthBalance(transaction);
       if (!date || date < bucket.start || date >= bucket.end) {
@@ -271,7 +283,19 @@ const buildGoalSavingsTrendPoints = (
         return sum;
       }
 
-      return sum + Math.abs(amount);
+      const absoluteAmount = Math.abs(amount);
+      const goalId = transaction.goalId?.trim() || null;
+      const goalMeta = goalId ? goalMetaById.get(goalId) : undefined;
+      const goalKey = goalId ?? "__unassigned_goal__";
+      const current = savedByGoalKey.get(goalKey);
+      savedByGoalKey.set(goalKey, {
+        amount: (current?.amount ?? 0) + absoluteAmount,
+        color: current?.color ?? goalMeta?.color ?? DEFAULT_CATEGORY_FLOW_COLOR,
+        goalId,
+        label: current?.label ?? goalMeta?.title ?? "Sin meta",
+      });
+
+      return sum + absoluteAmount;
     }, 0);
 
     cumulativeSaved += bucketSaved;
@@ -279,9 +303,25 @@ const buildGoalSavingsTrendPoints = (
     const percent = totalGoalAmount > 0
       ? (cumulativeSaved / totalGoalAmount) * 100
       : 0;
+    const goalSegments = Array.from(savedByGoalKey.values())
+      .sort((left, right) => right.amount - left.amount)
+      .map((segment) => ({
+        amount: segment.amount,
+        color: segment.color,
+        goalId: segment.goalId,
+        label: segment.label,
+        percentOfBucket: bucketSaved > 0
+          ? roundToSingleDecimal(clampPercentValue((segment.amount / bucketSaved) * 100))
+          : 0,
+      }));
+    const rangeLabel = `${buildDateLabel(bucket.start)} - ${buildDateLabel(addDays(bucket.end, -1))}`;
 
     return {
+      bucketSaved,
+      cumulativeSaved,
+      goalSegments,
       label: bucket.label,
+      rangeLabel,
       value: roundToSingleDecimal(clampPercentValue(percent)),
     };
   });
@@ -500,6 +540,17 @@ export const useStatisticsPageModel = (
     });
     return map;
   }, [categoriesData]);
+  const goalMetaById = useMemo(() => {
+    const map = new Map<string, GoalTrendMeta>();
+    goals.forEach((goal) => {
+      const goalColor = getGoalColorOption(goal.colorKey);
+      map.set(goal.id, {
+        color: resolveCssColorFromBgClass(goalColor.iconBgClass, DEFAULT_CATEGORY_FLOW_COLOR),
+        title: goal.title,
+      });
+    });
+    return map;
+  }, [goals]);
 
   const balanceTransactions = useMemo(
     () => transactions.filter((transaction) => !isGoalSavingTransaction(transaction)),
@@ -635,11 +686,26 @@ export const useStatisticsPageModel = (
   const trendPointsByView = useMemo<Record<StatisticsChartView, StatisticsTrendPoint[]>>(() => {
     const now = new Date();
     return {
-      day: buildGoalSavingsTrendPoints(scopedSavingTransactions, totalGoalsTarget, buildDayTrendBuckets(now)),
-      month: buildGoalSavingsTrendPoints(scopedSavingTransactions, totalGoalsTarget, buildMonthTrendBuckets(now)),
-      week: buildGoalSavingsTrendPoints(scopedSavingTransactions, totalGoalsTarget, buildWeekTrendBuckets(now)),
+      day: buildGoalSavingsTrendPoints(
+        scopedSavingTransactions,
+        goalMetaById,
+        totalGoalsTarget,
+        buildDayTrendBuckets(now),
+      ),
+      month: buildGoalSavingsTrendPoints(
+        scopedSavingTransactions,
+        goalMetaById,
+        totalGoalsTarget,
+        buildMonthTrendBuckets(now),
+      ),
+      week: buildGoalSavingsTrendPoints(
+        scopedSavingTransactions,
+        goalMetaById,
+        totalGoalsTarget,
+        buildWeekTrendBuckets(now),
+      ),
     };
-  }, [scopedSavingTransactions, totalGoalsTarget]);
+  }, [goalMetaById, scopedSavingTransactions, totalGoalsTarget]);
 
   const flowByView = useMemo<Record<StatisticsChartView, StatisticsFlowDay[]>>(() => {
     const now = new Date();

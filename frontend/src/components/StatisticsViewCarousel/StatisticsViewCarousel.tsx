@@ -31,11 +31,26 @@ export function StatisticsViewCarousel({
   renderSlide,
 }: StatisticsViewCarouselProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const syncSourceRef = useRef<"dot" | "scroll" | null>(null);
+  const scrollCommitTimeoutRef = useRef<number | null>(null);
   const activeViewIndex = Math.max(0, options.findIndex((option) => option.id === activeView));
+
+  useEffect(() => {
+    return () => {
+      if (scrollCommitTimeoutRef.current !== null) {
+        window.clearTimeout(scrollCommitTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const viewportNode = viewportRef.current;
     if (!viewportNode || options.length === 0 || activeViewIndex < 0) {
+      return;
+    }
+
+    if (syncSourceRef.current === "scroll") {
+      syncSourceRef.current = null;
       return;
     }
 
@@ -47,18 +62,22 @@ export function StatisticsViewCarousel({
     const targetScrollLeft = activeViewIndex * width;
     const distance = Math.abs(viewportNode.scrollLeft - targetScrollLeft);
     if (distance < 1) {
+      syncSourceRef.current = null;
       return;
     }
 
-    viewportNode.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+    viewportNode.scrollTo({
+      left: targetScrollLeft,
+      behavior: syncSourceRef.current === "dot" ? "smooth" : "auto",
+    });
+    syncSourceRef.current = null;
   }, [activeViewIndex, options.length]);
 
-  const handleViewportScroll = (event: ReactUIEvent<HTMLDivElement>): void => {
+  const commitActiveViewFromViewport = (viewportNode: HTMLDivElement): void => {
     if (options.length === 0) {
       return;
     }
 
-    const viewportNode = event.currentTarget;
     const width = viewportNode.clientWidth;
     if (width <= 0) {
       return;
@@ -71,7 +90,20 @@ export function StatisticsViewCarousel({
       return;
     }
 
+    syncSourceRef.current = "scroll";
     onViewChange(nextView.id);
+  };
+
+  const handleViewportScroll = (event: ReactUIEvent<HTMLDivElement>): void => {
+    if (scrollCommitTimeoutRef.current !== null) {
+      window.clearTimeout(scrollCommitTimeoutRef.current);
+    }
+
+    const viewportNode = event.currentTarget;
+    scrollCommitTimeoutRef.current = window.setTimeout(() => {
+      scrollCommitTimeoutRef.current = null;
+      commitActiveViewFromViewport(viewportNode);
+    }, 70);
   };
 
   return (
@@ -95,7 +127,10 @@ export function StatisticsViewCarousel({
             <button
               key={`${option.id}-dot`}
               type="button"
-              onClick={() => onViewChange(option.id)}
+              onClick={() => {
+                syncSourceRef.current = "dot";
+                onViewChange(option.id);
+              }}
               className={`h-1.5 rounded-full transition ${
                 isActive ? "w-4 bg-[var(--text-primary)]" : "w-1.5 bg-[var(--text-secondary)]"
               }`}

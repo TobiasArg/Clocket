@@ -1,6 +1,7 @@
 import type { StatisticsFlowDay } from "@/types";
 import { useAppSettings } from "@/hooks";
 import { memo, useCallback, useMemo } from "react";
+import { formatCurrency } from "@/utils";
 
 export type FlowChartMode = "stacked" | "net";
 
@@ -78,6 +79,7 @@ export const FlowChartView = memo(function FlowChartView({
 
           if (chartMode === "net") {
             const maxAbsNet = Math.max(1, ...chartRows.map((row) => Math.abs(row.net)));
+            const axisLabelX = padding.left + 2;
             const zeroY = padding.top + chartHeight / 2;
             const verticalReach = chartHeight / 2 - 14;
 
@@ -129,6 +131,44 @@ export const FlowChartView = memo(function FlowChartView({
                   stroke={zeroLineColor}
                   strokeWidth="1"
                 />
+
+                <text
+                  x={axisLabelX}
+                  y={padding.top + 8}
+                  fill={tickColor}
+                  fontSize="9"
+                  fontWeight="700"
+                >
+                  {`+${formatCurrency(maxAbsNet)}`}
+                </text>
+                <text
+                  x={axisLabelX}
+                  y={zeroY - 2}
+                  fill={tickColor}
+                  fontSize="9"
+                  fontWeight="700"
+                >
+                  0
+                </text>
+                <text
+                  x={axisLabelX}
+                  y={padding.top + chartHeight - 2}
+                  fill={tickColor}
+                  fontSize="9"
+                  fontWeight="700"
+                >
+                  {`-${formatCurrency(maxAbsNet)}`}
+                </text>
+                <text
+                  x={padding.left + chartWidth}
+                  y={padding.top + 8}
+                  textAnchor="end"
+                  fill={netPositiveColor}
+                  fontSize="9"
+                  fontWeight="700"
+                >
+                  Neto (+/-)
+                </text>
 
                 {areaPath && <path d={areaPath} fill={`url(#${fillId})`} />}
                 {linePath && (
@@ -188,8 +228,11 @@ export const FlowChartView = memo(function FlowChartView({
             );
           }
 
-          const maxIncome = Math.max(1, ...chartRows.map((row) => row.incomeTotal));
-          const maxExpense = Math.max(1, ...chartRows.map((row) => row.expenseTotal));
+          const maxFlowValue = Math.max(
+            1,
+            ...chartRows.map((row) => Math.max(row.incomeTotal, row.expenseTotal)),
+          );
+          const axisLabelX = padding.left + 2;
           const positiveHeight = chartHeight * 0.44;
           const negativeHeight = chartHeight * 0.44;
           const zeroY = padding.top + positiveHeight;
@@ -220,12 +263,59 @@ export const FlowChartView = memo(function FlowChartView({
                 stroke={zeroLineColor}
                 strokeWidth="1"
               />
+              <text
+                x={axisLabelX}
+                y={padding.top + 8}
+                fill={tickColor}
+                fontSize="9"
+                fontWeight="700"
+              >
+                {`+${formatCurrency(maxFlowValue)}`}
+              </text>
+              <text
+                x={axisLabelX}
+                y={zeroY - 2}
+                fill={tickColor}
+                fontSize="9"
+                fontWeight="700"
+              >
+                0
+              </text>
+              <text
+                x={axisLabelX}
+                y={padding.top + chartHeight - 2}
+                fill={tickColor}
+                fontSize="9"
+                fontWeight="700"
+              >
+                {`-${formatCurrency(maxFlowValue)}`}
+              </text>
+              <text
+                x={padding.left + chartWidth}
+                y={padding.top + 8}
+                textAnchor="end"
+                fill={incomeColor}
+                fontSize="9"
+                fontWeight="700"
+              >
+                Ingresos
+              </text>
+              <text
+                x={padding.left + chartWidth}
+                y={padding.top + chartHeight - 2}
+                textAnchor="end"
+                fill={expenseColor}
+                fontSize="9"
+                fontWeight="700"
+              >
+                Egresos
+              </text>
 
               {chartRows.map((row, index) => {
                 const centerX = padding.left + groupWidth * index + groupWidth / 2;
                 const left = centerX - barWidth / 2;
-                const incomeHeight = (row.incomeTotal / maxIncome) * positiveHeight;
-                const expenseHeight = (row.expenseTotal / maxExpense) * negativeHeight;
+                const incomeHeight = (row.incomeTotal / maxFlowValue) * positiveHeight;
+                const expenseHeight = (row.expenseTotal / maxFlowValue) * negativeHeight;
 
                 return (
                   <g

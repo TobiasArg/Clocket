@@ -73,7 +73,7 @@ export function Statistics({
   categoryTotal,
   categoryTotalLabel = "Total",
   categories,
-  savingsTitle = "Tendencia",
+  savingsTitle = "Progreso en Metas",
   savingsBadge,
   savingsLabel = "Ahorro",
   savingsValue,
@@ -132,7 +132,6 @@ export function Statistics({
   const scopeOptions: Array<{ label: string; value: StatisticsScope }> = [
     { label: "Histórico", value: "historical" },
     { label: "Este mes", value: "month" },
-    { label: "Este año", value: "year" },
   ];
 
   useEffect(() => {

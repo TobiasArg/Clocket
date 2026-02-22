@@ -104,12 +104,12 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
     (view: StatisticsChartView) => {
       const flowDays = flowByView[view] ?? [];
       if (!loadedViews[view]) {
-        return <div className="h-[210px] w-full rounded-xl bg-[var(--panel-bg)]/70" />;
+        return <div className="h-[220px] w-full rounded-xl bg-[var(--panel-bg)]/70" />;
       }
 
       const ViewComponent = FLOW_VIEW_COMPONENTS[view];
       return (
-        <Suspense fallback={<div className="h-[210px] w-full rounded-xl bg-[var(--panel-bg)]/70" />}>
+        <Suspense fallback={<div className="h-[220px] w-full rounded-xl bg-[var(--panel-bg)]/70" />}>
           <ViewComponent
             animationKey={`${chartAnimationKey}-${view}`}
             flowDays={flowDays}

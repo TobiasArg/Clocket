@@ -1,15 +1,33 @@
 import { useAppSettings } from "@/hooks";
-import type { TrendLinePoint } from "../../TrendLine/TrendLine";
+import type { StatisticsTrendPoint } from "@/hooks/useStatisticsPageModel";
 
 export type TrendChartMode = "line" | "bars";
 
 export interface TrendChartViewProps {
   animationKey: string;
   mode?: TrendChartMode;
-  points: TrendLinePoint[];
+  onSelectPoint?: (point: StatisticsTrendPoint, index: number) => void;
+  points: StatisticsTrendPoint[];
+  selectedPointIndex?: number | null;
 }
 
-export function TrendChartView({ animationKey, mode = "line", points }: TrendChartViewProps) {
+const clampNumber = (value: number, min: number, max: number): number => {
+  if (value < min) {
+    return min;
+  }
+  if (value > max) {
+    return max;
+  }
+  return value;
+};
+
+export function TrendChartView({
+  animationKey,
+  mode = "line",
+  onSelectPoint,
+  points,
+  selectedPointIndex = null,
+}: TrendChartViewProps) {
   const { settings } = useAppSettings();
   const isDark = settings?.theme === "dark";
   const lineColor = isDark ? "#4ade80" : "#16a34a";
@@ -17,23 +35,26 @@ export function TrendChartView({ animationKey, mode = "line", points }: TrendCha
   const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(63,63,70,0.12)";
   const tickColor = isDark ? "#a1a1aa" : "#71717a";
   const markerFill = isDark ? "#18181b" : "#ffffff";
+  const markerRing = isDark ? "rgba(74,222,128,0.35)" : "rgba(22,163,74,0.26)";
+  const selectedStroke = isDark ? "#f4f4f5" : "#18181b";
 
   if (points.length === 0) {
     return (
-      <div className="flex h-[132px] w-full items-center justify-center rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-3">
+      <div className="flex h-[172px] w-full items-center justify-center rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-3">
         <span className="text-xs font-medium text-[var(--text-secondary)]">Sin datos para esta vista</span>
       </div>
     );
   }
 
-  const width = 320;
-  const height = 132;
-  const padding = { bottom: 24, left: 10, right: 10, top: 10 };
+  const width = 340;
+  const height = 172;
+  const padding = { bottom: 34, left: 24, right: 10, top: 14 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  const maxValue = Math.max(100, ...points.map((point) => point.value));
+  const maxPercent = Math.max(100, ...points.map((point) => point.value));
+  const maxBucketSaved = Math.max(1, ...points.map((point) => point.bucketSaved));
   const minValue = 0;
-  const valueRange = Math.max(1, maxValue - minValue);
+  const valueRange = Math.max(1, maxPercent - minValue);
   const mapX = (index: number): number => {
     if (points.length <= 1) {
       return padding.left + chartWidth / 2;
@@ -53,22 +74,49 @@ export function TrendChartView({ animationKey, mode = "line", points }: TrendCha
   const baselineY = padding.top + chartHeight;
   const areaPath = `${linePath} L ${lastX} ${baselineY} L ${firstX} ${baselineY} Z`;
   const fillId = `trend-fill-${animationKey.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const selectedPoint = (
+    selectedPointIndex !== null &&
+    selectedPointIndex >= 0 &&
+    selectedPointIndex < points.length
+  )
+    ? points[selectedPointIndex]
+    : points[points.length - 1];
+  const handleSelect = (index: number): void => {
+    const point = points[index];
+    if (!point) {
+      return;
+    }
+
+    onSelectPoint?.(point, index);
+  };
 
   return (
-    <div className="h-[132px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-2 py-2">
+    <div className="h-[172px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-2 py-2">
       <svg key={animationKey} viewBox={`0 0 ${width} ${height}`} className="h-full w-full" aria-label="Trend chart">
-        {[0, 0.5, 1].map((step) => {
+        {[0, 0.25, 0.5, 0.75, 1].map((step) => {
           const y = padding.top + chartHeight * step;
+          const tick = Math.round(maxPercent * (1 - step));
           return (
-            <line
-              key={`grid-${step}`}
-              x1={padding.left}
-              y1={y}
-              x2={padding.left + chartWidth}
-              y2={y}
-              stroke={gridColor}
-              strokeWidth="1"
-            />
+            <g key={`grid-${step}`}>
+              <line
+                x1={padding.left}
+                y1={y}
+                x2={padding.left + chartWidth}
+                y2={y}
+                stroke={gridColor}
+                strokeWidth={step === 0 ? "1.2" : "1"}
+                strokeDasharray={step === 0 ? "4 4" : undefined}
+              />
+              <text
+                x={2}
+                y={y + 3}
+                fill={tickColor}
+                fontSize="9"
+                fontWeight="600"
+              >
+                {`${tick}%`}
+              </text>
+            </g>
           );
         })}
 
@@ -83,9 +131,45 @@ export function TrendChartView({ animationKey, mode = "line", points }: TrendCha
             <path d={areaPath} fill={`url(#${fillId})`} />
             <path d={linePath} fill="none" stroke={lineColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             {points.map((point, index) => (
-              <g key={`point-${point.label}-${index}`}>
-                <circle cx={mapX(index)} cy={mapY(point.value)} r="3.8" fill={lineColor} />
-                <circle cx={mapX(index)} cy={mapY(point.value)} r="1.7" fill={markerFill} />
+              <g
+                key={`point-${point.label}-${index}`}
+                className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onClick={() => handleSelect(index)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleSelect(index);
+                  }
+                }}
+              >
+                <line
+                  x1={mapX(index)}
+                  y1={mapY(point.value)}
+                  x2={mapX(index)}
+                  y2={baselineY}
+                  stroke={lineColor}
+                  strokeOpacity="0.16"
+                  strokeWidth="1.2"
+                />
+                {selectedPointIndex === index && (
+                  <circle cx={mapX(index)} cy={mapY(point.value)} r="8.5" fill={markerRing} />
+                )}
+                <circle cx={mapX(index)} cy={mapY(point.value)} r="4.4" fill={lineColor} />
+                <circle cx={mapX(index)} cy={mapY(point.value)} r="2" fill={markerFill} />
+                {(selectedPointIndex === index || index === points.length - 1) && (
+                  <text
+                    x={mapX(index)}
+                    y={mapY(point.value) - 8}
+                    textAnchor="middle"
+                    fill={lineColor}
+                    fontSize="9.5"
+                    fontWeight="700"
+                  >
+                    {`${point.value.toFixed(1)}%`}
+                  </text>
+                )}
               </g>
             ))}
           </>
@@ -93,19 +177,65 @@ export function TrendChartView({ animationKey, mode = "line", points }: TrendCha
           <>
             {points.map((point, index) => {
               const centerX = mapX(index);
-              const barWidth = Math.max(8, chartWidth / (points.length * 1.9));
-              const barHeight = ((point.value - minValue) / valueRange) * chartHeight;
+              const barWidth = clampNumber(chartWidth / (points.length * 1.8), 10, 26);
+              const barHeight = (point.bucketSaved / maxBucketSaved) * chartHeight;
+              const barLeft = centerX - barWidth / 2;
+              let cursorY = baselineY - barHeight;
               return (
-                <rect
+                <g
                   key={`bar-${point.label}-${index}`}
-                  x={centerX - barWidth / 2}
-                  y={baselineY - barHeight}
-                  width={barWidth}
-                  height={barHeight}
-                  rx="4"
-                  fill={barColor}
-                  fillOpacity="0.86"
-                />
+                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleSelect(index)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleSelect(index);
+                    }
+                  }}
+                >
+                  {point.goalSegments.length === 0 ? (
+                    <rect
+                      x={barLeft}
+                      y={baselineY - 1.5}
+                      width={barWidth}
+                      height="1.5"
+                      rx="1"
+                      fill={barColor}
+                      fillOpacity="0.4"
+                    />
+                  ) : point.goalSegments.map((segment, segmentIndex) => {
+                    const ratio = point.bucketSaved > 0 ? segment.amount / point.bucketSaved : 0;
+                    const segmentHeight = Math.max(1.2, barHeight * ratio);
+                    const isTop = segmentIndex === 0;
+                    const shape = (
+                      <rect
+                        key={`${segment.label}-${segmentIndex}`}
+                        x={barLeft}
+                        y={cursorY}
+                        width={barWidth}
+                        height={segmentHeight}
+                        rx={isTop ? "4" : "0"}
+                        fill={segment.color}
+                      />
+                    );
+                    cursorY += segmentHeight;
+                    return shape;
+                  })}
+                  {selectedPointIndex === index && (
+                    <rect
+                      x={barLeft - 1.5}
+                      y={baselineY - barHeight - 1.5}
+                      width={barWidth + 3}
+                      height={barHeight + 3}
+                      fill="none"
+                      rx="6"
+                      stroke={selectedStroke}
+                      strokeWidth="1.2"
+                    />
+                  )}
+                </g>
               );
             })}
           </>

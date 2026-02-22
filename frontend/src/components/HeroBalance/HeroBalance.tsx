@@ -29,34 +29,8 @@ const renderBalanceWithScaledDecimals = (value: string): ReactNode => {
   );
 };
 
-const getBalanceSizeClass = (
-  value: string,
-  variant: "mobile" | "desktop",
-): string => {
-  const normalizedLength = value.replace(/\s+/g, "").length;
-
-  if (variant === "desktop") {
-    if (normalizedLength >= 15) {
-      return "text-[clamp(1.875rem,3.6vw,2.5rem)]";
-    }
-
-    if (normalizedLength >= 12) {
-      return "text-[clamp(2.125rem,4.2vw,2.875rem)]";
-    }
-
-    return "text-[clamp(2.5rem,5vw,3.125rem)]";
-  }
-
-  if (normalizedLength >= 15) {
-    return "text-[clamp(1.5rem,6.6vw,2.125rem)]";
-  }
-
-  if (normalizedLength >= 12) {
-    return "text-[clamp(1.75rem,7.8vw,2.5rem)]";
-  }
-
-  return "text-[clamp(2.125rem,10.5vw,3rem)]";
-};
+const BALANCE_SIZE_CLASS_MOBILE = "text-[clamp(1.75rem,7.8vw,2.5rem)]";
+const BALANCE_SIZE_CLASS_DESKTOP = "text-[clamp(2.125rem,4.2vw,2.875rem)]";
 
 export function HeroBalance({
   label = "TOTAL BALANCE",
@@ -68,7 +42,7 @@ export function HeroBalance({
   variant = "mobile",
   className = "",
 }: HeroBalanceProps) {
-  const balanceSizeClass = getBalanceSizeClass(balance, variant);
+  const balanceSizeClass = variant === "desktop" ? BALANCE_SIZE_CLASS_DESKTOP : BALANCE_SIZE_CLASS_MOBILE;
 
   if (variant === "desktop") {
     return (
