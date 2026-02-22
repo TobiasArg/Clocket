@@ -1,18 +1,10 @@
 import type { StatisticsFlowDay } from "@/types";
 import type { TransactionItem } from "@/domain/transactions/repository";
 import { getTransactionDateForMonthBalance } from "@/domain/transactions/monthlyBalance";
-
-const FLOW_EXPENSE_COLORS = [
-  "#DC2626",
-  "#EA580C",
-  "#D97706",
-  "#2563EB",
-  "#7C3AED",
-  "#0891B2",
-  "#52525B",
-] as const;
-
-const FLOW_INCOME_COLOR = "#16A34A";
+import {
+  DEFAULT_CATEGORY_FLOW_COLOR,
+  resolveCssColorFromBgClass,
+} from "@/domain/categories/categoryColorResolver";
 
 const parseSignedAmount = (value: string): number => {
   const normalized = value.replace(/[^0-9+.-]/g, "");
@@ -35,17 +27,25 @@ const buildDateLabel = (date: Date): string => (
   new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short" }).format(date).replace(".", "")
 );
 
-const sortByAmountDesc = (entries: [string, number][]): [string, number][] => (
-  entries.sort((left, right) => right[1] - left[1])
+interface FlowCategoryEntry {
+  amount: number;
+  color: string;
+  label: string;
+}
+
+const buildCategoryFallbackKey = (label: string): string => (
+  `name:${label.toLocaleLowerCase("es-ES")}`
 );
 
 interface BuildStatisticsDailyFlowOptions {
+  categoryColorById?: Map<string, string>;
   categoryNameById: Map<string, string>;
   now?: Date;
   transactions: TransactionItem[];
 }
 
 export const buildStatisticsDailyFlow = ({
+  categoryColorById = new Map<string, string>(),
   categoryNameById,
   now = new Date(),
   transactions,
@@ -60,9 +60,9 @@ export const buildStatisticsDailyFlow = ({
     return {
       date,
       dateKey: buildDateKey(date),
-      expenseMap: new Map<string, number>(),
+      expenseMap: new Map<string, FlowCategoryEntry>(),
       expenseTotal: 0,
-      incomeMap: new Map<string, number>(),
+      incomeMap: new Map<string, FlowCategoryEntry>(),
       incomeTotal: 0,
     };
   });
@@ -92,49 +92,59 @@ export const buildStatisticsDailyFlow = ({
       return;
     }
 
-    const category = transaction.categoryId
-      ? (categoryNameById.get(transaction.categoryId) ?? "Uncategorized")
-      : (transaction.category || (amount > 0 ? "Ingreso" : "Uncategorized"));
+    const defaultCategoryLabel = amount > 0 ? "Ingreso" : "Uncategorized";
+    const categoryLabel = (
+      transaction.category?.trim() ||
+      defaultCategoryLabel
+    );
+    const categoryKey = transaction.categoryId
+      ? `id:${transaction.categoryId}`
+      : buildCategoryFallbackKey(categoryLabel);
+    const resolvedLabel = transaction.categoryId
+      ? (categoryNameById.get(transaction.categoryId) ?? categoryLabel)
+      : categoryLabel;
+    const resolvedColor = transaction.categoryId
+      ? (categoryColorById.get(transaction.categoryId) ?? DEFAULT_CATEGORY_FLOW_COLOR)
+      : resolveCssColorFromBgClass(transaction.iconBg, DEFAULT_CATEGORY_FLOW_COLOR);
+    const absoluteAmount = Math.abs(amount);
 
     if (amount > 0) {
-      day.incomeMap.set(category, (day.incomeMap.get(category) ?? 0) + amount);
-      day.incomeTotal += amount;
+      const current = day.incomeMap.get(categoryKey);
+      day.incomeMap.set(categoryKey, {
+        amount: (current?.amount ?? 0) + absoluteAmount,
+        color: current?.color ?? resolvedColor,
+        label: current?.label ?? resolvedLabel,
+      });
+      day.incomeTotal += absoluteAmount;
       return;
     }
 
-    const expenseAmount = Math.abs(amount);
-    day.expenseMap.set(category, (day.expenseMap.get(category) ?? 0) + expenseAmount);
-    day.expenseTotal += expenseAmount;
-  });
-
-  const expenseTotalsByCategory = new Map<string, number>();
-  dayBuckets.forEach((day) => {
-    day.expenseMap.forEach((amount, category) => {
-      expenseTotalsByCategory.set(category, (expenseTotalsByCategory.get(category) ?? 0) + amount);
+    const current = day.expenseMap.get(categoryKey);
+    day.expenseMap.set(categoryKey, {
+      amount: (current?.amount ?? 0) + absoluteAmount,
+      color: current?.color ?? resolvedColor,
+      label: current?.label ?? resolvedLabel,
     });
+    day.expenseTotal += absoluteAmount;
   });
-
-  const expenseColorByCategory = new Map<string, string>();
-  sortByAmountDesc(Array.from(expenseTotalsByCategory.entries()))
-    .forEach(([category], index) => {
-      expenseColorByCategory.set(category, FLOW_EXPENSE_COLORS[index % FLOW_EXPENSE_COLORS.length]);
-    });
 
   return dayBuckets.map((day) => ({
     dateKey: day.dateKey,
     dateLabel: buildDateLabel(day.date),
-    expenseByCategory: sortByAmountDesc(Array.from(day.expenseMap.entries()))
-      .map(([category, amount]) => ({
-        amount,
-        category,
-        color: expenseColorByCategory.get(category) ?? FLOW_EXPENSE_COLORS[0],
+    expenseByCategory: Array.from(day.expenseMap.values())
+      .sort((left, right) => right.amount - left.amount)
+      .map((entry) => ({
+        amount: entry.amount,
+        category: entry.label,
+        color: entry.color,
       })),
     expenseTotal: day.expenseTotal,
-    incomeByCategory: sortByAmountDesc(Array.from(day.incomeMap.entries()))
-      .map(([category, amount]) => ({
-        amount,
-        category,
-        color: FLOW_INCOME_COLOR,
+    incomeByCategory: Array.from(day.incomeMap.values())
+      .sort((left, right) => right.amount - left.amount)
+      .map((entry) => ({
+        amount: entry.amount,
+        category: entry.label,
+        color: entry.color,
       })),
     incomeTotal: day.incomeTotal,
     label: buildWeekdayLabel(day.date),

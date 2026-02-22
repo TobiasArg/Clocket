@@ -20,38 +20,62 @@ export const FlowChartView = memo(function FlowChartView({
   const tickColor = isDark ? "#a1a1aa" : "#71717a";
   const refLineColor = isDark ? "#3f3f46" : "#d4d4d8";
 
-  const { chartData, expenseSeries, hasFlowData } = useMemo(() => {
-    const totalsByCategory = new Map<string, { color: string; total: number }>();
+  const { chartData, expenseSeries, incomeSeries, hasFlowData } = useMemo(() => {
+    const expenseTotalsByCategory = new Map<string, { color: string; total: number }>();
+    const incomeTotalsByCategory = new Map<string, { color: string; total: number }>();
     flowDays.forEach((day) => {
       day.expenseByCategory.forEach((entry) => {
-        const current = totalsByCategory.get(entry.category);
-        totalsByCategory.set(entry.category, {
+        const current = expenseTotalsByCategory.get(entry.category);
+        expenseTotalsByCategory.set(entry.category, {
+          color: current?.color ?? entry.color,
+          total: (current?.total ?? 0) + entry.amount,
+        });
+      });
+      day.incomeByCategory.forEach((entry) => {
+        const current = incomeTotalsByCategory.get(entry.category);
+        incomeTotalsByCategory.set(entry.category, {
           color: current?.color ?? entry.color,
           total: (current?.total ?? 0) + entry.amount,
         });
       });
     });
 
-    const nextExpenseSeries = Array.from(totalsByCategory.entries())
+    const nextExpenseSeries = Array.from(expenseTotalsByCategory.entries())
       .sort((left, right) => right[1].total - left[1].total)
       .map(([category, value], index) => ({
         category,
         color: value.color,
         dataKey: `expense_${index}`,
       }));
+    const nextIncomeSeries = Array.from(incomeTotalsByCategory.entries())
+      .sort((left, right) => right[1].total - left[1].total)
+      .map(([category, value], index) => ({
+        category,
+        color: value.color,
+        dataKey: `income_${index}`,
+      }));
 
-    const dataKeyByCategory = new Map(nextExpenseSeries.map((series) => [series.category, series.dataKey]));
+    const expenseDataKeyByCategory = new Map(nextExpenseSeries.map((series) => [series.category, series.dataKey]));
+    const incomeDataKeyByCategory = new Map(nextIncomeSeries.map((series) => [series.category, series.dataKey]));
     const nextChartData = flowDays.map((day) => {
       const row: Record<string, number | string> = {
-        income: day.incomeTotal,
         label: day.label,
       };
 
+      nextIncomeSeries.forEach((series) => {
+        row[series.dataKey] = 0;
+      });
       nextExpenseSeries.forEach((series) => {
         row[series.dataKey] = 0;
       });
+      day.incomeByCategory.forEach((entry) => {
+        const dataKey = incomeDataKeyByCategory.get(entry.category);
+        if (dataKey) {
+          row[dataKey] = entry.amount;
+        }
+      });
       day.expenseByCategory.forEach((entry) => {
-        const dataKey = dataKeyByCategory.get(entry.category);
+        const dataKey = expenseDataKeyByCategory.get(entry.category);
         if (dataKey) {
           row[dataKey] = -entry.amount;
         }
@@ -63,6 +87,7 @@ export const FlowChartView = memo(function FlowChartView({
     return {
       chartData: nextChartData,
       expenseSeries: nextExpenseSeries,
+      incomeSeries: nextIncomeSeries,
       hasFlowData: flowDays.some((day) => day.incomeTotal > 0 || day.expenseTotal > 0),
     };
   }, [flowDays]);
@@ -88,7 +113,12 @@ export const FlowChartView = memo(function FlowChartView({
           const chartWidth = 360 - padding.left - padding.right;
           const chartHeight = 210 - padding.top - padding.bottom;
 
-          const maxIncome = chartData.reduce((max, row) => Math.max(max, Number(row.income ?? 0)), 0);
+          const maxIncome = chartData.reduce((max, row) => {
+            const totalIncome = incomeSeries.reduce((sum, series) => {
+              return sum + Math.abs(Number(row[series.dataKey] ?? 0));
+            }, 0);
+            return Math.max(max, totalIncome);
+          }, 0);
           const maxExpense = chartData.reduce((max, row) => {
             const totalExpense = expenseSeries.reduce((sum, series) => {
               return sum + Math.abs(Number(row[series.dataKey] ?? 0));
@@ -116,9 +146,14 @@ export const FlowChartView = memo(function FlowChartView({
               {chartData.map((row, index) => {
                 const centerX = padding.left + groupWidth * index + groupWidth / 2;
                 const barLeft = centerX - barWidth / 2;
-                const incomeValue = Number(row.income ?? 0);
-                const incomeHeight = toY(incomeValue);
-                const incomeTop = zeroY - incomeHeight;
+                let incomeCursor = zeroY;
+                const incomeBars = incomeSeries.map((series) => {
+                  const value = Math.abs(Number(row[series.dataKey] ?? 0));
+                  const height = toY(value);
+                  const top = incomeCursor - height;
+                  incomeCursor = top;
+                  return { color: series.color, height, top };
+                }).filter((bar) => bar.height > 0);
 
                 let expenseCursor = zeroY;
                 const expenseBars = expenseSeries.map((series) => {
@@ -143,9 +178,17 @@ export const FlowChartView = memo(function FlowChartView({
                       }
                     }}
                   >
-                    {incomeHeight > 0 && (
-                      <rect x={barLeft} y={incomeTop} width={barWidth} height={incomeHeight} rx={6} fill="#16A34A" />
-                    )}
+                    {incomeBars.map((bar, incomeIndex) => (
+                      <rect
+                        key={`income-${incomeIndex}`}
+                        x={barLeft}
+                        y={bar.top}
+                        width={barWidth}
+                        height={bar.height}
+                        rx={incomeIndex === incomeBars.length - 1 ? 6 : 0}
+                        fill={bar.color}
+                      />
+                    ))}
                     {expenseBars.map((bar, expenseIndex) => (
                       <rect
                         key={`expense-${expenseIndex}`}

@@ -13,6 +13,10 @@ import {
   getTransactionDateForMonthBalance,
 } from "@/utils";
 import type { TransactionItem } from "@/domain/transactions/repository";
+import {
+  DEFAULT_CATEGORY_FLOW_COLOR,
+  resolveCssColorFromBgClass,
+} from "@/domain/categories/categoryColorResolver";
 
 export interface StatisticsTrendPoint {
   label: string;
@@ -56,16 +60,6 @@ export interface UseStatisticsPageModelResult {
 }
 
 const DONUT_COLORS = ["#DC2626", "#2563EB", "#EA580C", "#71717A"] as const;
-const FLOW_EXPENSE_COLORS = [
-  "#DC2626",
-  "#EA580C",
-  "#D97706",
-  "#2563EB",
-  "#7C3AED",
-  "#0891B2",
-  "#52525B",
-] as const;
-const FLOW_INCOME_COLOR = "#16A34A";
 const STATISTICS_SCOPE_STORAGE_KEY = "clocket.statistics.scope";
 const DEFAULT_SCOPE: StatisticsScope = "month";
 const SCOPE_LABELS: Record<StatisticsScope, string> = {
@@ -147,6 +141,16 @@ const buildMonthYearLabel = (date: Date): string => (
 
 const sortByAmountDesc = (entries: [string, number][]): [string, number][] => (
   entries.sort((left, right) => right[1] - left[1])
+);
+
+interface FlowCategoryEntry {
+  amount: number;
+  color: string;
+  label: string;
+}
+
+const buildCategoryFallbackKey = (label: string): string => (
+  `name:${label.toLocaleLowerCase("es-ES")}`
 );
 
 const startOfDay = (value: Date): Date => (
@@ -282,9 +286,9 @@ const buildGoalSavingsTrendPoints = (
 interface FlowBucket {
   dateLabel: string;
   end: Date;
-  expenseMap: Map<string, number>;
+  expenseMap: Map<string, FlowCategoryEntry>;
   expenseTotal: number;
-  incomeMap: Map<string, number>;
+  incomeMap: Map<string, FlowCategoryEntry>;
   incomeTotal: number;
   key: string;
   label: string;
@@ -300,9 +304,9 @@ const buildDayFlowBuckets = (now: Date): FlowBucket[] => {
     return {
       dateLabel: buildDateLabel(bucketStart),
       end: addDays(bucketStart, 1),
-      expenseMap: new Map<string, number>(),
+      expenseMap: new Map<string, FlowCategoryEntry>(),
       expenseTotal: 0,
-      incomeMap: new Map<string, number>(),
+      incomeMap: new Map<string, FlowCategoryEntry>(),
       incomeTotal: 0,
       key: buildDateKey(bucketStart),
       label: buildWeekdayLabel(bucketStart),
@@ -323,9 +327,9 @@ const buildWeekFlowBuckets = (now: Date): FlowBucket[] => {
     return {
       dateLabel: `${buildDateLabel(bucketStart)} - ${buildDateLabel(bucketEndInclusive)}`,
       end: bucketEnd,
-      expenseMap: new Map<string, number>(),
+      expenseMap: new Map<string, FlowCategoryEntry>(),
       expenseTotal: 0,
-      incomeMap: new Map<string, number>(),
+      incomeMap: new Map<string, FlowCategoryEntry>(),
       incomeTotal: 0,
       key: `${buildDateKey(bucketStart)}_week`,
       label: buildNumericDateLabel(bucketStart),
@@ -344,9 +348,9 @@ const buildMonthFlowBuckets = (now: Date): FlowBucket[] => {
     return {
       dateLabel: buildMonthYearLabel(bucketStart),
       end: bucketEnd,
-      expenseMap: new Map<string, number>(),
+      expenseMap: new Map<string, FlowCategoryEntry>(),
       expenseTotal: 0,
-      incomeMap: new Map<string, number>(),
+      incomeMap: new Map<string, FlowCategoryEntry>(),
       incomeTotal: 0,
       key: `${buildMonthKey(bucketStart)}_month`,
       label: buildMonthLabel(bucketStart),
@@ -357,7 +361,7 @@ const buildMonthFlowBuckets = (now: Date): FlowBucket[] => {
 
 const buildFlowRows = (
   transactions: TransactionItem[],
-  categoryNameById: Map<string, string>,
+  categoryInfoById: Map<string, { color: string; name: string }>,
   buckets: FlowBucket[],
 ): StatisticsFlowDay[] => {
   transactions.forEach((transaction) => {
@@ -382,49 +386,59 @@ const buildFlowRows = (
       return;
     }
 
-    const category = transaction.categoryId
-      ? (categoryNameById.get(transaction.categoryId) ?? "Uncategorized")
-      : (transaction.category || (amount > 0 ? "Ingreso" : "Uncategorized"));
+    const absoluteAmount = Math.abs(amount);
+    const defaultCategoryLabel = amount > 0 ? "Ingreso" : "Uncategorized";
+    const categoryLabel = (
+      transaction.category?.trim() ||
+      defaultCategoryLabel
+    );
+    const categoryKey = transaction.categoryId
+      ? `id:${transaction.categoryId}`
+      : buildCategoryFallbackKey(categoryLabel);
+    const categoryInfo = transaction.categoryId
+      ? categoryInfoById.get(transaction.categoryId)
+      : undefined;
+    const resolvedLabel = categoryInfo?.name ?? categoryLabel;
+    const resolvedColor = categoryInfo?.color ??
+      resolveCssColorFromBgClass(transaction.iconBg, DEFAULT_CATEGORY_FLOW_COLOR);
 
     if (amount > 0) {
-      bucket.incomeMap.set(category, (bucket.incomeMap.get(category) ?? 0) + amount);
-      bucket.incomeTotal += amount;
+      const current = bucket.incomeMap.get(categoryKey);
+      bucket.incomeMap.set(categoryKey, {
+        amount: (current?.amount ?? 0) + absoluteAmount,
+        color: current?.color ?? resolvedColor,
+        label: current?.label ?? resolvedLabel,
+      });
+      bucket.incomeTotal += absoluteAmount;
       return;
     }
 
-    const expenseAmount = Math.abs(amount);
-    bucket.expenseMap.set(category, (bucket.expenseMap.get(category) ?? 0) + expenseAmount);
-    bucket.expenseTotal += expenseAmount;
-  });
-
-  const expenseTotalsByCategory = new Map<string, number>();
-  buckets.forEach((bucket) => {
-    bucket.expenseMap.forEach((amount, category) => {
-      expenseTotalsByCategory.set(category, (expenseTotalsByCategory.get(category) ?? 0) + amount);
+    const current = bucket.expenseMap.get(categoryKey);
+    bucket.expenseMap.set(categoryKey, {
+      amount: (current?.amount ?? 0) + absoluteAmount,
+      color: current?.color ?? resolvedColor,
+      label: current?.label ?? resolvedLabel,
     });
+    bucket.expenseTotal += absoluteAmount;
   });
-
-  const expenseColorByCategory = new Map<string, string>();
-  sortByAmountDesc(Array.from(expenseTotalsByCategory.entries()))
-    .forEach(([category], index) => {
-      expenseColorByCategory.set(category, FLOW_EXPENSE_COLORS[index % FLOW_EXPENSE_COLORS.length]);
-    });
 
   return buckets.map((bucket) => ({
     dateKey: bucket.key,
     dateLabel: bucket.dateLabel,
-    expenseByCategory: sortByAmountDesc(Array.from(bucket.expenseMap.entries()))
-      .map(([category, amount]) => ({
-        amount,
-        category,
-        color: expenseColorByCategory.get(category) ?? FLOW_EXPENSE_COLORS[0],
+    expenseByCategory: Array.from(bucket.expenseMap.values())
+      .sort((left, right) => right.amount - left.amount)
+      .map((entry) => ({
+        amount: entry.amount,
+        category: entry.label,
+        color: entry.color,
       })),
     expenseTotal: bucket.expenseTotal,
-    incomeByCategory: sortByAmountDesc(Array.from(bucket.incomeMap.entries()))
-      .map(([category, amount]) => ({
-        amount,
-        category,
-        color: FLOW_INCOME_COLOR,
+    incomeByCategory: Array.from(bucket.incomeMap.values())
+      .sort((left, right) => right.amount - left.amount)
+      .map((entry) => ({
+        amount: entry.amount,
+        category: entry.label,
+        color: entry.color,
       })),
     incomeTotal: bucket.incomeTotal,
     label: bucket.label,
@@ -468,6 +482,17 @@ export const useStatisticsPageModel = (
     const map = new Map<string, string>();
     categoriesData.forEach((category) => {
       map.set(category.id, category.name);
+    });
+    return map;
+  }, [categoriesData]);
+
+  const categoryInfoById = useMemo(() => {
+    const map = new Map<string, { color: string; name: string }>();
+    categoriesData.forEach((category) => {
+      map.set(category.id, {
+        color: resolveCssColorFromBgClass(category.iconBg, DEFAULT_CATEGORY_FLOW_COLOR),
+        name: category.name,
+      });
     });
     return map;
   }, [categoriesData]);
@@ -615,11 +640,11 @@ export const useStatisticsPageModel = (
   const flowByView = useMemo<Record<StatisticsChartView, StatisticsFlowDay[]>>(() => {
     const now = new Date();
     return {
-      day: buildFlowRows(scopedTransactions, categoryNameById, buildDayFlowBuckets(now)),
-      month: buildFlowRows(scopedTransactions, categoryNameById, buildMonthFlowBuckets(now)),
-      week: buildFlowRows(scopedTransactions, categoryNameById, buildWeekFlowBuckets(now)),
+      day: buildFlowRows(scopedTransactions, categoryInfoById, buildDayFlowBuckets(now)),
+      month: buildFlowRows(scopedTransactions, categoryInfoById, buildMonthFlowBuckets(now)),
+      week: buildFlowRows(scopedTransactions, categoryInfoById, buildWeekFlowBuckets(now)),
     };
-  }, [categoryNameById, scopedTransactions]);
+  }, [categoryInfoById, scopedTransactions]);
   const dailyFlow = flowByView.day;
   const trendPoints = trendPointsByView.day;
 

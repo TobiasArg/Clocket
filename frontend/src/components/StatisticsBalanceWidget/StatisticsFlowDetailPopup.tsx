@@ -50,7 +50,7 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
       label: popupIncomeLabel,
       rows: day.incomeByCategory,
       total: day.incomeTotal,
-      withDot: false,
+      withDot: true,
     },
     {
       amountClassName: "text-[#B91C1C]",
