@@ -121,12 +121,14 @@ export function Home({
     descriptionInput,
     editorMode,
     editingAmountSign,
+    handleCloseEditor,
     handleHeaderAction,
     handleSubmit,
     isAccountValid,
     isAccountsLoading,
     isAmountValid,
     isCategoriesLoading,
+    isCategoryValid,
     isDescriptionValid,
     isEditorOpen,
     isFormValid,
@@ -134,12 +136,14 @@ export function Home({
     selectedAccountId,
     selectedCurrency,
     selectedCategoryId,
+    selectedSubcategoryName,
     setAmountInput,
     setDescriptionInput,
     setEditingAmountSign,
     setSelectedAccountId,
     setSelectedCategoryId,
     setSelectedCurrency,
+    setSelectedSubcategoryName,
     showValidation,
     sortedAccounts,
     sortedCategories,
@@ -274,11 +278,13 @@ export function Home({
         selectedAccountId={selectedAccountId}
         selectedCurrency={selectedCurrency}
         selectedCategoryId={selectedCategoryId}
+        selectedSubcategoryName={selectedSubcategoryName}
         editingAmountSign={editingAmountSign}
         showValidation={showValidation}
         isAmountValid={isAmountValid}
         isDescriptionValid={isDescriptionValid}
         isAccountValid={isAccountValid}
+        isCategoryValid={isCategoryValid}
         isFormValid={isFormValid}
         isLoading={isLoading}
         isAccountsLoading={isAccountsLoading}
@@ -292,8 +298,9 @@ export function Home({
         onSelectedAccountIdChange={setSelectedAccountId}
         onCurrencyChange={setSelectedCurrency}
         onSelectedCategoryIdChange={setSelectedCategoryId}
+        onSelectedSubcategoryNameChange={setSelectedSubcategoryName}
         onSignChange={setEditingAmountSign}
-        onRequestClose={handleHeaderAction}
+        onRequestClose={handleCloseEditor}
         onSubmit={() => {
           void handleSubmit();
         }}
