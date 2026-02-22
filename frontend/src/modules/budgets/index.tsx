@@ -11,13 +11,13 @@ export type {
 export {
   BottomNavigation,
   BudgetListWidget,
-  BudgetQuickAddWidget,
   BudgetSummaryWidget,
   PageHeader,
 } from "@/components";
+export { BudgetQuickAddWidget } from "@/components/BudgetQuickAddWidget/BudgetQuickAddWidget";
 export type {
   BudgetListWidgetProps,
-  BudgetQuickAddWidgetProps,
   BudgetSummaryWidgetProps,
 } from "@/components";
+export type { BudgetQuickAddWidgetProps } from "@/components/BudgetQuickAddWidget/BudgetQuickAddWidget";
 export type { NavItem } from "@/types";

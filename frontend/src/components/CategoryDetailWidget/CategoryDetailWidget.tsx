@@ -70,12 +70,13 @@ export function CategoryDetailWidget({
   const isDeleteConfirmOpen = categoryId !== null && deleteConfirmCategoryId === categoryId;
   const isCategoryInUse = usageCount > 0;
   const canManageCategory = !isUsingExternalCategories && categoryId !== null;
-  const isDeleteDisabled = isLoading || isTransactionsLoading || isCategoryInUse;
+  const isDeleteDisabled = isLoading || isTransactionsLoading;
   const resolvedUsageLabel = isTransactionsLoading
     ? checkingUsageLabel
     : (isCategoryInUse ? usageLabel : notInUseLabel);
 
   return (
+    <>
     <SlideUpSheet
       isOpen={isOpen}
       title={null}
@@ -197,35 +198,43 @@ export function CategoryDetailWidget({
         <div className="px-1">
           <span className="text-[11px] font-medium text-[var(--text-secondary)]">{resolvedUsageLabel}</span>
         </div>
-
-        {canManageCategory && isDeleteConfirmOpen && (
-          <div className="flex flex-col gap-2 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3">
-            <span className="text-xs font-semibold text-[var(--text-primary)]">{deleteConfirmTitle}</span>
-            <span className="text-xs font-medium text-[var(--text-secondary)]">{deleteConfirmHint}</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onDeleteConfirmCategoryIdChange?.(null)}
-                className="rounded-lg bg-[var(--panel-bg)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)]"
-              >
-                {deleteCancelLabel}
-              </button>
-              <button
-                type="button"
-                onClick={() => onDeleteCategory?.(category)}
-                disabled={isDeleteDisabled}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                  isDeleteDisabled
-                    ? "bg-[var(--surface-muted)] text-[var(--text-secondary)] opacity-70"
-                    : "bg-[var(--surface-border)] text-[var(--text-primary)]"
-                }`}
-              >
-                {deleteConfirmLabel}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </SlideUpSheet>
+
+    {canManageCategory && isDeleteConfirmOpen && (
+      <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/40 px-5">
+        <div className="w-full max-w-sm rounded-2xl bg-[var(--panel-bg)] p-5 flex flex-col gap-3 shadow-xl">
+          <span className="text-sm font-bold text-[var(--text-primary)] font-['Outfit']">{deleteConfirmTitle}</span>
+          {isCategoryInUse && (
+            <span className="text-xs font-semibold text-[#DC2626]">
+              {usageCount} transacción{usageCount !== 1 ? "es" : ""} vinculada{usageCount !== 1 ? "s" : ""} perderán su categoría.
+            </span>
+          )}
+          <span className="text-xs font-medium text-[var(--text-secondary)]">{deleteConfirmHint}</span>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => onDeleteConfirmCategoryIdChange?.(null)}
+              className="rounded-lg bg-[var(--surface-muted)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)]"
+            >
+              {deleteCancelLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => onDeleteCategory?.(category)}
+              disabled={isDeleteDisabled}
+              className={`rounded-lg px-4 py-2 text-xs font-semibold ${
+                isDeleteDisabled
+                  ? "bg-[var(--surface-muted)] text-[var(--text-secondary)] opacity-70"
+                  : "bg-[#DC2626] text-white"
+              }`}
+            >
+              {deleteConfirmLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   );
 }

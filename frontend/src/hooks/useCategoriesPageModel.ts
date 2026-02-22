@@ -65,9 +65,7 @@ export const useCategoriesPageModel = (
 ): UseCategoriesPageModelResult => {
   const {
     categories,
-    checkingUsageLabel = "Verificando transacciones...",
     errorLabel = "No pudimos cargar las categorías. Intenta nuevamente.",
-    inUseDeleteMessage = "Esta categoría está en uso y no puede eliminarse aún.",
     onAddClick,
     onCategoryClick,
   } = options;
@@ -208,18 +206,6 @@ export const useCategoriesPageModel = (
 
   const handleDeleteCategory = async (category: Category) => {
     if (!category.id || isUsingExternalCategories) {
-      return;
-    }
-
-    if (isTransactionsLoading) {
-      setStatusMessage(checkingUsageLabel);
-      return;
-    }
-
-    const usageCount = usageCountByCategoryId.get(category.id) ?? 0;
-    if (usageCount > 0) {
-      setStatusMessage(inUseDeleteMessage);
-      setDeleteConfirmCategoryId(null);
       return;
     }
 
