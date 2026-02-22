@@ -47,8 +47,10 @@ export type {
 } from "./useHomePageModel";
 export { useBudgetsPageModel } from "./useBudgetsPageModel";
 export type {
+  BudgetCategoryColorOption,
   BudgetCategoryMeta,
   BudgetCategoryOption,
+  BudgetCreateCategoryInput,
   BudgetsSummary,
   UseBudgetsPageModelOptions,
   UseBudgetsPageModelResult,

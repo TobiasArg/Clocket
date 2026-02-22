@@ -20,6 +20,9 @@ export {
 
 export {
   DEFAULT_GOAL_COLOR_KEY,
+  GOALS_PARENT_CATEGORY_ICON,
+  GOALS_PARENT_CATEGORY_ICON_BG,
+  GOALS_PARENT_CATEGORY_NAME,
   getGoalCategoryName,
   getGoalColorOption,
   GOAL_COLOR_OPTIONS,
@@ -96,6 +99,12 @@ export type {
   CreateAccountInput,
   UpdateAccountPatch,
 } from "@/domain/accounts/repository";
+export {
+  ACCOUNT_ICON_OPTIONS,
+  DEFAULT_ACCOUNT_ICON,
+  DEFAULT_ACCOUNT_ID,
+  DEFAULT_ACCOUNT_NAME,
+} from "@/domain/accounts/repository";
 
 export type {
   AppSettingsItem,
@@ -104,11 +113,21 @@ export type {
 } from "@/domain/app-settings/repository";
 
 export type {
+  BudgetScopeRule,
   BudgetPlanItem,
   BudgetsRepository,
   CreateBudgetInput,
   UpdateBudgetPatch,
 } from "@/domain/budgets/repository";
+export {
+  BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
+  doesBudgetScopeMatchTransaction,
+  doesBudgetScopeRuleMatchTransaction,
+  doBudgetScopeRulesOverlap,
+  getPrimaryBudgetCategoryId,
+  normalizeBudgetScopeRules,
+  resolveBudgetScopeRulesFromBudget,
+} from "@/domain/budgets/budgetScopeMatcher";
 
 export type {
   CategoriesRepository,

@@ -31,6 +31,7 @@ export function InstallmentPlansWidget({
       title={title}
       titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
       gap="gap-3"
+      className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4"
       action={(
         <button
           type="button"
@@ -61,9 +62,9 @@ export function InstallmentPlansWidget({
           subtitle={cuota.progressLabel}
           titleClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
           subtitleClassName="text-[13px] font-medium text-[var(--text-secondary)]"
-          right={<span className="text-xl font-bold text-[var(--text-primary)] font-['Outfit']">{cuota.amount}</span>}
+          right={<span className="text-base font-bold text-[var(--text-primary)] font-['Outfit']">{cuota.amount}</span>}
           padding="p-4"
-          className="bg-[var(--surface-muted)] rounded-2xl"
+          className="bg-[var(--panel-bg)] rounded-2xl"
           gap="gap-0"
         />
       ))}

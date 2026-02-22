@@ -93,6 +93,10 @@ const clampPercent = (value: number): number => {
   return Math.max(0, Math.min(100, Math.round(value)));
 };
 
+const isGoalSavingTransaction = (transaction: TransactionItem): boolean => {
+  return transaction.transactionType === "saving" || Boolean(transaction.goalId);
+};
+
 const parsePercentFromLabel = (value: string): number => {
   const match = value.match(/\((\d+)%\)/);
   if (!match) {
@@ -365,7 +369,7 @@ const buildFlowRows = (
   buckets: FlowBucket[],
 ): StatisticsFlowDay[] => {
   transactions.forEach((transaction) => {
-    if (transaction.transactionType === "saving") {
+    if (isGoalSavingTransaction(transaction)) {
       return;
     }
 
@@ -498,11 +502,11 @@ export const useStatisticsPageModel = (
   }, [categoriesData]);
 
   const balanceTransactions = useMemo(
-    () => transactions.filter((transaction) => transaction.transactionType !== "saving"),
+    () => transactions.filter((transaction) => !isGoalSavingTransaction(transaction)),
     [transactions],
   );
   const savingsTransactions = useMemo(
-    () => transactions.filter((transaction) => transaction.transactionType === "saving"),
+    () => transactions.filter((transaction) => isGoalSavingTransaction(transaction)),
     [transactions],
   );
 

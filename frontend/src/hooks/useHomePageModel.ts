@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CuotaItem, GoalCardSimple, SpendingCategory, Transaction } from "@/types";
+import {
+  TRANSACTION_EXPENSE_TEXT_CLASS,
+  TRANSACTION_INCOME_TEXT_CLASS,
+} from "@/constants";
 import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
 import { useCuotas } from "./useCuotas";
@@ -80,11 +84,11 @@ const parseSignedAmount = (value: string): number => {
 const getAmountColor = (amount: string, amountColor?: string): string => {
   const normalizedAmount = amount.trim();
   if (normalizedAmount.startsWith("+")) {
-    return "text-[#16A34A]";
+    return TRANSACTION_INCOME_TEXT_CLASS;
   }
 
   if (normalizedAmount.startsWith("-")) {
-    return "text-[#DC2626]";
+    return TRANSACTION_EXPENSE_TEXT_CLASS;
   }
 
   return amountColor ?? "text-[var(--text-primary)]";
@@ -120,11 +124,12 @@ export const useHomePageModel = (
   } = useCuotas();
 
   const categoryInfoById = useMemo(() => {
-    const map = new Map<string, { name: string; color: string }>();
+    const map = new Map<string, { name: string; color: string; icon: string }>();
     categories.forEach((category) => {
       map.set(category.id, {
         name: category.name,
         color: category.iconBg || FALLBACK_SPENDING_COLOR,
+        icon: category.icon || "tag",
       });
     });
 
@@ -204,24 +209,29 @@ export const useHomePageModel = (
         return rightDate - leftDate;
       })
       .slice(0, 3)
-      .map((transaction) => ({
-        key: transaction.id,
-        icon: transaction.icon,
-        iconBg: transaction.iconBg,
-        name: transaction.name,
-        date: RECENT_DATE_FORMATTER.format(
-          getTransactionDateForMonthBalance(transaction) ?? new Date(),
-        ),
-        amount: transaction.amount,
-        amountColor: getAmountColor(transaction.amount, transaction.amountColor),
-      }));
-  }, [transactionItems, transactions]);
+      .map((transaction) => {
+        const categoryInfo = transaction.categoryId
+          ? categoryInfoById.get(transaction.categoryId)
+          : undefined;
+        return {
+          key: transaction.id,
+          icon: categoryInfo?.icon ?? transaction.icon,
+          iconBg: categoryInfo?.color ?? transaction.iconBg,
+          name: transaction.name,
+          date: RECENT_DATE_FORMATTER.format(
+            getTransactionDateForMonthBalance(transaction) ?? new Date(),
+          ),
+          amount: transaction.amount,
+          amountColor: getAmountColor(transaction.amount, transaction.amountColor),
+        };
+      });
+  }, [transactionItems, transactions, categoryInfoById]);
 
   const savedAmountByGoalId = useMemo(() => {
     const map = new Map<string, number>();
 
     transactionItems.forEach((transaction) => {
-      if (transaction.transactionType !== "saving" || !transaction.goalId) {
+      if (!transaction.goalId) {
         return;
       }
 
@@ -261,7 +271,7 @@ export const useHomePageModel = (
     const grouped = new Map<string, { label: string; amount: number; color: string }>();
 
     transactionItems.forEach((transaction) => {
-      if (transaction.transactionType === "saving") {
+      if (transaction.transactionType === "saving" || transaction.goalId) {
         return;
       }
 

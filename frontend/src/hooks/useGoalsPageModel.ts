@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
+import { useCurrency } from "./useCurrency";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
-import { formatCurrency, GOAL_COLOR_OPTIONS, GOAL_ICON_OPTIONS, getGoalColorOption } from "@/utils";
+import {
+  formatCurrency,
+  GOAL_COLOR_OPTIONS,
+  GOAL_ICON_OPTIONS,
+  getGoalColorOption,
+  toArsTransactionAmount,
+  type TransactionInputCurrency,
+} from "@/utils";
 import type { GoalColorKey } from "@/types";
 
 export interface GoalsSummary {
@@ -34,6 +42,7 @@ export interface UseGoalsPageModelResult {
   error: string | null;
   goalRows: GoalListPresentation[];
   handleCreate: () => Promise<void>;
+  handleCloseEditor: () => void;
   handleHeaderAction: () => void;
   iconOptions: string[];
   isDeadlineValid: boolean;
@@ -45,10 +54,12 @@ export interface UseGoalsPageModelResult {
   isTargetValid: boolean;
   isTitleValid: boolean;
   selectedColorKey: GoalColorKey;
+  selectedCurrency: TransactionInputCurrency;
   selectedIcon: string;
   setDeadlineDateInput: (value: string) => void;
   setDescriptionInput: (value: string) => void;
   setSelectedColorKey: (value: GoalColorKey) => void;
+  setSelectedCurrency: (value: TransactionInputCurrency) => void;
   setSelectedIcon: (value: string) => void;
   setTargetAmountInput: (value: string) => void;
   setTitleInput: (value: string) => void;
@@ -95,6 +106,7 @@ export const useGoalsPageModel = (
   options: UseGoalsPageModelOptions = {},
 ): UseGoalsPageModelResult => {
   const { onAddClick } = options;
+  const { currency: appCurrency } = useCurrency();
   const { items, isLoading, error, create } = useGoals();
   const { items: transactions } = useTransactions();
 
@@ -102,6 +114,7 @@ export const useGoalsPageModel = (
   const [titleInput, setTitleInput] = useState<string>("");
   const [descriptionInput, setDescriptionInput] = useState<string>("");
   const [targetAmountInput, setTargetAmountInput] = useState<string>("");
+  const [selectedCurrency, setSelectedCurrency] = useState<TransactionInputCurrency>(appCurrency);
   const [deadlineDateInput, setDeadlineDateInput] = useState<string>(getTodayIsoDate);
   const [selectedIcon, setSelectedIcon] = useState<string>(GOAL_ICON_OPTIONS[0] ?? "target");
   const [selectedColorKey, setSelectedColorKey] = useState<GoalColorKey>("emerald");
@@ -127,7 +140,7 @@ export const useGoalsPageModel = (
   const savedByGoalId = useMemo(() => {
     const map = new Map<string, number>();
     transactions.forEach((transaction) => {
-      if (transaction.transactionType !== "saving" || !transaction.goalId) {
+      if (!transaction.goalId) {
         return;
       }
 
@@ -183,21 +196,26 @@ export const useGoalsPageModel = (
     setTitleInput("");
     setDescriptionInput("");
     setTargetAmountInput("");
+    setSelectedCurrency(appCurrency);
     setDeadlineDateInput(getTodayIsoDate());
     setSelectedIcon(GOAL_ICON_OPTIONS[0] ?? "target");
     setSelectedColorKey("emerald");
     setShowValidation(false);
   };
 
+  const handleCloseEditor = () => {
+    resetEditor();
+  };
+
   const handleHeaderAction = () => {
     if (isEditorOpen) {
-      resetEditor();
+      handleCloseEditor();
     } else {
       setIsEditorOpen(true);
+      setSelectedCurrency(appCurrency);
       setShowValidation(false);
+      onAddClick?.();
     }
-
-    onAddClick?.();
   };
 
   const handleCreate = async () => {
@@ -206,10 +224,12 @@ export const useGoalsPageModel = (
       return;
     }
 
+    const normalizedTargetAmount = toArsTransactionAmount(targetAmountValue, selectedCurrency);
+
     const created = await create({
       title: normalizedTitle,
       description: normalizedDescription,
-      targetAmount: targetAmountValue,
+      targetAmount: normalizedTargetAmount,
       deadlineDate: deadlineDateInput,
       icon: selectedIcon,
       colorKey: selectedColorKey,
@@ -233,6 +253,7 @@ export const useGoalsPageModel = (
     error,
     goalRows,
     handleCreate,
+    handleCloseEditor,
     handleHeaderAction,
     iconOptions: GOAL_ICON_OPTIONS,
     isDeadlineValid,
@@ -244,10 +265,12 @@ export const useGoalsPageModel = (
     isTargetValid,
     isTitleValid,
     selectedColorKey,
+    selectedCurrency,
     selectedIcon,
     setDeadlineDateInput,
     setDescriptionInput,
     setSelectedColorKey,
+    setSelectedCurrency,
     setSelectedIcon,
     setTargetAmountInput,
     setTitleInput,

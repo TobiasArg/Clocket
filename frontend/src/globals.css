@@ -39,6 +39,7 @@ body {
   margin: 0;
   background: var(--app-bg);
   color: var(--text-primary);
+  overscroll-behavior: none;
 }
 
 .app-root-shell {
@@ -47,7 +48,12 @@ body {
 
 .app-device-shell {
   background: var(--panel-bg);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 768px) {
+  .app-device-shell {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  }
 }
 
 /* Native form elements adapt to theme */

@@ -37,6 +37,10 @@ const buildCategoryFallbackKey = (label: string): string => (
   `name:${label.toLocaleLowerCase("es-ES")}`
 );
 
+const isGoalSavingTransaction = (transaction: TransactionItem): boolean => {
+  return transaction.transactionType === "saving" || Boolean(transaction.goalId);
+};
+
 interface BuildStatisticsDailyFlowOptions {
   categoryColorById?: Map<string, string>;
   categoryNameById: Map<string, string>;
@@ -73,7 +77,7 @@ export const buildStatisticsDailyFlow = ({
   rangeEnd.setDate(rangeEnd.getDate() + 1);
 
   transactions.forEach((transaction) => {
-    if (transaction.transactionType === "saving") {
+    if (isGoalSavingTransaction(transaction)) {
       return;
     }
 

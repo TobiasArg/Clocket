@@ -255,6 +255,7 @@ export interface UseInvestmentsPageModelResult {
   derivedAmountLabel: string;
   formValidationLabel: string | null;
   handlePullRefresh: () => Promise<void>;
+  handleHeaderAction: () => void;
   handleOpenCreate: () => void;
   handleOpenEdit: (id: string) => void;
   handleOpenDetail: (id: string) => void;
@@ -522,6 +523,15 @@ export const useInvestmentsPageModel = (
     resetEditor();
   };
 
+  const handleHeaderAction = () => {
+    if (isEditorOpen) {
+      handleCloseEditor();
+      return;
+    }
+
+    handleOpenCreate();
+  };
+
   const handleOpenDetail = (id: string) => {
     setSelectedPositionId(id);
     setIsDetailOpen(true);
@@ -756,6 +766,7 @@ export const useInvestmentsPageModel = (
     derivedAmountLabel: derivedAmount > 0 ? `${derivedAmount.toFixed(8)}` : "0",
     formValidationLabel,
     handlePullRefresh,
+    handleHeaderAction,
     handleOpenCreate,
     handleOpenEdit,
     handleOpenDetail,

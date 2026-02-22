@@ -4,12 +4,32 @@ import type {
   CreateBudgetInput,
   UpdateBudgetPatch,
 } from "@/domain/budgets/repository";
+import {
+  getPrimaryBudgetCategoryId,
+  normalizeBudgetScopeRules,
+} from "@/domain/budgets/budgetScopeMatcher";
 
-const STORAGE_VERSION = 1 as const;
+const LEGACY_STORAGE_VERSION_1 = 1 as const;
+const STORAGE_VERSION = 2 as const;
 const DEFAULT_STORAGE_KEY = "clocket.budgets";
 const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
 
+interface LegacyBudgetItem {
+  id: string;
+  categoryId: string;
+  name: string;
+  limitAmount: number;
+  month: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface BudgetsStorageV1 {
+  version: typeof LEGACY_STORAGE_VERSION_1;
+  items: LegacyBudgetItem[];
+}
+
+interface BudgetsStorageV2 {
   version: typeof STORAGE_VERSION;
   items: BudgetPlanItem[];
 }
@@ -21,27 +41,25 @@ const getCurrentYearMonth = (): string => {
   return `${year}-${month}`;
 };
 
-const buildInitialState = (): BudgetsStorageV1 => ({
+const cloneBudget = (item: BudgetPlanItem): BudgetPlanItem => ({
+  ...item,
+  scopeRules: item.scopeRules.map((scopeRule) => ({
+    ...scopeRule,
+    subcategoryNames: scopeRule.subcategoryNames ? [...scopeRule.subcategoryNames] : undefined,
+  })),
+});
+
+const cloneBudgets = (items: BudgetPlanItem[]): BudgetPlanItem[] => items.map(cloneBudget);
+
+const buildInitialState = (): BudgetsStorageV2 => ({
   version: STORAGE_VERSION,
   items: [],
 });
-
-const cloneBudget = (item: BudgetPlanItem): BudgetPlanItem => ({ ...item });
-const cloneBudgets = (items: BudgetPlanItem[]): BudgetPlanItem[] => items.map(cloneBudget);
 
 const normalizeName = (value: string): string => {
   const normalized = value.trim();
   if (!normalized) {
     throw new Error("Budget name is required.");
-  }
-
-  return normalized;
-};
-
-const normalizeCategoryId = (value: string): string => {
-  const normalized = value.trim();
-  if (!normalized) {
-    throw new Error("Category is required.");
   }
 
   return normalized;
@@ -72,15 +90,31 @@ const createBudgetId = (): string => {
   return `budget_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
 };
 
-const isBudgetItem = (value: unknown): value is BudgetPlanItem => {
+const normalizeScopeRulesOrThrow = (
+  scopeRules: BudgetPlanItem["scopeRules"] | undefined,
+  legacyCategoryId?: string,
+): BudgetPlanItem["scopeRules"] => {
+  const normalized = normalizeBudgetScopeRules(scopeRules, legacyCategoryId);
+  if (normalized.length === 0) {
+    throw new Error("Budget requires at least one category scope rule.");
+  }
+
+  return normalized.map((rule) => ({
+    ...rule,
+    subcategoryNames: rule.subcategoryNames ? [...rule.subcategoryNames] : undefined,
+  }));
+};
+
+const isLegacyBudgetItem = (value: unknown): value is LegacyBudgetItem => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
-  const item = value as Partial<BudgetPlanItem>;
+  const item = value as Partial<LegacyBudgetItem>;
   return (
     typeof item.id === "string" &&
     typeof item.categoryId === "string" &&
+    item.categoryId.trim().length > 0 &&
     typeof item.name === "string" &&
     typeof item.limitAmount === "number" &&
     Number.isFinite(item.limitAmount) &&
@@ -91,12 +125,75 @@ const isBudgetItem = (value: unknown): value is BudgetPlanItem => {
   );
 };
 
-const isStorageShape = (value: unknown): value is BudgetsStorageV1 => {
+const isScopeRule = (value: unknown): boolean => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const scopeRule = value as {
+    categoryId?: unknown;
+    mode?: unknown;
+    subcategoryNames?: unknown;
+  };
+
+  if (typeof scopeRule.categoryId !== "string" || scopeRule.categoryId.trim().length === 0) {
+    return false;
+  }
+
+  if (scopeRule.mode === "all_subcategories") {
+    return true;
+  }
+
+  if (scopeRule.mode !== "selected_subcategories") {
+    return false;
+  }
+
+  return Array.isArray(scopeRule.subcategoryNames)
+    && scopeRule.subcategoryNames.length > 0
+    && scopeRule.subcategoryNames.every((subcategory) => typeof subcategory === "string");
+};
+
+const isBudgetItem = (value: unknown): value is BudgetPlanItem => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const item = value as Partial<BudgetPlanItem>;
+  return (
+    typeof item.id === "string" &&
+    (item.categoryId === undefined || typeof item.categoryId === "string") &&
+    typeof item.name === "string" &&
+    typeof item.limitAmount === "number" &&
+    Number.isFinite(item.limitAmount) &&
+    typeof item.month === "string" &&
+    YEAR_MONTH_PATTERN.test(item.month) &&
+    Array.isArray(item.scopeRules) &&
+    item.scopeRules.length > 0 &&
+    item.scopeRules.every((scopeRule) => isScopeRule(scopeRule)) &&
+    typeof item.createdAt === "string" &&
+    typeof item.updatedAt === "string"
+  );
+};
+
+const isStorageShapeV1 = (value: unknown): value is BudgetsStorageV1 => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const state = value as Partial<BudgetsStorageV1>;
+  return (
+    state.version === LEGACY_STORAGE_VERSION_1 &&
+    Array.isArray(state.items) &&
+    state.items.every(isLegacyBudgetItem)
+  );
+};
+
+const isStorageShapeV2 = (value: unknown): value is BudgetsStorageV2 => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const state = value as Partial<BudgetsStorageV2>;
   return (
     state.version === STORAGE_VERSION &&
     Array.isArray(state.items) &&
@@ -104,11 +201,31 @@ const isStorageShape = (value: unknown): value is BudgetsStorageV1 => {
   );
 };
 
+const migrateStorageV1 = (state: BudgetsStorageV1): BudgetsStorageV2 => {
+  return {
+    version: STORAGE_VERSION,
+    items: state.items.map((item) => {
+      const scopeRules = normalizeScopeRulesOrThrow(undefined, item.categoryId);
+      const primaryCategoryId = getPrimaryBudgetCategoryId(scopeRules, item.categoryId);
+
+      return {
+        ...item,
+        categoryId: primaryCategoryId ?? undefined,
+        scopeRules,
+      };
+    }),
+  };
+};
+
 const buildCreatedBudget = (input: CreateBudgetInput): BudgetPlanItem => {
   const nowIso = new Date().toISOString();
+  const scopeRules = normalizeScopeRulesOrThrow(input.scopeRules, input.categoryId);
+  const primaryCategoryId = getPrimaryBudgetCategoryId(scopeRules, input.categoryId);
+
   return {
     id: createBudgetId(),
-    categoryId: normalizeCategoryId(input.categoryId),
+    categoryId: primaryCategoryId ?? undefined,
+    scopeRules,
     name: normalizeName(input.name),
     limitAmount: normalizeLimitAmount(input.limitAmount),
     month: normalizeMonth(input.month),
@@ -121,11 +238,15 @@ const buildUpdatedBudget = (
   current: BudgetPlanItem,
   patch: UpdateBudgetPatch,
 ): BudgetPlanItem => {
+  const nextScopeRules = patch.scopeRules !== undefined || patch.categoryId !== undefined
+    ? normalizeScopeRulesOrThrow(patch.scopeRules, patch.categoryId ?? current.categoryId)
+    : normalizeScopeRulesOrThrow(current.scopeRules, current.categoryId);
+  const primaryCategoryId = getPrimaryBudgetCategoryId(nextScopeRules, patch.categoryId ?? current.categoryId);
+
   return {
     ...current,
-    ...(patch.categoryId !== undefined
-      ? { categoryId: normalizeCategoryId(patch.categoryId) }
-      : {}),
+    categoryId: primaryCategoryId ?? undefined,
+    scopeRules: nextScopeRules,
     ...(patch.name !== undefined ? { name: normalizeName(patch.name) } : {}),
     ...(patch.limitAmount !== undefined
       ? { limitAmount: normalizeLimitAmount(patch.limitAmount) }
@@ -138,7 +259,7 @@ const buildUpdatedBudget = (
 export class LocalStorageBudgetsRepository implements BudgetsRepository {
   private readonly storageKey: string;
 
-  private memoryState: BudgetsStorageV1;
+  private memoryState: BudgetsStorageV2;
 
   public constructor(storageKey: string = DEFAULT_STORAGE_KEY) {
     this.storageKey = storageKey;
@@ -205,7 +326,7 @@ export class LocalStorageBudgetsRepository implements BudgetsRepository {
     return window.localStorage;
   }
 
-  private readState(): BudgetsStorageV1 {
+  private readState(): BudgetsStorageV2 {
     const storage = this.getStorage();
 
     if (!storage) {
@@ -224,11 +345,17 @@ export class LocalStorageBudgetsRepository implements BudgetsRepository {
 
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (isStorageShape(parsed)) {
+      if (isStorageShapeV2(parsed)) {
         return {
           version: parsed.version,
           items: cloneBudgets(parsed.items),
         };
+      }
+
+      if (isStorageShapeV1(parsed)) {
+        const migrated = migrateStorageV1(parsed);
+        this.writeState(migrated);
+        return migrated;
       }
     } catch {
       // Invalid storage payload is reset to keep behavior predictable.
@@ -239,8 +366,8 @@ export class LocalStorageBudgetsRepository implements BudgetsRepository {
     return reset;
   }
 
-  private writeState(state: BudgetsStorageV1): void {
-    const next: BudgetsStorageV1 = {
+  private writeState(state: BudgetsStorageV2): void {
+    const next: BudgetsStorageV2 = {
       version: state.version,
       items: cloneBudgets(state.items),
     };

@@ -18,6 +18,7 @@ export function GoalsWidget({
       title={title}
       titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
       gap="gap-3"
+      className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4"
     >
       {goals.length === 0 ? (
         <span className="text-sm font-medium text-[var(--text-secondary)]">No hay metas activas.</span>
@@ -45,9 +46,15 @@ export function GoalsWidget({
                 <span className="text-base font-bold font-['Outfit'] text-[var(--text-primary)]">
                   {goal.name}
                 </span>
-                <span className="text-2xl font-light font-['Outfit'] text-[var(--text-secondary)]">
+                <span className="text-xl font-semibold font-['Outfit'] text-[var(--text-secondary)]">
                   {`${goal.progressPercent}%`}
                 </span>
+                <div className="w-full h-1.5 rounded-full bg-[var(--surface-border)] overflow-hidden mt-1">
+                  <div
+                    className={`h-full rounded-full ${getGoalColorOption(goal.colorKey).barClass}`}
+                    style={{ width: `${goal.progressPercent}%` }}
+                  />
+                </div>
               </div>
             </button>
           ))}

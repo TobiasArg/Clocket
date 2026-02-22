@@ -1,5 +1,9 @@
 import type { StatisticsFlowDay } from "@/types";
 import { memo, useEffect } from "react";
+import {
+  TRANSACTION_EXPENSE_TEXT_CLASS,
+  TRANSACTION_INCOME_TEXT_CLASS,
+} from "@/constants";
 import { formatCurrency } from "@/utils";
 
 export interface StatisticsFlowDetailPopupProps {
@@ -44,7 +48,7 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
 
   const sections = [
     {
-      amountClassName: "text-[#15803D]",
+      amountClassName: TRANSACTION_INCOME_TEXT_CLASS,
       emptyLabel: "Sin ingresos",
       key: "income",
       label: popupIncomeLabel,
@@ -53,7 +57,7 @@ export const StatisticsFlowDetailPopup = memo(function StatisticsFlowDetailPopup
       withDot: true,
     },
     {
-      amountClassName: "text-[#B91C1C]",
+      amountClassName: TRANSACTION_EXPENSE_TEXT_CLASS,
       emptyLabel: "Sin egresos",
       key: "expense",
       label: popupExpenseLabel,

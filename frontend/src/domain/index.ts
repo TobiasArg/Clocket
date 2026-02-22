@@ -1,4 +1,9 @@
-export { DEFAULT_ACCOUNT_ID, DEFAULT_ACCOUNT_NAME } from "./accounts/repository";
+export {
+  ACCOUNT_ICON_OPTIONS,
+  DEFAULT_ACCOUNT_ICON,
+  DEFAULT_ACCOUNT_ID,
+  DEFAULT_ACCOUNT_NAME,
+} from "./accounts/repository";
 export type {
   AccountItem,
   AccountsRepository,
@@ -13,11 +18,21 @@ export type {
 } from "./app-settings/repository";
 
 export type {
+  BudgetScopeRule,
   BudgetPlanItem,
   BudgetsRepository,
   CreateBudgetInput,
   UpdateBudgetPatch,
 } from "./budgets/repository";
+export {
+  BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
+  doesBudgetScopeMatchTransaction,
+  doesBudgetScopeRuleMatchTransaction,
+  doBudgetScopeRulesOverlap,
+  getPrimaryBudgetCategoryId,
+  normalizeBudgetScopeRules,
+  resolveBudgetScopeRulesFromBudget,
+} from "./budgets/budgetScopeMatcher";
 
 export type {
   CategoriesRepository,
@@ -60,6 +75,9 @@ export type {
 
 export {
   DEFAULT_GOAL_COLOR_KEY,
+  GOALS_PARENT_CATEGORY_ICON,
+  GOALS_PARENT_CATEGORY_ICON_BG,
+  GOALS_PARENT_CATEGORY_NAME,
   getGoalCategoryName,
   getGoalColorOption,
   GOAL_COLOR_OPTIONS,

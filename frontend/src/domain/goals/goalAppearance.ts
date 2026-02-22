@@ -105,6 +105,10 @@ const GOAL_COLOR_BY_KEY = new Map<GoalColorKey, GoalColorOption>(
 
 export const DEFAULT_GOAL_COLOR_KEY: GoalColorKey = "emerald";
 
+export const GOALS_PARENT_CATEGORY_NAME = "Goals";
+export const GOALS_PARENT_CATEGORY_ICON = "target";
+export const GOALS_PARENT_CATEGORY_ICON_BG = "bg-[#0EA5E9]";
+
 export const getGoalColorOption = (
   colorKey: GoalColorKey | undefined,
 ): GoalColorOption => {
@@ -116,4 +120,4 @@ export const getGoalColorOption = (
     (GOAL_COLOR_BY_KEY.get(DEFAULT_GOAL_COLOR_KEY) as GoalColorOption);
 };
 
-export const getGoalCategoryName = (title: string): string => `Goal - "${title}"`;
+export const getGoalCategoryName = (_title?: string): string => GOALS_PARENT_CATEGORY_NAME;

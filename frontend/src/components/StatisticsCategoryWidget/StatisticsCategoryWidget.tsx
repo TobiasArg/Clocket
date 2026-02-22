@@ -1,7 +1,11 @@
 import type { DonutSegment } from "@/types";
-import { memo } from "react";
+import { lazy, memo, Suspense } from "react";
 import { CardSection } from "../CardSection/CardSection";
-import { DonutChart } from "../DonutChart/DonutChart";
+
+const DonutChart = lazy(async () => {
+  const module = await import("../DonutChart/DonutChart");
+  return { default: module.DonutChart };
+});
 
 export interface StatisticsCategoryWidgetProps {
   categoryTitle?: string;
@@ -47,17 +51,19 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
               {categoryTotalLabel}: <span className="font-semibold text-[var(--text-primary)]">{categoryTotal}</span>
             </span>
           )}
-          <DonutChart
-            animationKey={chartAnimationKey}
-            segments={donutSegments}
-            centerValue={showCenterValue ? categoryTotal : undefined}
-            centerLabel={categoryTotalLabel}
-            chartType={chartType}
-            showLegend={showLegend}
-            legendPosition={chartType === "pie" ? "bottom" : "right"}
-            size={chartSize}
-            legendValueClassName="text-[11px] font-semibold text-[var(--text-secondary)]"
-          />
+          <Suspense fallback={<div className={`${chartSize} rounded-full bg-[var(--surface-muted)] animate-pulse`} />}>
+            <DonutChart
+              animationKey={chartAnimationKey}
+              segments={donutSegments}
+              centerValue={showCenterValue ? categoryTotal : undefined}
+              centerLabel={categoryTotalLabel}
+              chartType={chartType}
+              showLegend={showLegend}
+              legendPosition={chartType === "pie" ? "bottom" : "right"}
+              size={chartSize}
+              legendValueClassName="text-[11px] font-semibold text-[var(--text-secondary)]"
+            />
+          </Suspense>
         </div>
       )}
     </CardSection>

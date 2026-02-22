@@ -21,6 +21,7 @@ export interface GoalsProps {
   quickAddTargetAmountLabel?: string;
   quickAddDescriptionLabel?: string;
   quickAddDeadlineLabel?: string;
+  quickAddCurrencyLabel?: string;
   quickAddIconLabel?: string;
   quickAddColorLabel?: string;
   quickAddSubmitLabel?: string;
@@ -51,6 +52,7 @@ export function Goals({
   quickAddDescriptionLabel = "Descripción",
   quickAddTargetAmountLabel = "Meta",
   quickAddDeadlineLabel = "Fecha límite",
+  quickAddCurrencyLabel = "Moneda",
   quickAddIconLabel = "Ícono",
   quickAddColorLabel = "Color",
   quickAddSubmitLabel = "Guardar meta",
@@ -75,6 +77,7 @@ export function Goals({
     error,
     goalRows,
     handleCreate,
+    handleCloseEditor,
     handleHeaderAction,
     iconOptions,
     isDeadlineValid,
@@ -86,10 +89,12 @@ export function Goals({
     isTargetValid,
     isTitleValid,
     selectedColorKey,
+    selectedCurrency,
     selectedIcon,
     setDeadlineDateInput,
     setDescriptionInput,
     setSelectedColorKey,
+    setSelectedCurrency,
     setSelectedIcon,
     setTargetAmountInput,
     setTitleInput,
@@ -100,14 +105,40 @@ export function Goals({
   } = useGoalsPageModel({ onAddClick });
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--panel-bg)]">
+    <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <PageHeader
         title={headerTitle}
         onBackClick={onBackClick}
-        onActionClick={handleHeaderAction}
-        actionIcon={isEditorOpen ? "x" : "plus"}
+        onActionClick={isEditorOpen ? undefined : handleHeaderAction}
+        actionIcon="plus"
       />
-      <div className="flex-1 overflow-auto">
+      <div className="relative flex-1 overflow-hidden">
+        <div className={`h-full overflow-auto pb-2 ${isEditorOpen ? "pointer-events-none" : ""}`}>
+          <GoalsSummaryWidget
+            summaryTitle={summaryTitle}
+            totalLabel={totalLabel}
+            goalLabel={goalLabel}
+            progressLabel={progressLabel}
+            totalSaved={summary.totalSaved}
+            totalTarget={summary.totalTarget}
+            percent={summary.percent}
+          />
+
+          <GoalsListWidget
+            sectionTitle={sectionTitle}
+            isLoading={isLoading}
+            hasError={Boolean(error)}
+            loadingLabel={loadingLabel}
+            errorLabel={errorLabel}
+            emptyTitle={emptyTitle}
+            emptyHint={emptyHint}
+            items={goalRows}
+            onOpenGoal={(id) => {
+              onGoalClick?.(id);
+            }}
+          />
+        </div>
+
         <GoalsQuickAddWidget
           colorOptions={colorOptions}
           isOpen={isEditorOpen}
@@ -115,6 +146,7 @@ export function Goals({
           quickAddNameLabel={quickAddNameLabel}
           quickAddDescriptionLabel={quickAddDescriptionLabel}
           quickAddTargetAmountLabel={quickAddTargetAmountLabel}
+          quickAddCurrencyLabel={quickAddCurrencyLabel}
           quickAddDeadlineLabel={quickAddDeadlineLabel}
           quickAddIconLabel={quickAddIconLabel}
           quickAddColorLabel={quickAddColorLabel}
@@ -128,6 +160,7 @@ export function Goals({
           descriptionInput={descriptionInput}
           targetAmountInput={targetAmountInput}
           deadlineDateInput={deadlineDateInput}
+          selectedCurrency={selectedCurrency}
           selectedIcon={selectedIcon}
           selectedColorKey={selectedColorKey}
           showValidation={showValidation}
@@ -138,38 +171,16 @@ export function Goals({
           isIconValid={isIconValid}
           isFormValid={isFormValid}
           isLoading={isLoading}
+          onRequestClose={handleCloseEditor}
           onTitleChange={setTitleInput}
           onDescriptionChange={setDescriptionInput}
           onTargetAmountChange={setTargetAmountInput}
+          onCurrencyChange={setSelectedCurrency}
           onDeadlineDateChange={setDeadlineDateInput}
           onIconChange={setSelectedIcon}
           onColorKeyChange={(value) => setSelectedColorKey(value as GoalColorKey)}
           onSubmit={() => {
             void handleCreate();
-          }}
-        />
-
-        <GoalsSummaryWidget
-          summaryTitle={summaryTitle}
-          totalLabel={totalLabel}
-          goalLabel={goalLabel}
-          progressLabel={progressLabel}
-          totalSaved={summary.totalSaved}
-          totalTarget={summary.totalTarget}
-          percent={summary.percent}
-        />
-
-        <GoalsListWidget
-          sectionTitle={sectionTitle}
-          isLoading={isLoading}
-          hasError={Boolean(error)}
-          loadingLabel={loadingLabel}
-          errorLabel={errorLabel}
-          emptyTitle={emptyTitle}
-          emptyHint={emptyHint}
-          items={goalRows}
-          onOpenGoal={(id) => {
-            onGoalClick?.(id);
           }}
         />
       </div>
