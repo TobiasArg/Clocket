@@ -3,13 +3,21 @@ import { useBudgets } from "./useBudgets";
 import { useCategories } from "./useCategories";
 import { useTransactions } from "./useTransactions";
 import {
+  BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
   CATEGORY_COLOR_OPTIONS,
   CATEGORY_ICON_OPTIONS,
   DEFAULT_CATEGORY_COLOR_KEY,
   DEFAULT_CATEGORY_ICON,
+  doBudgetScopeRulesOverlap,
+  doesBudgetScopeMatchTransaction,
   getCategoryColorOption,
+  getPrimaryBudgetCategoryId,
   getTransactionDateForMonthBalance,
+  normalizeBudgetScopeRules,
+  resolveBudgetScopeRulesFromBudget,
   type BudgetPlanItem,
+  type BudgetScopeRule,
+  type TransactionItem,
 } from "@/utils";
 
 export interface BudgetCategoryMeta {
@@ -23,6 +31,7 @@ export interface BudgetCategoryOption {
   icon: string;
   iconBg: string;
   name: string;
+  subcategories: string[];
 }
 
 export interface BudgetCategoryColorOption {
@@ -57,7 +66,7 @@ export interface UseBudgetsPageModelResult {
   categoryById: Map<string, BudgetCategoryMeta>;
   categoriesError: string | null;
   error: string | null;
-  expensesByCategoryId: Map<string, number>;
+  expensesByBudgetId: Map<string, number>;
   handleCloseEditor: () => void;
   handleCreateCategory: (input: BudgetCreateCategoryInput) => Promise<BudgetCategoryOption | null>;
   handleCreate: () => Promise<void>;
@@ -69,17 +78,17 @@ export interface UseBudgetsPageModelResult {
   isBudgetNameValid: boolean;
   isCategoriesLoading: boolean;
   isDuplicateCategoryMonth: boolean;
-  isCategoryValid: boolean;
   isEditorOpen: boolean;
   isFormValid: boolean;
   isLoading: boolean;
+  isScopeValid: boolean;
   limitAmountInput: string;
-  selectedCategoryId: string;
   selectedMonth: string;
   selectedMonthLabel: string;
+  selectedScopeRules: BudgetScopeRule[];
   setBudgetNameInput: (value: string) => void;
   setLimitAmountInput: (value: string) => void;
-  setSelectedCategoryId: (value: string) => void;
+  setSelectedScopeRules: (value: BudgetScopeRule[]) => void;
   showValidation: boolean;
   sortedCategories: BudgetCategoryOption[];
   summary: BudgetsSummary;
@@ -149,6 +158,125 @@ const formatYearMonthLabel = (yearMonth: string): string => {
   return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
 };
 
+const normalizeSubcategories = (subcategories: string[] | undefined): string[] => {
+  if (!Array.isArray(subcategories)) {
+    return [];
+  }
+
+  const unique = new Set<string>();
+  subcategories.forEach((subcategory) => {
+    const normalized = subcategory.trim();
+    if (normalized.length === 0) {
+      return;
+    }
+
+    unique.add(normalized);
+  });
+
+  return Array.from(unique);
+};
+
+export const sanitizeScopeRulesForCategories = (
+  scopeRules: BudgetScopeRule[],
+  categoryOptions: BudgetCategoryOption[],
+): BudgetScopeRule[] => {
+  const categoryById = new Map<string, BudgetCategoryOption>();
+  categoryOptions.forEach((category) => {
+    categoryById.set(category.id, category);
+  });
+
+  const normalizedRules = normalizeBudgetScopeRules(scopeRules);
+  const nextRules: BudgetScopeRule[] = [];
+
+  normalizedRules.forEach((rule) => {
+    const category = categoryById.get(rule.categoryId);
+    if (!category) {
+      return;
+    }
+
+    if (rule.mode === "all_subcategories") {
+      nextRules.push({
+        categoryId: rule.categoryId,
+        mode: "all_subcategories",
+      });
+      return;
+    }
+
+    const allowedSubcategories = new Set<string>([
+      ...normalizeSubcategories(category.subcategories),
+      BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
+    ]);
+    const selectedSubcategories = (rule.subcategoryNames ?? [])
+      .map((subcategory) => subcategory.trim())
+      .filter((subcategory) => subcategory.length > 0)
+      .filter((subcategory) => allowedSubcategories.has(subcategory));
+
+    if (selectedSubcategories.length === 0) {
+      return;
+    }
+
+    nextRules.push({
+      categoryId: rule.categoryId,
+      mode: "selected_subcategories",
+      subcategoryNames: Array.from(new Set(selectedSubcategories)),
+    });
+  });
+
+  return normalizeBudgetScopeRules(nextRules);
+};
+
+export const buildBudgetExpensesById = (
+  budgets: BudgetPlanItem[],
+  transactions: TransactionItem[],
+  monthWindow: { start: Date; end: Date },
+): Map<string, number> => {
+  const map = new Map<string, number>();
+  budgets.forEach((budget) => {
+    map.set(budget.id, 0);
+  });
+
+  if (budgets.length === 0 || transactions.length === 0) {
+    return map;
+  }
+
+  const visibleTransactions = transactions.filter((transaction) => {
+    const transactionDate = getTransactionDateForMonthBalance(transaction);
+    if (!transactionDate) {
+      return false;
+    }
+
+    if (transactionDate < monthWindow.start || transactionDate >= monthWindow.end) {
+      return false;
+    }
+
+    return parseSignedAmount(transaction.amount) < 0;
+  });
+
+  if (visibleTransactions.length === 0) {
+    return map;
+  }
+
+  budgets.forEach((budget) => {
+    const scopeRules = resolveBudgetScopeRulesFromBudget(budget);
+    if (scopeRules.length === 0) {
+      return;
+    }
+
+    let spentAmount = 0;
+    visibleTransactions.forEach((transaction) => {
+      if (!doesBudgetScopeMatchTransaction(scopeRules, transaction)) {
+        return;
+      }
+
+      spentAmount += Math.abs(parseSignedAmount(transaction.amount));
+    });
+
+    map.set(budget.id, spentAmount);
+  });
+
+  return map;
+};
+
 export const useBudgetsPageModel = (
   options: UseBudgetsPageModelOptions = {},
 ): UseBudgetsPageModelResult => {
@@ -169,7 +297,7 @@ export const useBudgetsPageModel = (
   const { items: transactions } = useTransactions();
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
-  const [selectedCategoryId, setSelectedCategoryIdState] = useState<string>("");
+  const [selectedScopeRulesState, setSelectedScopeRulesState] = useState<BudgetScopeRule[]>([]);
   const [budgetNameInput, setBudgetNameInput] = useState<string>("");
   const [limitAmountInput, setLimitAmountInput] = useState<string>("");
   const [showValidation, setShowValidation] = useState<boolean>(false);
@@ -186,22 +314,6 @@ export const useBudgetsPageModel = (
     [selectedMonth],
   );
 
-  const categoryById = useMemo(() => {
-    const map = new Map<string, BudgetCategoryMeta>();
-    categories.forEach((category) => {
-      if (!category.id) {
-        return;
-      }
-
-      map.set(category.id, {
-        name: category.name,
-        icon: category.icon,
-        iconBg: category.iconBg,
-      });
-    });
-    return map;
-  }, [categories]);
-
   const sortedCategories = useMemo<BudgetCategoryOption[]>(
     () => categories
       .filter((category) => Boolean(category.id))
@@ -210,46 +322,43 @@ export const useBudgetsPageModel = (
         icon: category.icon,
         iconBg: category.iconBg,
         name: category.name,
+        subcategories: normalizeSubcategories(category.subcategories),
       }))
       .sort((left, right) => left.name.localeCompare(right.name)),
     [categories],
   );
 
-  const expensesByCategoryId = useMemo(() => {
-    const map = new Map<string, number>();
-    transactions.forEach((transaction) => {
-      const transactionDate = getTransactionDateForMonthBalance(transaction);
-      if (!transactionDate) {
-        return;
-      }
-
-      if (
-        transactionDate < selectedMonthWindow.start ||
-        transactionDate >= selectedMonthWindow.end
-      ) {
-        return;
-      }
-
-      const amount = parseSignedAmount(transaction.amount);
-      if (amount >= 0 || !transaction.categoryId) {
-        return;
-      }
-
-      map.set(transaction.categoryId, (map.get(transaction.categoryId) ?? 0) + Math.abs(amount));
+  const categoryById = useMemo(() => {
+    const map = new Map<string, BudgetCategoryMeta>();
+    sortedCategories.forEach((category) => {
+      map.set(category.id, {
+        name: category.name,
+        icon: category.icon,
+        iconBg: category.iconBg,
+      });
     });
-
     return map;
-  }, [selectedMonthWindow, transactions]);
+  }, [sortedCategories]);
+
+  const selectedScopeRules = useMemo(
+    () => sanitizeScopeRulesForCategories(selectedScopeRulesState, sortedCategories),
+    [selectedScopeRulesState, sortedCategories],
+  );
 
   const visibleBudgets = useMemo(
     () => budgets.filter((budget) => budget.month === selectedMonth),
     [budgets, selectedMonth],
   );
 
+  const expensesByBudgetId = useMemo(
+    () => buildBudgetExpensesById(visibleBudgets, transactions, selectedMonthWindow),
+    [selectedMonthWindow, transactions, visibleBudgets],
+  );
+
   const summary = useMemo<BudgetsSummary>(() => {
     const totalBudget = visibleBudgets.reduce((sum, item) => sum + item.limitAmount, 0);
     const totalSpent = visibleBudgets.reduce(
-      (sum, item) => sum + (expensesByCategoryId.get(item.categoryId) ?? 0),
+      (sum, item) => sum + (expensesByBudgetId.get(item.id) ?? 0),
       0,
     );
     const rawProgress = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
@@ -263,7 +372,7 @@ export const useBudgetsPageModel = (
       progress,
       rawProgress,
     };
-  }, [expensesByCategoryId, visibleBudgets]);
+  }, [expensesByBudgetId, visibleBudgets]);
 
   const categoryColorOptions = useMemo<BudgetCategoryColorOption[]>(
     () => CATEGORY_COLOR_OPTIONS.map((option) => ({
@@ -278,40 +387,29 @@ export const useBudgetsPageModel = (
     [],
   );
 
-  const setSelectedCategoryId = useCallback((value: string) => {
-    const nextId = value.trim();
-    setSelectedCategoryIdState(nextId);
-
-    if (nextId.length === 0) {
-      return;
-    }
-
-    setBudgetNameInput((current) => {
-      if (current.trim().length > 0) {
-        return current;
-      }
-
-      const selectedCategory = sortedCategories.find((category) => category.id === nextId);
-      return selectedCategory?.name ?? current;
-    });
-  }, [sortedCategories]);
+  const setSelectedScopeRules = useCallback((value: BudgetScopeRule[]) => {
+    setSelectedScopeRulesState(normalizeBudgetScopeRules(value));
+  }, []);
 
   const limitAmountValue = Number(limitAmountInput);
   const normalizedBudgetName = budgetNameInput.trim();
   const isAmountValid = Number.isFinite(limitAmountValue) && limitAmountValue > 0;
   const isBudgetNameValid = normalizedBudgetName.length > 0;
-  const isCategoryValid = selectedCategoryId.length > 0;
-  const isDuplicateCategoryMonth = selectedCategoryId.length > 0
-    && budgets.some((budget) => (
-      budget.categoryId === selectedCategoryId && budget.month === selectedMonth
-    ));
-  const isFormValid = isAmountValid && isBudgetNameValid && isCategoryValid && !isDuplicateCategoryMonth;
+  const isScopeValid = selectedScopeRules.length > 0;
+
+  const isDuplicateCategoryMonth = selectedScopeRules.length > 0
+    && visibleBudgets.some((budget) => {
+      const budgetScopeRules = resolveBudgetScopeRulesFromBudget(budget);
+      return doBudgetScopeRulesOverlap(selectedScopeRules, budgetScopeRules);
+    });
+
+  const isFormValid = isAmountValid && isBudgetNameValid && isScopeValid && !isDuplicateCategoryMonth;
   const budgetFormValidationLabel = showValidation && isDuplicateCategoryMonth
-    ? "Ya existe un budget para esta categoría en el mes seleccionado."
+    ? "Ya existe un budget para el alcance seleccionado en este mes."
     : null;
 
   const resetEditor = () => {
-    setSelectedCategoryIdState("");
+    setSelectedScopeRulesState([]);
     setBudgetNameInput("");
     setLimitAmountInput("");
     setShowValidation(false);
@@ -367,7 +465,13 @@ export const useBudgetsPageModel = (
       return null;
     }
 
-    setSelectedCategoryIdState(created.id);
+    setSelectedScopeRulesState((current) => normalizeBudgetScopeRules([
+      ...current,
+      {
+        categoryId: created.id,
+        mode: "all_subcategories",
+      },
+    ]));
     setBudgetNameInput((current) => current.trim().length > 0 ? current : created.name);
 
     return {
@@ -375,6 +479,7 @@ export const useBudgetsPageModel = (
       name: created.name,
       icon: created.icon,
       iconBg: created.iconBg,
+      subcategories: normalizeSubcategories(created.subcategories),
     };
   };
 
@@ -384,10 +489,15 @@ export const useBudgetsPageModel = (
       return;
     }
 
-    const selectedCategory = categoryById.get(selectedCategoryId);
+    const scopeRules = sanitizeScopeRulesForCategories(selectedScopeRules, sortedCategories);
+    if (scopeRules.length === 0) {
+      return;
+    }
+
     const created = await create({
-      categoryId: selectedCategoryId,
-      name: normalizedBudgetName || selectedCategory?.name || "Uncategorized",
+      categoryId: getPrimaryBudgetCategoryId(scopeRules) ?? undefined,
+      scopeRules,
+      name: normalizedBudgetName || "Uncategorized",
       limitAmount: limitAmountValue,
       month: selectedMonth,
     });
@@ -408,7 +518,7 @@ export const useBudgetsPageModel = (
     categoryColorOptions,
     categoryIconOptions,
     error: budgetsError,
-    expensesByCategoryId,
+    expensesByBudgetId,
     handleCloseEditor,
     handleCreateCategory,
     handleCreate,
@@ -420,17 +530,17 @@ export const useBudgetsPageModel = (
     isBudgetNameValid,
     isCategoriesLoading,
     isDuplicateCategoryMonth,
-    isCategoryValid,
     isEditorOpen,
     isFormValid,
     isLoading: isBudgetsLoading,
+    isScopeValid,
     limitAmountInput,
-    selectedCategoryId,
     selectedMonth,
     selectedMonthLabel,
+    selectedScopeRules,
     setBudgetNameInput,
     setLimitAmountInput,
-    setSelectedCategoryId,
+    setSelectedScopeRules,
     showValidation,
     sortedCategories,
     summary,

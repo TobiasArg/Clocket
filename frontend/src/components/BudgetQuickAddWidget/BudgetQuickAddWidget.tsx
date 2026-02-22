@@ -5,8 +5,11 @@ import type {
   BudgetCreateCategoryInput,
 } from "@/hooks";
 import {
+  BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
   DEFAULT_CATEGORY_COLOR_KEY,
   DEFAULT_CATEGORY_ICON,
+  normalizeBudgetScopeRules,
+  type BudgetScopeRule,
 } from "@/utils";
 import { ActionButton } from "../ActionButton/ActionButton";
 import { CategoryColorPicker } from "../CategoryColorPicker/CategoryColorPicker";
@@ -20,6 +23,56 @@ import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 import { SlideUpSheet } from "../SlideUpSheet/SlideUpSheet";
 
 const CREATE_CATEGORY_OPTION_ID = "__create_budget_category__";
+
+const normalizeSubcategories = (subcategories: string[] | undefined): string[] => {
+  if (!Array.isArray(subcategories)) {
+    return [];
+  }
+
+  const unique = new Set<string>();
+  subcategories.forEach((subcategory) => {
+    const normalized = subcategory.trim();
+    if (normalized.length === 0) {
+      return;
+    }
+
+    unique.add(normalized);
+  });
+
+  return Array.from(unique);
+};
+
+const buildSelectedSubcategorySet = (rule: BudgetScopeRule | null): Set<string> => {
+  if (!rule || rule.mode !== "selected_subcategories") {
+    return new Set<string>();
+  }
+
+  return new Set(
+    (rule.subcategoryNames ?? [])
+      .map((subcategory) => subcategory.trim())
+      .filter((subcategory) => subcategory.length > 0),
+  );
+};
+
+const getRuleSummaryLabel = (
+  rule: BudgetScopeRule,
+  noneLabel: string,
+  allLabel: string,
+): string => {
+  if (rule.mode === "all_subcategories") {
+    return allLabel;
+  }
+
+  const names = (rule.subcategoryNames ?? [])
+    .map((subcategory) => subcategory === BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN ? noneLabel : subcategory)
+    .filter((subcategory) => subcategory.trim().length > 0);
+
+  if (names.length === 0) {
+    return "Sin subcategorías seleccionadas";
+  }
+
+  return names.join(" · ");
+};
 
 export interface BudgetQuickAddWidgetProps {
   amountErrorLabel: string;
@@ -39,19 +92,21 @@ export interface BudgetQuickAddWidgetProps {
   isAmountValid: boolean;
   isBudgetNameValid: boolean;
   isCategoriesLoading?: boolean;
-  isCategoryValid: boolean;
-  isDuplicateCategoryMonth?: boolean;
   isFormValid: boolean;
   isLoading: boolean;
   isOpen: boolean;
+  isScopeValid: boolean;
   limitAmountInput: string;
   onAmountChange: (value: string) => void;
   onBudgetNameChange: (value: string) => void;
-  onCategoryChange: (value: string) => void;
   onCreateCategory: (input: BudgetCreateCategoryInput) => Promise<BudgetCategoryOption | null>;
   onRequestClose?: () => void;
+  onScopeRulesChange: (value: BudgetScopeRule[]) => void;
   onSubmit: () => void;
-  selectedCategoryId: string;
+  scopeModeAllLabel?: string;
+  scopeModeSelectedLabel?: string;
+  scopeNoSubcategoryLabel?: string;
+  selectedScopeRules: BudgetScopeRule[];
   showValidation: boolean;
   submitLabel: string;
   title: string;
@@ -75,24 +130,28 @@ export function BudgetQuickAddWidget({
   isAmountValid,
   isBudgetNameValid,
   isCategoriesLoading = false,
-  isCategoryValid,
-  isDuplicateCategoryMonth = false,
   isFormValid,
   isLoading,
   isOpen,
+  isScopeValid,
   limitAmountInput,
   onAmountChange,
   onBudgetNameChange,
-  onCategoryChange,
   onCreateCategory,
   onRequestClose,
+  onScopeRulesChange,
   onSubmit,
-  selectedCategoryId,
+  scopeModeAllLabel = "Todas",
+  scopeModeSelectedLabel = "Seleccionadas",
+  scopeNoSubcategoryLabel = "Sin subcategoría",
+  selectedScopeRules,
   showValidation,
   submitLabel,
   title,
 }: BudgetQuickAddWidgetProps) {
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState<boolean>(false);
+  const [isSubcategoryPickerOpen, setIsSubcategoryPickerOpen] = useState<boolean>(false);
+  const [subcategoryCategoryId, setSubcategoryCategoryId] = useState<string>("");
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState<boolean>(false);
   const [createCategoryNameInput, setCreateCategoryNameInput] = useState<string>("");
   const [createCategoryIcon, setCreateCategoryIcon] = useState<string>(DEFAULT_CATEGORY_ICON);
@@ -100,18 +159,57 @@ export function BudgetQuickAddWidget({
   const [showCreateCategoryValidation, setShowCreateCategoryValidation] = useState<boolean>(false);
   const [isCreateCategorySubmitting, setIsCreateCategorySubmitting] = useState<boolean>(false);
 
-  const selectedCategory = useMemo(
-    () => categories.find((category) => category.id === selectedCategoryId) ?? null,
-    [categories, selectedCategoryId],
+  const normalizedScopeRules = useMemo(
+    () => normalizeBudgetScopeRules(selectedScopeRules),
+    [selectedScopeRules],
   );
 
+  const categoriesById = useMemo(() => {
+    const map = new Map<string, BudgetCategoryOption>();
+    categories.forEach((category) => {
+      map.set(category.id, {
+        ...category,
+        subcategories: normalizeSubcategories(category.subcategories),
+      });
+    });
+    return map;
+  }, [categories]);
+
+  const selectedRulesByCategoryId = useMemo(() => {
+    const map = new Map<string, BudgetScopeRule>();
+    normalizedScopeRules.forEach((rule) => {
+      map.set(rule.categoryId, rule);
+    });
+    return map;
+  }, [normalizedScopeRules]);
+
+  const selectedRuleRows = useMemo(() => {
+    return normalizedScopeRules
+      .map((rule) => ({
+        rule,
+        category: categoriesById.get(rule.categoryId) ?? null,
+      }))
+      .sort((left, right) => {
+        const leftName = left.category?.name ?? left.rule.categoryId;
+        const rightName = right.category?.name ?? right.rule.categoryId;
+        return leftName.localeCompare(rightName);
+      });
+  }, [categoriesById, normalizedScopeRules]);
+
   const categoryPickerItems = useMemo<OptionPickerItem[]>(() => {
-    const items = categories.map((category) => ({
-      id: category.id,
-      label: category.name,
-      icon: category.icon,
-      iconBg: category.iconBg,
-    }));
+    const items = categories.map((category) => {
+      const selectedRule = selectedRulesByCategoryId.get(category.id);
+      return {
+        id: category.id,
+        label: category.name,
+        icon: category.icon,
+        iconBg: category.iconBg,
+        subtitle: selectedRule
+          ? getRuleSummaryLabel(selectedRule, scopeNoSubcategoryLabel, "Todas las subcategorías")
+          : undefined,
+        meta: selectedRule ? "Incluida" : undefined,
+      } satisfies OptionPickerItem;
+    });
 
     items.push({
       id: CREATE_CATEGORY_OPTION_ID,
@@ -122,7 +220,7 @@ export function BudgetQuickAddWidget({
     });
 
     return items;
-  }, [categories, categoryCreateActionLabel]);
+  }, [categories, categoryCreateActionLabel, scopeNoSubcategoryLabel, selectedRulesByCategoryId]);
 
   const resetCreateCategoryDraft = useCallback(() => {
     setCreateCategoryNameInput("");
@@ -137,11 +235,11 @@ export function BudgetQuickAddWidget({
     }
 
     setIsCategoryPickerOpen(false);
+    setIsSubcategoryPickerOpen(false);
+    setSubcategoryCategoryId("");
     setIsCreateCategoryOpen(false);
     resetCreateCategoryDraft();
   }, [isOpen, resetCreateCategoryDraft]);
-
-  const canOpenCategoryPicker = !isCategoriesLoading;
 
   const normalizedCreateCategoryName = createCategoryNameInput.trim();
   const previewCategoryName = normalizedCreateCategoryName.length > 0
@@ -156,6 +254,128 @@ export function BudgetQuickAddWidget({
   const isCreateCategoryFormValid = isCreateCategoryNameValid
     && isCreateCategoryIconValid
     && isCreateCategoryColorValid;
+
+  const openSubcategoryPicker = (categoryId: string) => {
+    const category = categoriesById.get(categoryId);
+    if (!category) {
+      return;
+    }
+
+    setSubcategoryCategoryId(category.id);
+    setIsSubcategoryPickerOpen(true);
+  };
+
+  const applyScopeRules = (nextRules: BudgetScopeRule[]) => {
+    onScopeRulesChange(normalizeBudgetScopeRules(nextRules));
+  };
+
+  const handleAddCategoryScope = (categoryId: string) => {
+    const alreadySelected = selectedRulesByCategoryId.has(categoryId);
+    if (alreadySelected) {
+      openSubcategoryPicker(categoryId);
+      return;
+    }
+
+    const nextRules = normalizeBudgetScopeRules([
+      ...normalizedScopeRules,
+      {
+        categoryId,
+        mode: "all_subcategories",
+      },
+    ]);
+    applyScopeRules(nextRules);
+
+    const category = categoriesById.get(categoryId);
+    if (category && category.subcategories.length > 0) {
+      openSubcategoryPicker(categoryId);
+    }
+  };
+
+  const handleRemoveCategoryScope = (categoryId: string) => {
+    const nextRules = normalizedScopeRules.filter((rule) => rule.categoryId !== categoryId);
+    applyScopeRules(nextRules);
+
+    if (subcategoryCategoryId === categoryId) {
+      setIsSubcategoryPickerOpen(false);
+      setSubcategoryCategoryId("");
+    }
+  };
+
+  const handleModeChange = (categoryId: string, mode: BudgetScopeRule["mode"]) => {
+    const nextRules = normalizedScopeRules.map((rule) => {
+      if (rule.categoryId !== categoryId) {
+        return rule;
+      }
+
+      if (mode === "all_subcategories") {
+        return {
+          categoryId,
+          mode: "all_subcategories",
+        } satisfies BudgetScopeRule;
+      }
+
+      return {
+        categoryId,
+        mode: "selected_subcategories",
+        subcategoryNames: (() => {
+          const selected = Array.from(buildSelectedSubcategorySet(rule));
+          return selected.length > 0
+            ? selected
+            : [BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN];
+        })(),
+      } satisfies BudgetScopeRule;
+    });
+
+    applyScopeRules(nextRules);
+    if (mode === "selected_subcategories") {
+      openSubcategoryPicker(categoryId);
+    }
+  };
+
+  const activeSubcategoryCategory = categoriesById.get(subcategoryCategoryId) ?? null;
+  const activeSubcategoryRule = selectedRulesByCategoryId.get(subcategoryCategoryId) ?? null;
+  const activeSelectedSubcategories = buildSelectedSubcategorySet(activeSubcategoryRule);
+
+  const availableSubcategoryTokens = useMemo(() => {
+    if (!activeSubcategoryCategory) {
+      return [] as string[];
+    }
+
+    return [
+      BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
+      ...normalizeSubcategories(activeSubcategoryCategory.subcategories),
+    ];
+  }, [activeSubcategoryCategory]);
+
+  const toggleActiveSubcategory = (token: string) => {
+    if (!activeSubcategoryCategory) {
+      return;
+    }
+
+    const nextSelected = new Set(activeSelectedSubcategories);
+    if (nextSelected.has(token)) {
+      if (nextSelected.size === 1) {
+        return;
+      }
+      nextSelected.delete(token);
+    } else {
+      nextSelected.add(token);
+    }
+
+    const nextRules = normalizedScopeRules.map((rule) => {
+      if (rule.categoryId !== activeSubcategoryCategory.id) {
+        return rule;
+      }
+
+      return {
+        categoryId: rule.categoryId,
+        mode: "selected_subcategories",
+        subcategoryNames: Array.from(nextSelected),
+      } satisfies BudgetScopeRule;
+    });
+
+    applyScopeRules(nextRules);
+  };
 
   const handleCreateCategorySubmit = () => {
     void (async () => {
@@ -176,6 +396,7 @@ export function BudgetQuickAddWidget({
           return;
         }
 
+        handleAddCategoryScope(created.id);
         setIsCreateCategoryOpen(false);
         resetCreateCategoryDraft();
       } finally {
@@ -227,38 +448,124 @@ export function BudgetQuickAddWidget({
             )}
           </label>
 
-          <label className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <span className="text-xs font-medium text-[var(--text-secondary)]">{categoryLabel}</span>
             <button
               type="button"
               onClick={() => {
-                if (canOpenCategoryPicker) {
+                if (!isCategoriesLoading) {
                   setIsCategoryPickerOpen(true);
                 }
               }}
-              disabled={!canOpenCategoryPicker}
-              className={`flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
-                canOpenCategoryPicker ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"
-              }`}
+              disabled={isCategoriesLoading}
+              className="flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-left text-sm font-medium text-[var(--text-primary)]"
             >
-              <div className="min-w-0 flex items-center gap-2">
-                {selectedCategory && (
-                  <IconBadge
-                    icon={selectedCategory.icon}
-                    bg={selectedCategory.iconBg}
-                    size="h-[28px] w-[28px]"
-                    rounded="rounded-lg"
-                  />
-                )}
-                <span className="truncate">{selectedCategory?.name ?? "Selecciona una categoría"}</span>
-              </div>
+              <span className="truncate">Agregar o editar categorías</span>
               <PhosphorIcon name="caret-right" size="text-[16px]" className="text-[var(--text-secondary)]" />
             </button>
 
-            {showValidation && !isCategoryValid && (
+            {selectedRuleRows.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {selectedRuleRows.map(({ rule, category }) => {
+                  const isMissingCategory = category === null;
+                  const summaryLabel = getRuleSummaryLabel(
+                    rule,
+                    scopeNoSubcategoryLabel,
+                    "Todas las subcategorías",
+                  );
+
+                  return (
+                    <div
+                      key={rule.categoryId}
+                      className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <IconBadge
+                            icon={category?.icon ?? "warning"}
+                            bg={category?.iconBg ?? "bg-[#71717A]"}
+                            size="h-[30px] w-[30px]"
+                            rounded="rounded-lg"
+                          />
+                          <span className="truncate text-sm font-semibold text-[var(--text-primary)]">
+                            {category?.name ?? "Categoría eliminada"}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCategoryScope(rule.categoryId)}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--panel-bg)] text-[var(--text-secondary)]"
+                          aria-label="Quitar categoría del alcance"
+                        >
+                          <PhosphorIcon name="trash" size="text-[14px]" />
+                        </button>
+                      </div>
+
+                      {isMissingCategory ? (
+                        <span className="mt-2 block text-[11px] font-medium text-[var(--text-secondary)]">
+                          Esta categoría ya no existe. Quita o reemplaza el alcance para guardar.
+                        </span>
+                      ) : (
+                        <>
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleModeChange(rule.categoryId, "all_subcategories")}
+                              className={`rounded-xl px-3 py-2 text-xs font-semibold ${
+                                rule.mode === "all_subcategories"
+                                  ? "bg-[var(--surface-border)] text-[var(--text-primary)]"
+                                  : "bg-[var(--panel-bg)] text-[var(--text-secondary)]"
+                              }`}
+                            >
+                              {scopeModeAllLabel}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleModeChange(rule.categoryId, "selected_subcategories")}
+                              className={`rounded-xl px-3 py-2 text-xs font-semibold ${
+                                rule.mode === "selected_subcategories"
+                                  ? "bg-[var(--surface-border)] text-[var(--text-primary)]"
+                                  : "bg-[var(--panel-bg)] text-[var(--text-secondary)]"
+                              }`}
+                            >
+                              {scopeModeSelectedLabel}
+                            </button>
+                          </div>
+
+                          {rule.mode === "selected_subcategories" && (
+                            <button
+                              type="button"
+                              onClick={() => openSubcategoryPicker(rule.categoryId)}
+                              className="mt-2 flex w-full items-center justify-between rounded-xl bg-[var(--panel-bg)] px-3 py-2 text-left"
+                            >
+                              <span className="truncate text-xs font-medium text-[var(--text-secondary)]">
+                                {summaryLabel}
+                              </span>
+                              <PhosphorIcon
+                                name="caret-right"
+                                size="text-[14px]"
+                                className="text-[var(--text-secondary)]"
+                              />
+                            </button>
+                          )}
+
+                          {rule.mode === "all_subcategories" && (
+                            <span className="mt-2 block text-[11px] font-medium text-[var(--text-secondary)]">
+                              {summaryLabel}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {showValidation && !isScopeValid && (
               <span className="text-[11px] font-medium text-[var(--text-secondary)]">{categoryErrorLabel}</span>
             )}
-            {showValidation && isDuplicateCategoryMonth && budgetFormValidationLabel && (
+            {showValidation && budgetFormValidationLabel && (
               <span className="text-[11px] font-medium text-[var(--text-secondary)]">{budgetFormValidationLabel}</span>
             )}
             {isCategoriesLoading && (
@@ -267,7 +574,7 @@ export function BudgetQuickAddWidget({
             {categoriesError && (
               <span className="text-[11px] font-medium text-[var(--text-secondary)]">No pudimos cargar las categorías.</span>
             )}
-          </label>
+          </div>
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-[var(--text-secondary)]">{amountLabel}</span>
@@ -291,9 +598,8 @@ export function BudgetQuickAddWidget({
 
       <OptionPickerSheet
         isOpen={isCategoryPickerOpen}
-        title="Seleccionar categoría"
+        title="Seleccionar categorías"
         items={categoryPickerItems}
-        selectedId={selectedCategoryId || null}
         isLoading={isCategoriesLoading}
         errorMessage={categoriesError}
         emptyLabel="Sin categorías"
@@ -307,10 +613,79 @@ export function BudgetQuickAddWidget({
             return;
           }
 
-          onCategoryChange(item.id);
+          handleAddCategoryScope(item.id);
           setIsCategoryPickerOpen(false);
         }}
       />
+
+      <SlideUpSheet
+        isOpen={isSubcategoryPickerOpen}
+        title={activeSubcategoryCategory ? `Subcategorías · ${activeSubcategoryCategory.name}` : "Subcategorías"}
+        onRequestClose={() => {
+          setIsSubcategoryPickerOpen(false);
+          setSubcategoryCategoryId("");
+        }}
+        backdropAriaLabel="Cerrar selector de subcategorías"
+        handleAriaLabel="Desliza hacia arriba para cerrar"
+        footer={(
+          <ActionButton
+            type="button"
+            icon="check"
+            label="Listo"
+            iconColor="text-[var(--text-primary)]"
+            labelColor="text-[var(--text-primary)]"
+            bg="bg-[var(--surface-border)]"
+            padding="px-4 py-3"
+            onClick={() => {
+              setIsSubcategoryPickerOpen(false);
+              setSubcategoryCategoryId("");
+            }}
+          />
+        )}
+      >
+        <div className="flex flex-col">
+          {activeSubcategoryCategory && availableSubcategoryTokens.map((token, index) => {
+            const isSelected = activeSelectedSubcategories.has(token);
+            const label = token === BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN
+              ? scopeNoSubcategoryLabel
+              : token;
+
+            return (
+              <button
+                key={token}
+                type="button"
+                onClick={() => toggleActiveSubcategory(token)}
+                className={`flex items-center justify-between gap-2 px-1 py-2 text-left ${
+                  index < availableSubcategoryTokens.length - 1 ? "border-b border-[var(--surface-border)]" : ""
+                }`}
+              >
+                <div className="min-w-0 flex items-center gap-3">
+                  <IconBadge
+                    icon={activeSubcategoryCategory.icon}
+                    bg={activeSubcategoryCategory.iconBg}
+                    size="h-[34px] w-[34px]"
+                    rounded="rounded-lg"
+                  />
+                  <span className="block truncate text-sm font-medium text-[var(--text-primary)]">{label}</span>
+                </div>
+                {isSelected && (
+                  <PhosphorIcon
+                    name="check"
+                    size="text-[16px]"
+                    className="text-[var(--text-secondary)]"
+                  />
+                )}
+              </button>
+            );
+          })}
+
+          {activeSubcategoryCategory && activeSelectedSubcategories.size === 0 && (
+            <span className="mt-2 block text-[11px] font-medium text-[var(--text-secondary)]">
+              Selecciona al menos una subcategoría para mantener este alcance.
+            </span>
+          )}
+        </div>
+      </SlideUpSheet>
 
       <SlideUpSheet
         isOpen={isCreateCategoryOpen}

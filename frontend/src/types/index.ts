@@ -58,9 +58,18 @@ export interface BudgetSummaryItem {
   highlighted?: boolean;
 }
 
+export type BudgetScopeMode = "all_subcategories" | "selected_subcategories";
+
+export interface BudgetScopeRule {
+  categoryId: string;
+  mode: BudgetScopeMode;
+  subcategoryNames?: string[];
+}
+
 export interface BudgetPlan {
   id: string;
-  categoryId: string;
+  categoryId?: string;
+  scopeRules: BudgetScopeRule[];
   name: string;
   limitAmount: number;
   month: string;

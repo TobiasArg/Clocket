@@ -104,11 +104,21 @@ export type {
 } from "@/domain/app-settings/repository";
 
 export type {
+  BudgetScopeRule,
   BudgetPlanItem,
   BudgetsRepository,
   CreateBudgetInput,
   UpdateBudgetPatch,
 } from "@/domain/budgets/repository";
+export {
+  BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
+  doesBudgetScopeMatchTransaction,
+  doesBudgetScopeRuleMatchTransaction,
+  doBudgetScopeRulesOverlap,
+  getPrimaryBudgetCategoryId,
+  normalizeBudgetScopeRules,
+  resolveBudgetScopeRulesFromBudget,
+} from "@/domain/budgets/budgetScopeMatcher";
 
 export type {
   CategoriesRepository,

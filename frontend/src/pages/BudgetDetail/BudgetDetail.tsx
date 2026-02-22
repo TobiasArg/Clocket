@@ -66,13 +66,12 @@ export function BudgetDetail({
     isAmountValid,
     isBudgetNameValid,
     isCategoriesLoading,
-    isCategoryValid,
-    isDuplicateCategoryMonth,
     isEditorOpen,
     isEditorSubmitting,
     isEmpty,
     isFormValid,
     isLoading,
+    isScopeValid,
     limitAmountInput,
     resolvedHeaderBg,
     resolvedBudgetDescription,
@@ -85,10 +84,10 @@ export function BudgetDetail({
     resolvedProgressTextColor,
     resolvedProgressUsedLabel,
     resolvedSpentValue,
-    selectedCategoryId,
+    selectedScopeRules,
     setBudgetNameInput,
     setLimitAmountInput,
-    setSelectedCategoryId,
+    setSelectedScopeRules,
     showValidation,
     sortedCategories,
   } = useBudgetDetailPageModel({
@@ -172,8 +171,8 @@ export function BudgetDetail({
         budgetNameErrorLabel="Agrega un nombre para el budget."
         budgetNameInput={budgetNameInput}
         budgetFormValidationLabel={budgetFormValidationLabel}
-        categoryLabel="Categoría"
-        categoryErrorLabel="Selecciona una categoría."
+        categoryLabel="Categorías incluidas"
+        categoryErrorLabel="Selecciona al menos una categoría y subcategoría válida."
         categoryCreateActionLabel="Nueva categoría"
         amountLabel="Monto límite"
         amountErrorLabel="Ingresa un monto mayor a 0."
@@ -181,25 +180,25 @@ export function BudgetDetail({
         categoriesError={categoriesError}
         categoryIconOptions={categoryIconOptions}
         categoryColorOptions={categoryColorOptions}
-        selectedCategoryId={selectedCategoryId}
+        selectedScopeRules={selectedScopeRules}
         limitAmountInput={limitAmountInput}
         showValidation={showValidation}
         isAmountValid={isAmountValid}
         isBudgetNameValid={isBudgetNameValid}
         isCategoriesLoading={isCategoriesLoading}
-        isCategoryValid={isCategoryValid}
-        isDuplicateCategoryMonth={isDuplicateCategoryMonth}
+        isScopeValid={isScopeValid}
         isFormValid={isFormValid}
         isLoading={isEditorSubmitting}
         onRequestClose={handleCloseEditor}
         onBudgetNameChange={setBudgetNameInput}
-        onCategoryChange={setSelectedCategoryId}
+        onScopeRulesChange={setSelectedScopeRules}
         onCreateCategory={handleCreateCategory}
         onAmountChange={setLimitAmountInput}
         onSubmit={() => {
           void handleSubmitEdit();
         }}
       />
+
     </div>
   );
 }

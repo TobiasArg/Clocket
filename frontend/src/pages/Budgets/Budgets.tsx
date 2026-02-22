@@ -54,9 +54,9 @@ export function Budgets({
   quickAddNameLabel = "Nombre del budget",
   quickAddNamePlaceholder = "Ej. Gastos fijos de casa",
   quickAddNameErrorLabel = "Agrega un nombre para el budget.",
-  quickAddCategoryLabel = "Categoría",
-  quickAddCategoryErrorLabel = "Selecciona una categoría.",
-  quickAddDuplicateCategoryErrorLabel = "Ya existe un budget para esta categoría en el mes seleccionado.",
+  quickAddCategoryLabel = "Categorías incluidas",
+  quickAddCategoryErrorLabel = "Selecciona al menos una categoría y subcategoría válida.",
+  quickAddDuplicateCategoryErrorLabel = "Ya existe un budget para parte del alcance seleccionado en el mes.",
   quickAddCreateCategoryLabel = "Nueva categoría",
   quickAddAmountLabel = "Monto límite",
   quickAddSubmitLabel = "Guardar budget",
@@ -87,7 +87,7 @@ export function Budgets({
     categoryIconOptions,
     categoryById,
     error,
-    expensesByCategoryId,
+    expensesByBudgetId,
     handleCloseEditor,
     handleCreateCategory,
     handleCreate,
@@ -99,15 +99,15 @@ export function Budgets({
     isBudgetNameValid,
     isCategoriesLoading,
     isDuplicateCategoryMonth,
-    isCategoryValid,
     isEditorOpen,
     isFormValid,
     isLoading,
+    isScopeValid,
     limitAmountInput,
-    selectedCategoryId,
+    selectedScopeRules,
     setBudgetNameInput,
     setLimitAmountInput,
-    setSelectedCategoryId,
+    setSelectedScopeRules,
     showValidation,
     sortedCategories,
     summary,
@@ -316,7 +316,7 @@ export function Budgets({
               emptyHint={emptyHint}
               emptyActionLabel={emptyActionLabel}
               items={visibleBudgets}
-              expensesByCategoryId={expensesByCategoryId}
+              expensesByBudgetId={expensesByBudgetId}
               categoryById={categoryById}
               onBudgetClick={onBudgetClick}
               onEmptyAction={handleOpenEditor}
@@ -342,19 +342,18 @@ export function Budgets({
           categories={sortedCategories}
           categoryIconOptions={categoryIconOptions}
           categoryColorOptions={categoryColorOptions}
-          selectedCategoryId={selectedCategoryId}
+          selectedScopeRules={selectedScopeRules}
           limitAmountInput={limitAmountInput}
           showValidation={showValidation}
           isAmountValid={isAmountValid}
           isBudgetNameValid={isBudgetNameValid}
           isCategoriesLoading={isCategoriesLoading}
-          isCategoryValid={isCategoryValid}
-          isDuplicateCategoryMonth={isDuplicateCategoryMonth}
+          isScopeValid={isScopeValid}
           isFormValid={isFormValid}
           isLoading={isLoading}
           categoriesError={categoriesError}
           onBudgetNameChange={setBudgetNameInput}
-          onCategoryChange={setSelectedCategoryId}
+          onScopeRulesChange={setSelectedScopeRules}
           onCreateCategory={handleCreateCategory}
           onAmountChange={setLimitAmountInput}
           onSubmit={() => {
