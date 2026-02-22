@@ -248,6 +248,14 @@ export const useTransactionsPageModel = (
     return map;
   }, [categories]);
 
+  const categoryIconById = useMemo(() => {
+    const map = new Map<string, { icon: string; iconBg: string }>();
+    categories.forEach((category) => {
+      map.set(category.id, { icon: category.icon, iconBg: category.iconBg });
+    });
+    return map;
+  }, [categories]);
+
   const sortedCategories = useMemo(
     () => [...categories].sort((left, right) => left.name.localeCompare(right.name)),
     [categories],
@@ -375,13 +383,19 @@ export const useTransactionsPageModel = (
             : group.total > 0
               ? "text-[#16A34A]"
               : "text-[var(--text-primary)]",
-        transactions: dedupeTransactionsById(group.transactions).sort((left, right) => {
-          const leftTime = getTransactionDateForMonthBalance(left)?.getTime() ?? 0;
-          const rightTime = getTransactionDateForMonthBalance(right)?.getTime() ?? 0;
-          return rightTime - leftTime;
-        }),
+        transactions: dedupeTransactionsById(group.transactions)
+          .sort((left, right) => {
+            const leftTime = getTransactionDateForMonthBalance(left)?.getTime() ?? 0;
+            const rightTime = getTransactionDateForMonthBalance(right)?.getTime() ?? 0;
+            return rightTime - leftTime;
+          })
+          .map((tx) => {
+            const catIcon = tx.categoryId ? categoryIconById.get(tx.categoryId) : undefined;
+            if (!catIcon) return tx;
+            return { ...tx, icon: catIcon.icon, iconBg: catIcon.iconBg };
+          }),
       }));
-  }, [items]);
+  }, [items, categoryIconById]);
 
   const closeEditor = () => {
     setEditorMode(null);
@@ -460,10 +474,11 @@ export const useTransactionsPageModel = (
       const dateLabel = DATE_FORMATTER.format(new Date(`${todayIso}T00:00:00`));
       const isIncome = editingAmountSign === "+";
       const amountInArs = toArsTransactionAmount(amountValue, selectedCurrency);
+      const selectedCategoryMeta = categoryIconById.get(selectedCategoryId);
 
       const created = await create({
-        icon: isIncome ? "arrow-up-right" : "receipt",
-        iconBg: isIncome ? "bg-[#16A34A]" : "bg-[#18181B]",
+        icon: selectedCategoryMeta?.icon ?? (isIncome ? "arrow-up-right" : "receipt"),
+        iconBg: selectedCategoryMeta?.iconBg ?? (isIncome ? "bg-[#16A34A]" : "bg-[#18181B]"),
         name: normalizedDescription,
         accountId: selectedAccountId,
         category: selectedCategoryName,
@@ -486,6 +501,7 @@ export const useTransactionsPageModel = (
 
     if (editorMode === "edit" && selectedTransactionId) {
       const amountInArs = toArsTransactionAmount(amountValue, selectedCurrency);
+      const selectedCategoryMeta = categoryIconById.get(selectedCategoryId);
       const updated = await update(selectedTransactionId, {
         name: normalizedDescription,
         accountId: selectedAccountId,
@@ -494,6 +510,10 @@ export const useTransactionsPageModel = (
         subcategoryName: selectedSubcategoryName || undefined,
         amount: formatAmountWithSign(amountInArs, editingAmountSign),
         amountColor: getAmountColorBySign(editingAmountSign),
+        ...(selectedCategoryMeta && {
+          icon: selectedCategoryMeta.icon,
+          iconBg: selectedCategoryMeta.iconBg,
+        }),
       });
 
       if (!updated) {
