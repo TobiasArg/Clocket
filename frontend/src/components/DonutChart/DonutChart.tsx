@@ -1,6 +1,6 @@
 import type { DonutSegment } from "@/types";
 import { useAppSettings } from "@/hooks";
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 export interface DonutChartProps {
   animationKey?: string;
@@ -17,6 +17,7 @@ export interface DonutChartProps {
   legendNameClassName?: string;
   legendValueClassName?: string;
   className?: string;
+  onSegmentSelect?: (segment: DonutSegment | null) => void;
 }
 
 export const DonutChart = memo(function DonutChart({
@@ -34,6 +35,7 @@ export const DonutChart = memo(function DonutChart({
   legendNameClassName = "text-[13px] font-medium text-[var(--text-primary)]",
   legendValueClassName = "text-xs font-medium text-[var(--text-secondary)]",
   className = "",
+  onSegmentSelect,
 }: DonutChartProps) {
   const { settings } = useAppSettings();
   const isDark = settings?.theme === "dark";
@@ -99,6 +101,22 @@ export const DonutChart = memo(function DonutChart({
   const selectedSegment = selectedSegmentIndex !== null
     ? (normalizedSegments[selectedSegmentIndex] ?? null)
     : null;
+  const segmentIndexByName = useMemo(() => {
+    return new Map(normalizedSegments.map((segment, index) => [segment.name, index]));
+  }, [normalizedSegments]);
+
+  useEffect(() => {
+    onSegmentSelect?.(selectedSegment);
+  }, [onSegmentSelect, selectedSegment]);
+
+  const toggleSegment = (index: number | null) => {
+    if (index === null || index < 0) {
+      setSelectedSegmentIndex(null);
+      return;
+    }
+
+    setSelectedSegmentIndex((current) => (current === index ? null : index));
+  };
 
   return (
     <div
@@ -129,7 +147,7 @@ export const DonutChart = memo(function DonutChart({
               stroke={resolvedBgFill}
               strokeWidth={1}
               className="cursor-pointer transition-opacity duration-200"
-              onClick={() => setSelectedSegmentIndex((current) => (current === index ? null : index))}
+              onClick={() => toggleSegment(index)}
             />
           ))}
         </svg>
@@ -154,7 +172,14 @@ export const DonutChart = memo(function DonutChart({
       {showLegend && (
         <div className={`${isLegendBottom ? "grid w-full grid-cols-2 gap-2" : "flex flex-1 flex-col gap-2"}`}>
           {segments.map((segment) => (
-            <div key={segment.name} className="flex items-center justify-between gap-2">
+            <button
+              key={segment.name}
+              type="button"
+              onClick={() => toggleSegment(segmentIndexByName.get(segment.name) ?? null)}
+              className={`flex w-full items-center justify-between gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
+                selectedSegment?.name === segment.name ? "bg-[var(--surface-muted)]/70" : ""
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" aria-hidden="true">
                   <circle cx="5" cy="5" r="5" fill={segment.color} />
@@ -162,7 +187,7 @@ export const DonutChart = memo(function DonutChart({
                 <span className={`truncate ${legendNameClassName}`}>{segment.name}</span>
               </div>
               <span className={`shrink-0 ${legendValueClassName}`}>{segment.value}</span>
-            </div>
+            </button>
           ))}
         </div>
       )}

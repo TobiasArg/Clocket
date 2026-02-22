@@ -37,7 +37,7 @@ export function TrendChartView({
   const tickColor = isDark ? "#a1a1aa" : "#71717a";
   const markerFill = isDark ? "#18181b" : "#ffffff";
   const markerRing = isDark ? "rgba(74,222,128,0.35)" : "rgba(22,163,74,0.26)";
-  const selectedStroke = isDark ? "#f4f4f5" : "#18181b";
+  const selectedStroke = isDark ? "rgba(244,244,245,0.65)" : "rgba(24,24,27,0.55)";
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [responsiveWidth, setResponsiveWidth] = useState<number>(0);
@@ -104,13 +104,6 @@ export function TrendChartView({
   const baselineY = padding.top + chartHeight;
   const areaPath = `${linePath} L ${lastX} ${baselineY} L ${firstX} ${baselineY} Z`;
   const fillId = `trend-fill-${animationKey.replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const selectedPoint = (
-    selectedPointIndex !== null &&
-    selectedPointIndex >= 0 &&
-    selectedPointIndex < points.length
-  )
-    ? points[selectedPointIndex]
-    : points[points.length - 1];
   const handleSelect = (index: number): void => {
     const point = points[index];
     if (!point) {
@@ -164,15 +157,7 @@ export function TrendChartView({
               <g
                 key={`point-${point.label}-${index}`}
                 className="cursor-pointer"
-                role="button"
-                tabIndex={0}
                 onClick={() => handleSelect(index)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    handleSelect(index);
-                  }
-                }}
               >
                 <line
                   x1={mapX(index)}
@@ -215,15 +200,7 @@ export function TrendChartView({
                 <g
                   key={`bar-${point.label}-${index}`}
                   className="cursor-pointer"
-                  role="button"
-                  tabIndex={0}
                   onClick={() => handleSelect(index)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      handleSelect(index);
-                    }
-                  }}
                 >
                   {point.goalSegments.length === 0 ? (
                     <rect
@@ -237,7 +214,10 @@ export function TrendChartView({
                     />
                   ) : point.goalSegments.map((segment, segmentIndex) => {
                     const ratio = point.bucketSaved > 0 ? segment.amount / point.bucketSaved : 0;
-                    const segmentHeight = Math.max(1.2, barHeight * ratio);
+                    const remainingHeight = Math.max(0, baselineY - cursorY);
+                    const segmentHeight = segmentIndex === point.goalSegments.length - 1
+                      ? remainingHeight
+                      : Math.max(0, barHeight * ratio);
                     const isTop = segmentIndex === 0;
                     const shape = (
                       <rect
@@ -254,15 +234,13 @@ export function TrendChartView({
                     return shape;
                   })}
                   {selectedPointIndex === index && (
-                    <rect
-                      x={barLeft - 1.5}
-                      y={baselineY - barHeight - 1.5}
-                      width={barWidth + 3}
-                      height={barHeight + 3}
-                      fill="none"
-                      rx="6"
+                    <circle
+                      cx={centerX}
+                      cy={baselineY - barHeight - 6}
+                      r="4.2"
+                      fill={markerFill}
                       stroke={selectedStroke}
-                      strokeWidth="1.2"
+                      strokeWidth="1.8"
                     />
                   )}
                 </g>

@@ -268,7 +268,24 @@ const buildGoalSavingsTrendPoints = (
   totalGoalAmount: number,
   buckets: TrendBucket[],
 ): StatisticsTrendPoint[] => {
-  let cumulativeSaved = 0;
+  const baselineSaved = transactions.reduce((sum, transaction) => {
+    if (buckets.length === 0) {
+      return sum;
+    }
+
+    const date = getTransactionDateForMonthBalance(transaction);
+    if (!date || date >= buckets[0].start) {
+      return sum;
+    }
+
+    const amount = parseSignedAmount(transaction.amount);
+    if (amount >= 0) {
+      return sum;
+    }
+
+    return sum + Math.abs(amount);
+  }, 0);
+  let cumulativeSaved = baselineSaved;
 
   return buckets.map((bucket) => {
     const savedByGoalKey = new Map<string, { amount: number; color: string; goalId: string | null; label: string }>();
@@ -620,7 +637,7 @@ export const useStatisticsPageModel = (
   }, [scopedTransactions]);
 
   const computedCategoryRows = useMemo<CategoryBreakdown[]>(() => {
-    const grouped = new Map<string, number>();
+    const grouped = new Map<string, { amount: number; dotColor: string; name: string }>();
 
     scopedTransactions.forEach((transaction) => {
       const amount = parseSignedAmount(transaction.amount);
@@ -628,29 +645,42 @@ export const useStatisticsPageModel = (
         return;
       }
 
-      const categoryName = transaction.categoryId
-        ? (categoryNameById.get(transaction.categoryId) ?? "Uncategorized")
-        : (transaction.category || "Uncategorized");
-      grouped.set(categoryName, (grouped.get(categoryName) ?? 0) + Math.abs(amount));
+      const categoryInfo = transaction.categoryId
+        ? categoryInfoById.get(transaction.categoryId)
+        : undefined;
+      const categoryName = categoryInfo?.name
+        ?? (transaction.categoryId ? categoryNameById.get(transaction.categoryId) : undefined)
+        ?? transaction.category
+        ?? "Uncategorized";
+      const categoryColor = categoryInfo?.color ?? DEFAULT_CATEGORY_FLOW_COLOR;
+      const categoryKey = transaction.categoryId
+        ? `id:${transaction.categoryId}`
+        : buildCategoryFallbackKey(categoryName);
+      const current = grouped.get(categoryKey);
+      grouped.set(categoryKey, {
+        amount: (current?.amount ?? 0) + Math.abs(amount),
+        dotColor: current?.dotColor ?? `bg-[${categoryColor}]`,
+        name: current?.name ?? categoryName,
+      });
     });
 
-    const total = Array.from(grouped.values()).reduce((sum, value) => sum + value, 0);
+    const total = Array.from(grouped.values()).reduce((sum, entry) => sum + entry.amount, 0);
     if (total <= 0) {
       return [];
     }
 
-    return Array.from(grouped.entries())
-      .sort((left, right) => right[1] - left[1])
+    return Array.from(grouped.values())
+      .sort((left, right) => right.amount - left.amount)
       .slice(0, 4)
-      .map(([name, value], index) => {
-        const percent = clampPercent((value / total) * 100);
+      .map((entry, index) => {
+        const percent = clampPercent((entry.amount / total) * 100);
         return {
-          dotColor: `bg-[${DONUT_COLORS[index % DONUT_COLORS.length]}]`,
-          name,
-          value: `${formatCurrency(value)} (${percent}%)`,
+          dotColor: entry.dotColor || `bg-[${DONUT_COLORS[index % DONUT_COLORS.length]}]`,
+          name: entry.name,
+          value: `${formatCurrency(entry.amount)} (${percent}%)`,
         };
       });
-  }, [categoryNameById, scopedTransactions]);
+  }, [categoryInfoById, categoryNameById, scopedTransactions]);
 
   const categoryRows = categories ?? computedCategoryRows;
 
@@ -658,7 +688,10 @@ export const useStatisticsPageModel = (
     return categoryRows.map((category, index) => {
       const percentage = parsePercentFromLabel(category.value);
       return {
-        color: DONUT_COLORS[index % DONUT_COLORS.length],
+        color: resolveCssColorFromBgClass(
+          category.dotColor,
+          DONUT_COLORS[index % DONUT_COLORS.length],
+        ),
         name: category.name,
         value: parseAmountLabelFromCategoryValue(category.value),
         percentage,

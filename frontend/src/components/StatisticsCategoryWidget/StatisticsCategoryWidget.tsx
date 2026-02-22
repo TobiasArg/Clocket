@@ -1,5 +1,5 @@
 import type { DonutSegment } from "@/types";
-import { lazy, memo, Suspense, useMemo } from "react";
+import { lazy, memo, Suspense, useMemo, useState } from "react";
 import { CardSection } from "../CardSection/CardSection";
 
 const DonutChart = lazy(async () => {
@@ -34,6 +34,7 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
   showMetaText = false,
   showLegend = false,
 }: StatisticsCategoryWidgetProps) {
+  const [selectedSegmentName, setSelectedSegmentName] = useState<string | null>(null);
   const resolvedCategoryTotalLabel = categoryTotalLabel.trim().length > 0
     ? categoryTotalLabel
     : "Total del período";
@@ -89,6 +90,9 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
                   legendPosition={chartType === "pie" ? "bottom" : "right"}
                   size={chartSize}
                   legendValueClassName="text-[11px] font-semibold text-[var(--text-secondary)]"
+                  onSegmentSelect={(segment) => {
+                    setSelectedSegmentName(segment?.name ?? null);
+                  }}
                 />
               </Suspense>
             </div>
@@ -96,8 +100,15 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
             <div className="flex flex-col gap-2">
               <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5">
                 <div className="flex flex-col gap-2">
-                  {normalizedSegments.map((segment) => (
-                    <div key={segment.name} className="flex flex-col gap-1">
+                  {normalizedSegments.map((segment) => {
+                    const isSelected = selectedSegmentName === segment.name;
+                    return (
+                    <div
+                      key={segment.name}
+                      className={`flex flex-col gap-1 rounded-lg px-1.5 py-1 transition-colors ${
+                        isSelected ? "bg-[var(--surface-muted)]/70" : ""
+                      }`}
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-xs font-semibold text-[var(--text-primary)]">{segment.name}</span>
                         <span className="text-[11px] font-medium text-[var(--text-secondary)]">
@@ -109,12 +120,14 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
                           className="h-full rounded-full transition-[width] duration-300"
                           style={{
                             backgroundColor: segment.color,
+                            boxShadow: isSelected ? `0 0 0 1px ${segment.color}` : "none",
                             width: `${Math.max(6, Math.min(100, segment.percentage))}%`,
                           }}
                         />
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
