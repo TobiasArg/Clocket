@@ -60,7 +60,7 @@ export function Investments({
     showValidation,
     derivedAmountLabel,
     formValidationLabel,
-    handleOpenCreate,
+    handleHeaderAction,
     handleOpenEdit,
     handleCloseDetail,
     handleCloseEditor,
@@ -92,9 +92,9 @@ export function Investments({
         <PageHeader
           title={headerTitle}
           avatarInitials={avatarInitials}
-          onActionClick={handleOpenCreate}
-          actionIcon="plus"
-          actionAriaLabel="Agregar entrada"
+          onActionClick={handleHeaderAction}
+          actionIcon={isEditorOpen ? "x" : "plus"}
+          actionAriaLabel={isEditorOpen ? "Cerrar editor" : "Agregar entrada"}
         />
       </div>
 
