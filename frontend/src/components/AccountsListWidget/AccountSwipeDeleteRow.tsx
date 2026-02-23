@@ -255,11 +255,11 @@ export function AccountSwipeDeleteRow({
   }, [isInteractionLocked]);
 
   return (
-    <div className="relative overflow-hidden touch-pan-y">
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[#DC2626]">
+    <div className="relative overflow-hidden rounded-2xl touch-pan-y">
+      <div className="pointer-events-none absolute inset-0 z-0 rounded-2xl">
         <div
           ref={revealViewportRef}
-          className="absolute inset-y-0 right-0 flex items-center justify-center overflow-hidden"
+          className="absolute inset-y-0 right-0 flex items-center justify-center overflow-hidden rounded-r-2xl bg-[#DC2626]"
           style={{ width: 0 }}
         >
           <div
@@ -273,7 +273,7 @@ export function AccountSwipeDeleteRow({
 
       <div
         ref={swipeLayerRef}
-        className="relative z-10 bg-[var(--surface-muted)] will-change-transform select-none"
+        className="relative z-10 rounded-2xl bg-[var(--surface-muted)] will-change-transform select-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={(event) => {
@@ -318,6 +318,7 @@ export function AccountSwipeDeleteRow({
           showBorder={showBorder}
           borderColor="border-[var(--surface-border)]"
           padding="px-3 py-3.5"
+          className="rounded-2xl"
         />
       </div>
     </div>

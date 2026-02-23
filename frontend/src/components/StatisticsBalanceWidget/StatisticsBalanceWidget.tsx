@@ -127,7 +127,7 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
       <CardSection
         title={balanceTitle}
         titleClassName="text-base font-bold text-[var(--text-primary)] font-['Outfit']"
-        className="rounded-[22px] border border-[var(--surface-border)] bg-[linear-gradient(165deg,var(--surface-muted),rgba(244,244,245,0.45))] p-5"
+        className="clocket-aurora-card rounded-[22px] p-5"
         action={(
           <div className="flex items-center rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] p-1">
             {([

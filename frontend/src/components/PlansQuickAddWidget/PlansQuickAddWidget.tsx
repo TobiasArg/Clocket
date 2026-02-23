@@ -101,7 +101,7 @@ export function PlansQuickAddWidget({
         />
       )}
     >
-      <div className="flex flex-col gap-3">
+      <div className="clocket-glass-card flex flex-col gap-3 rounded-2xl bg-[var(--surface-muted)] p-3">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-medium text-[var(--text-secondary)]">{nameLabel}</span>
           <input

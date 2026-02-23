@@ -30,7 +30,7 @@ export function InvestmentSummaryWidget({ summary }: InvestmentSummaryWidgetProp
   };
 
   return (
-    <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-4 py-4">
+    <div className="clocket-glass-card rounded-2xl px-4 py-4">
       <div className="min-w-0">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Portfolio</span>
         <p className="truncate text-[28px] font-bold leading-none text-[var(--text-primary)] font-['Outfit']">

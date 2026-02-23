@@ -30,7 +30,7 @@ export function BudgetSummaryWidget({
       title={summaryTitle}
       bg="bg-[var(--surface-muted)]"
       rounded="rounded-2xl"
-      className="mx-5 border border-[var(--surface-border)]"
+      className="clocket-glass-card mx-5"
       titleClassName="block truncate text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1.5px]"
     >
       <div className="flex w-full justify-between gap-3">

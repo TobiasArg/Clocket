@@ -24,7 +24,7 @@ export function InvestmentPositionItem({ item, onOpenDetail }: InvestmentPositio
     <button
       type="button"
       onClick={() => onOpenDetail(item.id)}
-      className="w-full rounded-2xl border border-[var(--surface-border)] bg-[var(--panel-bg)] p-4 text-left transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+      className="clocket-glass-card w-full rounded-2xl p-4 text-left transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
       aria-label={`Abrir detalle de ${item.displayName}`}
     >
       <div className="flex items-start justify-between gap-3">

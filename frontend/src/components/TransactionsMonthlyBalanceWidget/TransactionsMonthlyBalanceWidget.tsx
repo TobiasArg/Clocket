@@ -42,7 +42,7 @@ export function TransactionsMonthlyBalanceWidget({
 }: TransactionsMonthlyBalanceWidgetProps) {
   return (
     <CardSection gap="gap-2">
-      <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4 flex flex-col gap-3">
+      <div className="clocket-glass-card flex flex-col gap-3 rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
         <span className="text-[11px] font-semibold text-[var(--text-secondary)] tracking-[1px]">
           {monthlyBalanceTitle}
         </span>
@@ -62,7 +62,7 @@ export function TransactionsMonthlyBalanceWidget({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-xl bg-[var(--panel-bg)] px-3 py-2">
+              <div className="clocket-glass-card rounded-xl bg-[var(--panel-bg)] px-3 py-2">
                 <span className="block text-[11px] font-medium text-[var(--text-secondary)]">
                   {monthlyIncomeLabel}
                 </span>
@@ -70,7 +70,7 @@ export function TransactionsMonthlyBalanceWidget({
                   {formatCurrency(monthlyBalance.income)}
                 </span>
               </div>
-              <div className="rounded-xl bg-[var(--panel-bg)] px-3 py-2">
+              <div className="clocket-glass-card rounded-xl bg-[var(--panel-bg)] px-3 py-2">
                 <span className="block text-[11px] font-medium text-[var(--text-secondary)]">
                   {monthlyExpenseLabel}
                 </span>

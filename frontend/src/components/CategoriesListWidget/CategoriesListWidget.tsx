@@ -28,25 +28,25 @@ export function CategoriesListWidget({
   return (
     <>
       {statusMessage && (
-        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-3">
+        <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-3">
           <span className="text-sm font-medium text-[var(--text-secondary)]">{statusMessage}</span>
         </div>
       )}
 
       {isLoading && categories.length === 0 && (
-        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+        <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
           <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
         </div>
       )}
 
       {!isLoading && hasError && (
-        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+        <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
           <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
         </div>
       )}
 
       {!isLoading && categories.length === 0 && (
-        <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+        <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
           <span className="block text-sm font-semibold text-[var(--text-primary)] font-['Outfit']">
             {emptyTitle}
           </span>
@@ -69,7 +69,7 @@ export function CategoriesListWidget({
             key={category.id ?? `${category.name}-${index}`}
             type="button"
             onClick={() => onCategorySelect?.(index)}
-            className="flex w-full items-center gap-3 rounded-2xl bg-[var(--surface-muted)] px-3 py-3 text-left"
+            className="clocket-glass-card flex w-full items-center gap-3 rounded-2xl bg-[var(--surface-muted)] px-3 py-3 text-left"
           >
             <IconBadge
               icon={category.icon}

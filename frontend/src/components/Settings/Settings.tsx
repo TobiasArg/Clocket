@@ -4,7 +4,6 @@ import {
   ListItemRow,
   PageHeader,
   PhosphorIcon,
-  SettingsGroup,
 } from "@/components";
 import { useAppSettings } from "@/hooks";
 import { applyTheme } from "@/utils";
@@ -228,78 +227,82 @@ export function Settings({
       <div className="flex-1 overflow-auto">
         <div className="flex flex-col gap-6 px-5 py-2">
           {statusMessage && (
-            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-2">
+            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-2">
               <span className="text-xs font-medium text-[var(--text-secondary)]">{statusMessage}</span>
             </div>
           )}
 
           {isLoading && !settings && (
-            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
               <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
             </div>
           )}
 
           {!isLoading && error && (
-            <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
               <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
             </div>
           )}
 
           {resolvedSections.map((section, sectionIndex) => (
-            <SettingsGroup key={section.title} title={section.title}>
-              {section.items.map((item, itemIndex) => {
-                const isNotificationsItem = !sections && sectionIndex === 1 && itemIndex === 1;
+            <section key={section.title} className="flex flex-col gap-2">
+              <span className="mb-1 text-[11px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
+                {section.title}
+              </span>
+              <div className="flex flex-col gap-2">
+                {section.items.map((item, itemIndex) => {
+                  const isNotificationsItem = !sections && sectionIndex === 1 && itemIndex === 1;
 
-                const rightNode = isNotificationsItem ? (
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={resolvedSettings.notificationsEnabled}
-                    aria-label="Alternar notificaciones"
-                    disabled={isTogglingNotifications}
-                    onClick={() => {
-                      void handleNotificationsToggle();
-                    }}
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full p-0.5 transition ${
-                      resolvedSettings.notificationsEnabled ? "bg-[#22C55E]" : "bg-[var(--surface-border)]"
-                    } disabled:cursor-not-allowed disabled:opacity-60`}
-                  >
-                    <span
-                      className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
-                        resolvedSettings.notificationsEnabled ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    />
-                  </button>
-                ) : (
-                  <PhosphorIcon name="caret-right" className="shrink-0 text-[var(--text-secondary)]" />
-                );
-
-                return (
-                  <ListItemRow
-                    key={item.name}
-                    left={(
-                      <IconBadge
-                        icon={item.icon}
-                        iconColor="text-[var(--panel-bg)]"
-                        size="w-[36px] h-[36px]"
-                        rounded="rounded-[10px]"
+                  const rightNode = isNotificationsItem ? (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={resolvedSettings.notificationsEnabled}
+                      aria-label="Alternar notificaciones"
+                      disabled={isTogglingNotifications}
+                      onClick={() => {
+                        void handleNotificationsToggle();
+                      }}
+                      className={`relative inline-flex h-7 w-12 items-center rounded-full p-0.5 transition ${
+                        resolvedSettings.notificationsEnabled ? "bg-[#22C55E]" : "bg-[var(--surface-border)]"
+                      } disabled:cursor-not-allowed disabled:opacity-60`}
+                    >
+                      <span
+                        className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+                          resolvedSettings.notificationsEnabled ? "translate-x-5" : "translate-x-0"
+                        }`}
                       />
-                    )}
-                    title={item.name}
-                    subtitle={item.description}
-                    titleClassName="text-[15px] font-semibold text-[var(--text-primary)] font-['Outfit']"
-                    subtitleClassName="truncate text-xs font-medium text-[var(--text-secondary)]"
-                    right={rightNode}
-                    onClick={isNotificationsItem ? undefined : () => {
-                      handleItemClick(sectionIndex, itemIndex);
-                    }}
-                    showBorder={itemIndex < section.items.length - 1}
-                    borderColor="border-[var(--surface-border)]"
-                    padding="p-4"
-                  />
-                );
-              })}
-            </SettingsGroup>
+                    </button>
+                  ) : (
+                    <PhosphorIcon name="caret-right" className="shrink-0 text-[var(--text-secondary)]" />
+                  );
+
+                  return (
+                    <ListItemRow
+                      key={item.name}
+                      left={(
+                        <IconBadge
+                          icon={item.icon}
+                          iconColor="text-[var(--panel-bg)]"
+                          size="w-[36px] h-[36px]"
+                          rounded="rounded-[10px]"
+                        />
+                      )}
+                      title={item.name}
+                      subtitle={item.description}
+                      titleClassName="text-[15px] font-semibold text-[var(--text-primary)] font-['Outfit']"
+                      subtitleClassName="truncate text-xs font-medium text-[var(--text-secondary)]"
+                      right={rightNode}
+                      onClick={isNotificationsItem ? undefined : () => {
+                        handleItemClick(sectionIndex, itemIndex);
+                      }}
+                      padding="py-4"
+                      className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4"
+                    />
+                  );
+                })}
+              </div>
+            </section>
           ))}
         </div>
       </div>

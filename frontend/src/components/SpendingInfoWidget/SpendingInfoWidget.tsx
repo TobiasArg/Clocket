@@ -28,7 +28,7 @@ export function SpendingInfoWidget({
     <CardSection
       title={title}
       titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
-      className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4"
+      className="clocket-aurora-card rounded-2xl p-4"
       action={(
         <div className="flex flex-col items-end">
           <span className="text-lg font-semibold text-[var(--text-primary)] font-['Outfit']">

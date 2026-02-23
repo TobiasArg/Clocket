@@ -125,7 +125,7 @@ export function BudgetListWidget({
             key={budget.id}
             type="button"
             onClick={() => onBudgetClick?.(budget.id)}
-            className="flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5 text-left"
+            className="clocket-glass-card flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5 text-left"
           >
             <div className="flex min-w-0 items-center justify-between w-full gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-3">

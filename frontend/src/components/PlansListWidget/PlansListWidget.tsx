@@ -58,13 +58,13 @@ export function PlansListWidget({
   return (
     <>
       {isLoading && items.length === 0 && (
-        <div className="rounded-[20px] p-5 bg-[var(--surface-muted)]">
+        <div className="clocket-glass-card rounded-[20px] bg-[var(--surface-muted)] p-5">
           <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
         </div>
       )}
 
       {!isLoading && hasError && (
-        <div className="rounded-[20px] p-5 bg-[var(--surface-muted)]">
+        <div className="clocket-glass-card rounded-[20px] bg-[var(--surface-muted)] p-5">
           <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
         </div>
       )}
@@ -106,7 +106,7 @@ export function PlansListWidget({
                 onPlanClick?.(index);
               }
             }}
-            className={`flex flex-col gap-4 rounded-[20px] p-5 text-left bg-[var(--surface-muted)] ${isCardClickable ? "cursor-pointer" : ""}`}
+            className={`clocket-glass-card flex flex-col gap-4 rounded-[20px] bg-[var(--surface-muted)] p-5 text-left ${isCardClickable ? "cursor-pointer" : ""}`}
           >
             <div className="flex justify-between items-start w-full gap-3">
               <div className="flex flex-col gap-1 min-w-0">
@@ -177,7 +177,7 @@ export function PlansListWidget({
                 </button>
               ) : (
                 <div
-                  className="rounded-xl bg-[var(--panel-bg)] px-3 py-3 flex flex-col gap-2 max-w-[280px]"
+                  className="clocket-glass-card flex max-w-[280px] flex-col gap-2 rounded-xl bg-[var(--panel-bg)] px-3 py-3"
                   onClick={(event) => {
                     event.stopPropagation();
                   }}
@@ -208,7 +208,7 @@ export function PlansListWidget({
       })}
 
       {!isLoading && !hasError && items.length === 0 && (
-        <div className="rounded-[20px] p-5 bg-[var(--surface-muted)]">
+        <div className="clocket-glass-card rounded-[20px] bg-[var(--surface-muted)] p-5">
           <span className="block text-base font-semibold text-[var(--text-primary)] font-['Outfit']">
             {emptyTitle}
           </span>

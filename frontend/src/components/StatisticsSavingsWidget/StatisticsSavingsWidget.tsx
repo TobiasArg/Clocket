@@ -162,9 +162,10 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
   return (
     <>
       <SummaryPanel
-        bg={`${savingsBg} border border-[var(--surface-border)]`}
+        bg="bg-transparent"
         rounded="rounded-[22px]"
         padding="p-5"
+        className={`clocket-aurora-card ${savingsBg}`}
       >
         <div className="flex items-start justify-between gap-3 w-full">
           <div className="min-w-0">

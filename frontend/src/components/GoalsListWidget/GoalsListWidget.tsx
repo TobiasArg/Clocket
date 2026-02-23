@@ -52,7 +52,7 @@ export function GoalsListWidget({
           key={goal.id}
           type="button"
           onClick={() => onOpenGoal?.(goal.id)}
-          className="w-full text-left flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5"
+          className="clocket-glass-card w-full text-left flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5"
         >
           <div className="flex min-w-0 items-center justify-between w-full gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-3">

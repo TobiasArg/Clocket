@@ -31,7 +31,7 @@ export function InstallmentPlansWidget({
       title={title}
       titleClassName="text-lg font-bold text-[var(--text-primary)] font-['Outfit']"
       gap="gap-3"
-      className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4"
+      className="clocket-aurora-card rounded-2xl p-4"
       action={(
         <button
           type="button"

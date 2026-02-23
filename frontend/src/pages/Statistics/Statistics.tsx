@@ -212,20 +212,18 @@ export function Statistics({
       <div className="flex-1 overflow-auto px-5 py-3 pb-6">
         <div className="flex flex-col gap-4">
           {isLoading && monthlyTransactionsCount === 0 && (
-            <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-4">
+            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
               <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
             </div>
           )}
 
           {!isLoading && hasError && (
-            <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-4">
+            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
               <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
             </div>
           )}
 
-          <section className="relative overflow-hidden rounded-[24px] border border-[var(--surface-border)] bg-[radial-gradient(120%_130%_at_10%_0%,rgba(34,197,94,0.16),rgba(255,255,255,0)_55%),radial-gradient(95%_120%_at_100%_100%,rgba(59,130,246,0.12),rgba(255,255,255,0)_60%),var(--surface-muted)] p-4">
-            <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[rgba(59,130,246,0.12)] blur-2xl" aria-hidden="true" />
-            <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-[rgba(34,197,94,0.12)] blur-2xl" aria-hidden="true" />
+          <section className="clocket-aurora-card rounded-[24px] p-4">
             <div className="relative flex flex-col gap-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

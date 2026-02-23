@@ -46,7 +46,7 @@ export const PlanStatusCounter = memo(function PlanStatusCounter({
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-w-0 flex-1 flex-col gap-1 rounded-xl border px-3 py-2 text-left ${containerClassName}`}
+      className={`clocket-glass-card flex min-w-0 flex-1 flex-col gap-1 rounded-xl border px-3 py-2 text-left ${containerClassName}`}
     >
       <div className="flex items-center gap-1.5">
         <span className={`h-2 w-2 rounded-full ${dotColorClassName}`} />

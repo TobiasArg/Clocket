@@ -48,7 +48,7 @@ export function SettingsModalShell({
       tabIndex={-1}
     >
       <div
-        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-[var(--surface-border)] bg-[var(--panel-bg)] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
+        className="clocket-glass-card max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl bg-[var(--panel-bg)] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"

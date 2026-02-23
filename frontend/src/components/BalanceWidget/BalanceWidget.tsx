@@ -31,7 +31,7 @@ export function BalanceWidget({
   };
 
   return (
-    <div className="rounded-2xl bg-[var(--surface-muted)] border border-[var(--surface-border)] p-4 flex flex-col gap-4">
+    <div className="clocket-aurora-card rounded-2xl p-4 flex flex-col gap-4">
       <div
         className="overflow-hidden select-none touch-pan-y"
         onPointerDown={(e) => {

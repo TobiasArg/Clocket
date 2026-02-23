@@ -61,7 +61,7 @@ export const StatisticsCategoryWidget = memo(function StatisticsCategoryWidget({
     <CardSection
       title={categoryTitle}
       titleClassName="text-base font-bold text-[var(--text-primary)] font-['Outfit']"
-      className="relative overflow-hidden rounded-[22px] border border-[var(--surface-border)] bg-[linear-gradient(170deg,var(--surface-muted),rgba(244,244,245,0.45))] p-5"
+      className="clocket-aurora-card rounded-[22px] p-5"
     >
       {!hasSegments ? (
         <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>

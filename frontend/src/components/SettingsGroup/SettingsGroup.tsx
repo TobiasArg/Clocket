@@ -16,7 +16,7 @@ export function SettingsGroup({
   return (
     <div className={`flex flex-col ${className}`}>
       <span className={titleClassName}>{title}</span>
-      <div className="flex flex-col overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)]">
+      <div className="clocket-glass-card flex flex-col overflow-hidden rounded-2xl bg-[var(--surface-muted)]">
         {children}
       </div>
     </div>

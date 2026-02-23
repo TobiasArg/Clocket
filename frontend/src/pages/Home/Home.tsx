@@ -177,13 +177,15 @@ export function Home({
 
       <div className={`flex-1 overflow-auto ${isEditorOpen ? "pointer-events-none" : ""}`}>
         <div className="flex flex-col gap-4 px-5 pb-5">
-          <BalanceWidget
-            activeSlide={activeBalanceSlide}
-            slides={balanceSlides}
-            onSlideChange={setActiveBalanceSlide}
-            incomeLabel={incomeLabel}
-            expenseLabel={expenseLabel}
-          />
+          <div className="mt-2">
+            <BalanceWidget
+              activeSlide={activeBalanceSlide}
+              slides={balanceSlides}
+              onSlideChange={setActiveBalanceSlide}
+              incomeLabel={incomeLabel}
+              expenseLabel={expenseLabel}
+            />
+          </div>
 
           <RecentTransactionsWidget
             title={recentTitle}

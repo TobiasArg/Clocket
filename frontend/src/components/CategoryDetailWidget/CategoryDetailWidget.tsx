@@ -85,7 +85,7 @@ export function CategoryDetailWidget({
       //handleAriaLabel="Desliza hacia arriba para cerrar"
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-muted)] p-3">
+        <div className="clocket-glass-card flex items-center gap-3 rounded-2xl bg-[var(--surface-muted)] p-3">
           <IconBadge
             icon={category.icon}
             bg={category.iconBg}
@@ -116,7 +116,7 @@ export function CategoryDetailWidget({
           )}
         </div>
 
-        <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--panel-bg)] p-3">
+        <div className="clocket-glass-card rounded-2xl bg-[var(--panel-bg)] p-3">
           <span className="block text-[11px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
             SUBCATEGORÍAS
           </span>
@@ -203,7 +203,7 @@ export function CategoryDetailWidget({
 
     {canManageCategory && isDeleteConfirmOpen && (
       <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/40 px-5">
-        <div className="w-full max-w-sm rounded-2xl bg-[var(--panel-bg)] p-5 flex flex-col gap-3 shadow-xl">
+        <div className="clocket-glass-card flex w-full max-w-sm flex-col gap-3 rounded-2xl bg-[var(--panel-bg)] p-5 shadow-xl">
           <span className="text-sm font-bold text-[var(--text-primary)] font-['Outfit']">{deleteConfirmTitle}</span>
           {isCategoryInUse && (
             <span className="text-xs font-semibold text-[#DC2626]">

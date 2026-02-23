@@ -22,8 +22,8 @@ const DEFAULT_GRID_ROWS: GridOption[][] = [
     { icon: "calendar", label: "Planes", to: "/plans" },
   ],
   [
-    { icon: "gear", label: "Configuración", to: "/settings" },
     { icon: "target", label: "Metas", to: "/goals" },
+    { icon: "gear", label: "Configuración", to: "/settings" },
   ],
 ];
 

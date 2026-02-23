@@ -89,7 +89,7 @@ export function CategoryQuickAddWidget({
       )}
     >
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-muted)] p-3">
+        <div className="clocket-glass-card flex items-center gap-3 rounded-2xl bg-[var(--surface-muted)] p-3">
           <IconBadge
             icon={previewIcon}
             bg={previewColorClass}
