@@ -225,6 +225,47 @@ describe("localStorage repositories smoke", () => {
     expect(categoryAfterRemove?.subcategories).toEqual(["Casa"]);
   });
 
+  it("goals repository consolidates duplicated Goals parent categories", async () => {
+    const duplicateA = await categoriesRepository.create({
+      name: "Goals",
+      icon: "target",
+      iconBg: "bg-[#0EA5E9]",
+    });
+    await categoriesRepository.update(duplicateA.id, {
+      subcategories: ["Meta A"],
+      subcategoryCount: 1,
+    });
+
+    const duplicateB = await categoriesRepository.create({
+      name: " goals ",
+      icon: "target",
+      iconBg: "bg-[#0EA5E9]",
+    });
+    await categoriesRepository.update(duplicateB.id, {
+      subcategories: ["Meta B"],
+      subcategoryCount: 1,
+    });
+
+    const createdGoal = await goalsRepository.create({
+      title: "Viaje",
+      description: "Ahorro para vacaciones",
+      targetAmount: 1000,
+      deadlineDate: "2026-12-31",
+      icon: "airplane-tilt",
+      colorKey: "sky",
+    });
+
+    const categories = await categoriesRepository.list();
+    const normalizedGoalsName = GOALS_PARENT_CATEGORY_NAME.toLocaleLowerCase("es-ES");
+    const goalsParents = categories.filter((category) => (
+      category.name.trim().toLocaleLowerCase("es-ES") === normalizedGoalsName
+    ));
+
+    expect(goalsParents).toHaveLength(1);
+    expect(createdGoal.categoryId).toBe(goalsParents[0].id);
+    expect(goalsParents[0].subcategories).toEqual(["Meta A", "Meta B", "Viaje"]);
+  });
+
   it("investments repository aggregates entries per ticker and supports entry delete", async () => {
     const created = await investmentsRepository.addEntry({
       ticker: "aapl",

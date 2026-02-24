@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { CuotaItem } from "@/types";
 import { CardSection, ListItemRow } from "@/components";
 
@@ -14,7 +15,7 @@ export interface InstallmentPlansWidgetProps {
   viewAllLabel: string;
 }
 
-export function InstallmentPlansWidget({
+export const InstallmentPlansWidget = memo(function InstallmentPlansWidget({
   cuotas,
   emptyLabel,
   errorLabel,
@@ -70,4 +71,4 @@ export function InstallmentPlansWidget({
       ))}
     </CardSection>
   );
-}
+});

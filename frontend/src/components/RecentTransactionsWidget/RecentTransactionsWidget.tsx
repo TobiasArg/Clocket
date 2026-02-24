@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CardSection, IconBadge, ListItemRow } from "@/components";
 
 export interface RecentTransactionRow {
@@ -22,7 +23,7 @@ export interface RecentTransactionsWidgetProps {
   viewAllLabel: string;
 }
 
-export function RecentTransactionsWidget({
+export const RecentTransactionsWidget = memo(function RecentTransactionsWidget({
   emptyLabel,
   errorLabel,
   hasError,
@@ -85,4 +86,4 @@ export function RecentTransactionsWidget({
       ))}
     </CardSection>
   );
-}
+});

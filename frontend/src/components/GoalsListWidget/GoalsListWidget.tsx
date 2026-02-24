@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CardSection, TextBadge } from "@/components";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { ProgressSection } from "../ProgressSection/ProgressSection";
@@ -15,7 +16,7 @@ export interface GoalsListWidgetProps {
   sectionTitle?: string;
 }
 
-export function GoalsListWidget({
+export const GoalsListWidget = memo(function GoalsListWidget({
   emptyHint = "Agrega una meta para empezar a ahorrar con foco.",
   emptyTitle = "No hay metas",
   errorLabel = "No pudimos cargar las metas. Intenta nuevamente.",
@@ -51,6 +52,7 @@ export function GoalsListWidget({
         <button
           key={goal.id}
           type="button"
+          aria-label={goal.title}
           onClick={() => onOpenGoal?.(goal.id)}
           className="clocket-glass-card w-full text-left flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5"
         >
@@ -94,4 +96,4 @@ export function GoalsListWidget({
       ))}
     </CardSection>
   );
-}
+});

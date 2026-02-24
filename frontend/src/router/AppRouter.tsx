@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect } from "react";
 import { useAppSettings } from "@/hooks";
+import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
 import { Home } from "@/pages/Home/Home";
 import {
   type AppPath,
@@ -89,7 +90,7 @@ function RouterFallback({ label = "Cargando..." }: { label?: string }) {
   );
 }
 
-export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
+function AppRouterInner({ currentPath, navigateTo }: AppRouterProps) {
   const { settings } = useAppSettings();
   const profile = settings?.profile;
   const userName = profile?.name?.trim() || "Usuario";
@@ -246,4 +247,12 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
     default:
       return <Home avatarInitials={avatarInitials} userName={userName} />;
   }
+}
+
+export function AppRouter(props: AppRouterProps) {
+  return (
+    <ErrorBoundary>
+      <AppRouterInner {...props} />
+    </ErrorBoundary>
+  );
 }

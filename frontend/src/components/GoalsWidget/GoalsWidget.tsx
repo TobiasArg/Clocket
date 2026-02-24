@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { GoalCardSimple } from "@/types";
 import { getGoalColorOption } from "@/utils";
 import { CardSection, IconBadge } from "@/components";
@@ -8,7 +9,7 @@ export interface GoalsWidgetProps {
   onGoalClick?: (goalId: string) => void;
 }
 
-export function GoalsWidget({
+export const GoalsWidget = memo(function GoalsWidget({
   goals,
   title,
   onGoalClick,
@@ -28,6 +29,7 @@ export function GoalsWidget({
             <button
               key={goal.id}
               type="button"
+              aria-label={goal.name}
               onClick={() => onGoalClick?.(goal.id)}
               className="flex flex-col gap-3 rounded-[20px] bg-[var(--panel-bg)] p-4 min-w-[140px] text-left"
             >
@@ -62,4 +64,4 @@ export function GoalsWidget({
       )}
     </CardSection>
   );
-}
+});

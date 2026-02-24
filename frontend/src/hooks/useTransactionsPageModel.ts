@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   TRANSACTION_EXPENSE_TEXT_CLASS,
   TRANSACTION_INCOME_TEXT_CLASS,
@@ -141,6 +141,22 @@ const getAmountColorBySign = (sign: AmountSign): string => {
   return sign === "+" ? TRANSACTION_INCOME_TEXT_CLASS : TRANSACTION_EXPENSE_TEXT_CLASS;
 };
 
+const normalizeCategoryMatcher = (value: string | undefined): string => {
+  return (value ?? "").trim().toLocaleLowerCase("es-ES");
+};
+
+const isIncomeCategory = (category: { id?: string; name: string }): boolean => {
+  const normalizedName = normalizeCategoryMatcher(category.name);
+  const normalizedId = normalizeCategoryMatcher(category.id);
+
+  return (
+    normalizedName === "ingreso" ||
+    normalizedName === "ingresos" ||
+    normalizedName.includes("ingreso") ||
+    normalizedId.includes("income")
+  );
+};
+
 const getAbsoluteAmountFromValue = (value: string): string => {
   const absolute = Math.abs(parseSignedAmountValue(value));
   if (!Number.isFinite(absolute)) {
@@ -263,10 +279,14 @@ export const useTransactionsPageModel = (
     return map;
   }, [categories]);
 
-  const sortedCategories = useMemo(
-    () => [...categories].sort((left, right) => left.name.localeCompare(right.name)),
-    [categories],
-  );
+  const sortedCategories = useMemo(() => {
+    const ordered = [...categories].sort((left, right) => left.name.localeCompare(right.name));
+    if (editingAmountSign !== "+") {
+      return ordered;
+    }
+
+    return ordered.filter((category) => isIncomeCategory(category));
+  }, [categories, editingAmountSign]);
 
   const accountsById = useMemo(() => {
     const map = new Map<string, string>();
@@ -333,7 +353,7 @@ export const useTransactionsPageModel = (
     sortedCategories,
   ]);
 
-  const resolveCategoryLabel = (transaction: TransactionItem): string => {
+  const resolveCategoryLabel = useCallback((transaction: TransactionItem): string => {
     if (transaction.categoryId) {
       const categoryName = categoriesById.get(transaction.categoryId);
       if (categoryName) {
@@ -343,11 +363,11 @@ export const useTransactionsPageModel = (
     }
 
     return uncategorizedLabel;
-  };
+  }, [categoriesById, uncategorizedLabel]);
 
-  const resolveAccountLabel = (transaction: TransactionItem): string => {
+  const resolveAccountLabel = useCallback((transaction: TransactionItem): string => {
     return accountsById.get(transaction.accountId) ?? uncategorizedAccountLabel;
-  };
+  }, [accountsById, uncategorizedAccountLabel]);
 
   const monthGroups = useMemo<TransactionsMonthGroup[]>(() => {
     const grouped = new Map<
@@ -404,7 +424,7 @@ export const useTransactionsPageModel = (
       }));
   }, [items, categoryIconById]);
 
-  const closeEditor = () => {
+  const closeEditor = useCallback(() => {
     setEditorMode(null);
     setSelectedTransactionId(null);
     setSelectedAccountId("");
@@ -415,9 +435,9 @@ export const useTransactionsPageModel = (
     setAmountInput("");
     setDescriptionInput("");
     setShowValidation(false);
-  };
+  }, [appCurrency]);
 
-  const openCreateEditor = () => {
+  const openCreateEditor = useCallback(() => {
     setEditorMode("create");
     setSelectedTransactionId(null);
     setSelectedAccountId(defaultAccountId);
@@ -428,9 +448,9 @@ export const useTransactionsPageModel = (
     setAmountInput("");
     setDescriptionInput("");
     setShowValidation(false);
-  };
+  }, [appCurrency, defaultAccountId]);
 
-  const openEditEditor = (transaction: TransactionItem) => {
+  const openEditEditor = useCallback((transaction: TransactionItem) => {
     setEditorMode("edit");
     setSelectedTransactionId(transaction.id);
     setSelectedAccountId(transaction.accountId);
@@ -441,9 +461,9 @@ export const useTransactionsPageModel = (
     setAmountInput(getAbsoluteAmountFromValue(transaction.amount));
     setDescriptionInput(transaction.name);
     setShowValidation(false);
-  };
+  }, [appCurrency]);
 
-  const handleHeaderAction = () => {
+  const handleHeaderAction = useCallback(() => {
     if (isEditorOpen) {
       closeEditor();
     } else {
@@ -451,18 +471,18 @@ export const useTransactionsPageModel = (
     }
 
     onFilterClick?.();
-  };
+  }, [isEditorOpen, closeEditor, openCreateEditor, onFilterClick]);
 
-  const handleTransactionRowClick = (
+  const handleTransactionRowClick = useCallback((
     transaction: TransactionItem,
     monthIndex: number,
     transactionIndex: number,
   ) => {
     openEditEditor(transaction);
     onTransactionClick?.(monthIndex, transactionIndex);
-  };
+  }, [openEditEditor, onTransactionClick]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     setShowValidation(true);
 
     if (!isFormValid) {
@@ -530,14 +550,30 @@ export const useTransactionsPageModel = (
       closeEditor();
       setShowSaved(true);
     }
-  };
+  }, [
+    isFormValid,
+    editorMode,
+    selectedCategoryId,
+    categoriesById,
+    categoryIconById,
+    editingAmountSign,
+    amountValue,
+    selectedCurrency,
+    selectedAccountId,
+    selectedSubcategoryName,
+    resolvedDescription,
+    selectedTransactionId,
+    create,
+    update,
+    closeEditor,
+  ]);
 
-  const setSelectedCategoryId = (value: string) => {
+  const setSelectedCategoryId = useCallback((value: string) => {
     setSelectedCategoryIdState(value);
     setSelectedSubcategoryName("");
-  };
+  }, []);
 
-  const requestDeleteTransaction = (id: string): void => {
+  const requestDeleteTransaction = useCallback((id: string): void => {
     if (!id || pendingDeleteTransactionId) {
       return;
     }
@@ -548,17 +584,17 @@ export const useTransactionsPageModel = (
     }
 
     setDeleteConfirmTransactionId(id);
-  };
+  }, [pendingDeleteTransactionId, items]);
 
-  const cancelDeleteTransaction = (): void => {
+  const cancelDeleteTransaction = useCallback((): void => {
     if (pendingDeleteTransactionId) {
       return;
     }
 
     setDeleteConfirmTransactionId(null);
-  };
+  }, [pendingDeleteTransactionId]);
 
-  const confirmDeleteTransaction = async (): Promise<void> => {
+  const confirmDeleteTransaction = useCallback(async (): Promise<void> => {
     if (!deleteConfirmTransactionId || pendingDeleteTransactionId === deleteConfirmTransactionId) {
       return;
     }
@@ -580,7 +616,7 @@ export const useTransactionsPageModel = (
     setPendingDeleteTransactionId((current) => (
       current === deleteConfirmTransactionId ? null : current
     ));
-  };
+  }, [deleteConfirmTransactionId, pendingDeleteTransactionId, remove, selectedTransactionId, closeEditor]);
 
   return {
     accountsError,

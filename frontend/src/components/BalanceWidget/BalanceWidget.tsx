@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { memo, useRef } from "react";
 import { HeroBalance } from "@/components";
 
 export interface BalanceWidgetSlide {
@@ -17,7 +17,7 @@ export interface BalanceWidgetProps {
   slides: BalanceWidgetSlide[];
 }
 
-export function BalanceWidget({
+export const BalanceWidget = memo(function BalanceWidget({
   activeSlide,
   expenseLabel,
   incomeLabel,
@@ -86,4 +86,4 @@ export function BalanceWidget({
       )}
     </div>
   );
-}
+});

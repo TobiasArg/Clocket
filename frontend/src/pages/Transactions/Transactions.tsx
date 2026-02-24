@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   PageHeader,
   TransactionDeleteConfirmDialog,
@@ -158,6 +159,9 @@ export function Transactions({
     uncategorizedAccountLabel,
   });
 
+  const handleSubmitVoid = useCallback(() => { void handleSubmit(); }, [handleSubmit]);
+  const handleConfirmDeleteVoid = useCallback(() => { void confirmDeleteTransaction(); }, [confirmDeleteTransaction]);
+
   return (
     <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <PageHeader
@@ -264,9 +268,7 @@ export function Transactions({
           onSelectedSubcategoryNameChange={setSelectedSubcategoryName}
           onSignChange={setEditingAmountSign}
           onRequestClose={handleCloseEditor}
-          onSubmit={() => {
-            void handleSubmit();
-          }}
+          onSubmit={handleSubmitVoid}
         />
       </div>
 
@@ -279,9 +281,7 @@ export function Transactions({
         cancelLabel={deleteCancelLabel}
         transactionName={deleteConfirmTransactionName}
         onCancel={cancelDeleteTransaction}
-        onConfirm={() => {
-          void confirmDeleteTransaction();
-        }}
+        onConfirm={handleConfirmDeleteVoid}
       />
     </div>
   );

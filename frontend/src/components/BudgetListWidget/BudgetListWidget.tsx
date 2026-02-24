@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CardSection } from "@/components";
 import { IconBadge } from "../IconBadge/IconBadge";
 import {
@@ -58,7 +59,7 @@ const resolveCssColorFromBgClass = (bgClass: string | undefined): string | null 
   return match[1]?.trim() || null;
 };
 
-export function BudgetListWidget({
+export const BudgetListWidget = memo(function BudgetListWidget({
   categoryById,
   emptyActionLabel,
   emptyHint,
@@ -124,6 +125,7 @@ export function BudgetListWidget({
           <button
             key={budget.id}
             type="button"
+            aria-label={budget.name}
             onClick={() => onBudgetClick?.(budget.id)}
             className="clocket-glass-card flex flex-col gap-4 bg-[var(--surface-muted)] rounded-[20px] p-5 text-left"
           >
@@ -182,4 +184,4 @@ export function BudgetListWidget({
       })}
     </CardSection>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { InvestmentPositionItem } from "@/components/InvestmentPositionItem/InvestmentPositionItem";
 import type { InvestmentTableRow } from "@/hooks/useInvestmentsPageModel";
 
@@ -8,7 +9,7 @@ export interface InvestmentListWidgetProps {
   onOpenDetail: (id: string) => void;
 }
 
-export function InvestmentListWidget({
+export const InvestmentListWidget = memo(function InvestmentListWidget({
   rows,
   isLoading,
   errorMessage,
@@ -67,4 +68,4 @@ export function InvestmentListWidget({
       ))}
     </div>
   );
-}
+});

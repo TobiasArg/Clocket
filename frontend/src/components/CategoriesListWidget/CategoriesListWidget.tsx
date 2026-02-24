@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Category } from "@/types";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
@@ -14,7 +15,7 @@ export interface CategoriesListWidgetProps {
   statusMessage?: string | null;
 }
 
-export function CategoriesListWidget({
+export const CategoriesListWidget = memo(function CategoriesListWidget({
   categories = [],
   emptyHint = "Agrega tu primera categoría para organizar tus movimientos.",
   emptyTitle = "No hay categorías",
@@ -68,6 +69,7 @@ export function CategoriesListWidget({
           <button
             key={category.id ?? `${category.name}-${index}`}
             type="button"
+            aria-label={category.name}
             onClick={() => onCategorySelect?.(index)}
             className="clocket-glass-card flex w-full items-center gap-3 rounded-2xl bg-[var(--surface-muted)] px-3 py-3 text-left"
           >
@@ -91,4 +93,4 @@ export function CategoriesListWidget({
       })}
     </>
   );
-}
+});

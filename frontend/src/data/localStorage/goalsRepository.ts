@@ -124,6 +124,14 @@ const normalizeSubcategories = (value: string[] | undefined): string[] => {
   return Array.from(deduped.values());
 };
 
+const areStringArraysEqual = (left: string[], right: string[]): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
+};
+
 const ensureUniqueGoalTitle = (
   title: string,
   items: GoalPlanItem[],
@@ -266,12 +274,12 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
   }
 
   public async list(): Promise<GoalPlanItem[]> {
-    const state = await this.syncGoalsCategoryStructure(this.readState());
+    const state = this.readState();
     return cloneGoals(state.items);
   }
 
   public async getById(id: string): Promise<GoalPlanItem | null> {
-    const state = await this.syncGoalsCategoryStructure(this.readState());
+    const state = this.readState();
     const found = state.items.find((item) => item.id === id);
     return found ? cloneGoal(found) : null;
   }
@@ -281,7 +289,10 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
     const normalizedTitle = normalizeTitle(input.title);
     ensureUniqueGoalTitle(normalizedTitle, state.items);
 
-    const goalsCategory = await this.ensureGoalsParentCategory();
+    const goalsCategory = await this.ensureGoalsParentCategory(
+      state.items[0]?.categoryId,
+      [...state.items.map((item) => item.title), normalizedTitle],
+    );
     await this.ensureGoalSubcategory(goalsCategory.id, normalizedTitle);
 
     const created = buildCreatedGoal(
@@ -311,7 +322,10 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
     const updated = buildUpdatedGoal(current, patch);
     ensureUniqueGoalTitle(updated.title, state.items, updated.id);
 
-    const goalsCategory = await this.ensureGoalsParentCategory();
+    const goalsCategory = await this.ensureGoalsParentCategory(
+      current.categoryId,
+      state.items.map((item) => item.id === id ? updated.title : item.title),
+    );
     updated.categoryId = goalsCategory.id;
 
     await this.ensureGoalSubcategory(goalsCategory.id, updated.title);
@@ -343,8 +357,7 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
   }
 
   public async clearAll(): Promise<void> {
-    const categories = await categoriesRepository.list();
-    const goalsCategory = categories.find(isGoalsParentCategory);
+    const goalsCategory = await this.ensureGoalsParentCategory();
 
     if (goalsCategory) {
       await categoriesRepository.update(goalsCategory.id, {
@@ -358,10 +371,14 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
 
   private async syncGoalsCategoryStructure(state: GoalsStorageV2): Promise<GoalsStorageV2> {
     if (state.items.length === 0) {
+      await this.ensureGoalsParentCategory();
       return state;
     }
 
-    const goalsCategory = await this.ensureGoalsParentCategory();
+    const goalsCategory = await this.ensureGoalsParentCategory(
+      state.items[0]?.categoryId,
+      state.items.map((item) => item.title),
+    );
     const previousCategoryIds = new Set<string>(
       state.items
         .map((item) => item.categoryId)
@@ -384,21 +401,6 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
       }),
     };
 
-    const goalTitles = normalizedState.items.map((item) => item.title);
-    const goalsCategorySnapshot = await categoriesRepository.getById(goalsCategory.id);
-    const currentSubcategories = normalizeSubcategories(goalsCategorySnapshot?.subcategories);
-    const mergedSubcategories = normalizeSubcategories([...currentSubcategories, ...goalTitles]);
-
-    if (
-      mergedSubcategories.length !== currentSubcategories.length ||
-      mergedSubcategories.some((value, index) => value !== currentSubcategories[index])
-    ) {
-      await categoriesRepository.update(goalsCategory.id, {
-        subcategoryCount: mergedSubcategories.length,
-        subcategories: mergedSubcategories,
-      });
-    }
-
     if (hasStateChanges) {
       this.writeState(normalizedState);
     }
@@ -420,31 +422,61 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
     return normalizedState;
   }
 
-  private async ensureGoalsParentCategory(): Promise<CategoryItem> {
+  private async ensureGoalsParentCategory(
+    preferredCategoryId?: string,
+    goalTitles: string[] = [],
+  ): Promise<CategoryItem> {
     const categories = await categoriesRepository.list();
-    const existing = categories.find(isGoalsParentCategory);
+    const goalCategories = categories.filter(isGoalsParentCategory);
 
-    if (existing) {
-      if (
-        existing.icon !== GOALS_PARENT_CATEGORY_ICON ||
-        existing.iconBg !== GOALS_PARENT_CATEGORY_ICON_BG
-      ) {
-        const updated = await categoriesRepository.update(existing.id, {
-          icon: GOALS_PARENT_CATEGORY_ICON,
-          iconBg: GOALS_PARENT_CATEGORY_ICON_BG,
-        });
+    let canonical = goalCategories.find((category) => category.id === preferredCategoryId)
+      ?? goalCategories[0]
+      ?? null;
 
-        return updated ?? existing;
-      }
-
-      return existing;
+    if (!canonical) {
+      canonical = await categoriesRepository.create({
+        name: GOALS_PARENT_CATEGORY_NAME,
+        icon: GOALS_PARENT_CATEGORY_ICON,
+        iconBg: GOALS_PARENT_CATEGORY_ICON_BG,
+      });
     }
 
-    return categoriesRepository.create({
-      name: GOALS_PARENT_CATEGORY_NAME,
-      icon: GOALS_PARENT_CATEGORY_ICON,
-      iconBg: GOALS_PARENT_CATEGORY_ICON_BG,
-    });
+    const duplicateCategories = goalCategories.filter((category) => category.id !== canonical.id);
+    const mergedSubcategories = normalizeSubcategories([
+      ...normalizeSubcategories(canonical.subcategories),
+      ...duplicateCategories.flatMap((category) => normalizeSubcategories(category.subcategories)),
+      ...goalTitles,
+    ]);
+
+    const shouldNormalizeAppearance = (
+      canonical.name !== GOALS_PARENT_CATEGORY_NAME ||
+      canonical.icon !== GOALS_PARENT_CATEGORY_ICON ||
+      canonical.iconBg !== GOALS_PARENT_CATEGORY_ICON_BG ||
+      canonical.subcategoryCount !== mergedSubcategories.length ||
+      !areStringArraysEqual(normalizeSubcategories(canonical.subcategories), mergedSubcategories)
+    );
+
+    if (shouldNormalizeAppearance) {
+      const updated = await categoriesRepository.update(canonical.id, {
+        name: GOALS_PARENT_CATEGORY_NAME,
+        icon: GOALS_PARENT_CATEGORY_ICON,
+        iconBg: GOALS_PARENT_CATEGORY_ICON_BG,
+        subcategoryCount: mergedSubcategories.length,
+        subcategories: mergedSubcategories,
+      });
+
+      if (updated) {
+        canonical = updated;
+      }
+    }
+
+    if (duplicateCategories.length > 0) {
+      for (const duplicate of duplicateCategories) {
+        await categoriesRepository.remove(duplicate.id);
+      }
+    }
+
+    return canonical;
   }
 
   private async ensureGoalSubcategory(categoryId: string, subcategoryName: string): Promise<void> {

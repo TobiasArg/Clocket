@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { SpendingCategory } from "@/types";
 import { CardSection, SpendingBar } from "@/components";
 
@@ -13,7 +14,7 @@ export interface SpendingInfoWidgetProps {
   total: string;
 }
 
-export function SpendingInfoWidget({
+export const SpendingInfoWidget = memo(function SpendingInfoWidget({
   categories,
   emptyLabel,
   isLoading,
@@ -60,4 +61,4 @@ export function SpendingInfoWidget({
       ))}
     </CardSection>
   );
-}
+});

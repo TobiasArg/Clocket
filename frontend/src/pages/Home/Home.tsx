@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type {
   CuotaItem,
@@ -149,10 +150,12 @@ export function Home({
     sortedCategories,
   } = useTransactionsPageModel();
 
-  const handleAddTransactionPress = () => {
+  const handleAddTransactionPress = useCallback(() => {
     handleHeaderAction();
     onAddTransactionClick?.();
-  };
+  }, [handleHeaderAction, onAddTransactionClick]);
+
+  const handleSubmitVoid = useCallback(() => { void handleSubmit(); }, [handleSubmit]);
 
   return (
     <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
@@ -303,9 +306,7 @@ export function Home({
         onSelectedSubcategoryNameChange={setSelectedSubcategoryName}
         onSignChange={setEditingAmountSign}
         onRequestClose={handleCloseEditor}
-        onSubmit={() => {
-          void handleSubmit();
-        }}
+        onSubmit={handleSubmitVoid}
       />
     </div>
   );
