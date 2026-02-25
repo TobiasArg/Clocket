@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Avatar } from "../Avatar/Avatar";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
@@ -12,7 +13,7 @@ export interface PageHeaderProps {
   actionIconClassName?: string;
 }
 
-export function PageHeader({
+export const PageHeader = memo(function PageHeader({
   title,
   avatarInitials,
   onBackClick,
@@ -53,4 +54,4 @@ export function PageHeader({
       )}
     </div>
   );
-}
+});

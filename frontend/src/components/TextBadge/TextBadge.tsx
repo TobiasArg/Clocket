@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 export interface TextBadgeProps {
   text: string;
   bg?: string;
@@ -9,7 +11,7 @@ export interface TextBadgeProps {
   className?: string;
 }
 
-export function TextBadge({
+export const TextBadge = memo(function TextBadge({
   text,
   bg = "bg-[var(--surface-muted)]",
   textColor = "text-[var(--text-primary)]",
@@ -24,4 +26,4 @@ export function TextBadge({
       <span className={`block truncate ${fontSize} ${fontWeight} ${textColor}`}>{text}</span>
     </div>
   );
-}
+});

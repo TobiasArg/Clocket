@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { getPercentWidthClass } from "@/utils";
 
 export interface ProgressBarProps {
@@ -7,7 +8,7 @@ export interface ProgressBarProps {
   height?: string;
 }
 
-export function ProgressBar({
+export const ProgressBar = memo(function ProgressBar({
   percent,
   barColor,
   trackColor = "bg-[var(--surface-muted)]",
@@ -20,4 +21,4 @@ export function ProgressBar({
       <div className={`h-full rounded ${barColor} ${widthClassName}`} />
     </div>
   );
-}
+});

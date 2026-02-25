@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 export interface AvatarProps {
   initials: string;
   bg?: string;
@@ -8,7 +10,7 @@ export interface AvatarProps {
   className?: string;
 }
 
-export function Avatar({
+export const Avatar = memo(function Avatar({
   initials,
   bg = "bg-[var(--text-primary)]",
   size = "w-[44px] h-[44px]",
@@ -22,4 +24,4 @@ export function Avatar({
       <span className={`${fontWeight} ${textSize} ${textColor}`}>{initials}</span>
     </div>
   );
-}
+});

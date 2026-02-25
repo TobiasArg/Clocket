@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ProgressBar } from "@/components";
 
 export interface ProgressSectionProps {
@@ -12,7 +13,7 @@ export interface ProgressSectionProps {
   className?: string;
 }
 
-export function ProgressSection({
+export const ProgressSection = memo(function ProgressSection({
   percent,
   barColor,
   trackColor = "bg-[var(--surface-border)]",
@@ -34,4 +35,4 @@ export function ProgressSection({
       )}
     </div>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { NavItem } from "@/types";
 import { navigateToPath } from "@/utils";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
@@ -8,7 +9,7 @@ export interface BottomNavigationProps {
   onItemClick?: (index: number) => void;
 }
 
-export function BottomNavigation({
+export const BottomNavigation = memo(function BottomNavigation({
   items,
   activeColor = "text-[var(--text-primary)]",
   onItemClick,
@@ -91,4 +92,4 @@ export function BottomNavigation({
       </div>
     </div>
   );
-}
+});

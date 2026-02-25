@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { PhosphorIcon } from "@/components";
 
 export interface IconBadgeProps {
@@ -10,7 +11,7 @@ export interface IconBadgeProps {
   className?: string;
 }
 
-export function IconBadge({
+export const IconBadge = memo(function IconBadge({
   icon,
   bg = "bg-[var(--text-primary)]",
   iconColor = "text-white",
@@ -24,4 +25,4 @@ export function IconBadge({
       <PhosphorIcon name={icon} className={iconColor} size={iconSize} />
     </div>
   );
-}
+});

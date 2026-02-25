@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { getPercentWidthClass } from "@/utils";
 
 export interface SpendingBarProps {
@@ -8,7 +9,7 @@ export interface SpendingBarProps {
   className?: string;
 }
 
-export function SpendingBar({
+export const SpendingBar = memo(function SpendingBar({
   label,
   percentage,
   barColor,
@@ -28,4 +29,4 @@ export function SpendingBar({
       </span>
     </div>
   );
-}
+});

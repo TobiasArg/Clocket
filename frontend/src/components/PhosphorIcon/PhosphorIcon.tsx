@@ -1,10 +1,12 @@
+import { memo } from "react";
+
 export interface PhosphorIconProps {
   name: string;
   className?: string;
   size?: string;
 }
 
-export function PhosphorIcon({
+export const PhosphorIcon = memo(function PhosphorIcon({
   name,
   className = "",
   size = "text-[20px]",
@@ -14,4 +16,4 @@ export function PhosphorIcon({
       {name}
     </span>
   );
-}
+});

@@ -1,5 +1,6 @@
 import { AppRouter } from "./router/AppRouter";
 import { useRouter } from "./router/useRouter";
+import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
 
 export function App() {
   const { currentPath, navigateTo } = useRouter();
@@ -13,12 +14,14 @@ export function App() {
     : "app-root-shell w-full h-screen h-dvh overflow-hidden";
 
   return (
-    <div className={rootClass}>
-      <div className={shellClass}>
-        <div className="app-router-host">
-          <AppRouter currentPath={currentPath} navigateTo={navigateTo} />
+    <ErrorBoundary>
+      <div className={rootClass}>
+        <div className={shellClass}>
+          <div className="app-router-host">
+            <AppRouter currentPath={currentPath} navigateTo={navigateTo} />
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

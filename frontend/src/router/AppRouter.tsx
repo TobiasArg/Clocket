@@ -1,6 +1,5 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useCallback, useEffect } from "react";
 import { useAppSettings } from "@/hooks";
-import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
 import { Home } from "@/pages/Home/Home";
 import {
   type AppPath,
@@ -90,7 +89,7 @@ function RouterFallback({ label = "Cargando..." }: { label?: string }) {
   );
 }
 
-function AppRouterInner({ currentPath, navigateTo }: AppRouterProps) {
+export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
   const { settings } = useAppSettings();
   const profile = settings?.profile;
   const userName = profile?.name?.trim() || "Usuario";
@@ -106,6 +105,13 @@ function AppRouterInner({ currentPath, navigateTo }: AppRouterProps) {
     name: userName,
     email: profile?.email?.trim() || "usuario@email.com",
   };
+
+  const goToTransactions = useCallback(() => navigateTo("/transactions"), [navigateTo]);
+  const goToPlans = useCallback(() => navigateTo("/plans"), [navigateTo]);
+  const goToGoal = useCallback((id: string) => navigateTo(toGoalDetailPath(id)), [navigateTo]);
+  const goToBudget = useCallback((id: string) => navigateTo(toBudgetDetailPath(id)), [navigateTo]);
+  const goToGoalFromList = useCallback((id: string) => navigateTo(toGoalDetailPath(id)), [navigateTo]);
+  const noopTransactionClick = useCallback(() => undefined, []);
 
   useEffect(() => {
     if (currentPath !== "/" && currentPath !== "/home") {
@@ -157,15 +163,15 @@ function AppRouterInner({ currentPath, navigateTo }: AppRouterProps) {
         <Home
           avatarInitials={avatarInitials}
           userName={userName}
-          onSeeAllTransactions={() => navigateTo("/transactions")}
-          onSeeAllCuotas={() => navigateTo("/plans")}
-          onGoalClick={(id) => navigateTo(toGoalDetailPath(id))}
+          onSeeAllTransactions={goToTransactions}
+          onSeeAllCuotas={goToPlans}
+          onGoalClick={goToGoal}
         />
       );
     case "/transactions":
       return (
         <Suspense fallback={<RouterFallback />}>
-          <TransactionsLazy onBackClick={goBack} onTransactionClick={() => undefined} />
+          <TransactionsLazy onBackClick={goBack} onTransactionClick={noopTransactionClick} />
         </Suspense>
       );
     case "/accounts":
@@ -185,7 +191,7 @@ function AppRouterInner({ currentPath, navigateTo }: AppRouterProps) {
         <Suspense fallback={<RouterFallback />}>
           <BudgetsLazy
             avatarInitials={avatarInitials}
-            onBudgetClick={(id) => navigateTo(toBudgetDetailPath(id))}
+            onBudgetClick={goToBudget}
           />
         </Suspense>
       );
@@ -200,7 +206,7 @@ function AppRouterInner({ currentPath, navigateTo }: AppRouterProps) {
         <Suspense fallback={<RouterFallback />}>
           <GoalsLazy
             onBackClick={goBack}
-            onGoalClick={(id) => navigateTo(toGoalDetailPath(id))}
+            onGoalClick={goToGoalFromList}
           />
         </Suspense>
       );
@@ -247,12 +253,4 @@ function AppRouterInner({ currentPath, navigateTo }: AppRouterProps) {
     default:
       return <Home avatarInitials={avatarInitials} userName={userName} />;
   }
-}
-
-export function AppRouter(props: AppRouterProps) {
-  return (
-    <ErrorBoundary>
-      <AppRouterInner {...props} />
-    </ErrorBoundary>
-  );
 }
