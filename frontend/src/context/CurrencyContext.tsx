@@ -15,8 +15,6 @@ export interface CurrencyContextValue {
 }
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
-const FALLBACK_CURRENCY: SupportedCurrency = "ARS";
-const FALLBACK_LOCALE = resolveLocaleForCurrency(FALLBACK_CURRENCY);
 
 export interface CurrencyProviderProps {
   children: ReactNode;
@@ -47,17 +45,9 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
 
 export const useCurrency = (): CurrencyContextValue => {
   const context = useContext(CurrencyContext);
-  if (context) {
-    return context;
+  if (!context) {
+    throw new Error("useCurrency must be used within CurrencyProvider.");
   }
 
-  return {
-    currency: FALLBACK_CURRENCY,
-    isLoading: false,
-    locale: FALLBACK_LOCALE,
-    formatMoney: (amount: number) => formatCurrency(amount, {
-      currency: FALLBACK_CURRENCY,
-      locale: FALLBACK_LOCALE,
-    }),
-  };
+  return context;
 };

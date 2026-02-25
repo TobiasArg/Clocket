@@ -2,7 +2,7 @@ import { TrendLine } from "@/components/TrendLine/TrendLine";
 import type { InvestmentTableRow, PositionEntryRow } from "@/hooks/useInvestmentsPageModel";
 import { useCurrency } from "@/hooks";
 import { formatCurrency, getUsdRate } from "@/utils";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 export interface InvestmentPositionDetailPanelProps {
   isOpen: boolean;
@@ -47,9 +47,14 @@ export function InvestmentPositionDetailPanel({
   const touchStartYRef = useRef<number | null>(null);
   const isTrackingRef = useRef<boolean>(false);
   const closeTimeoutRef = useRef<number | null>(null);
-  const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const swipeOffsetRef = useRef<number>(0);
   const [isClosing, setIsClosing] = useState<boolean>(false);
   const [exitOffset, setExitOffset] = useState<number>(CLOSE_EXIT_OFFSET_FALLBACK);
+
+  const setSwipeOffsetStyle = useCallback((nextOffset: number) => {
+    swipeOffsetRef.current = nextOffset;
+    panelRef.current?.style.setProperty("--position-detail-swipe-offset", `${nextOffset}px`);
+  }, []);
 
   const clearCloseTimeout = useCallback(() => {
     if (closeTimeoutRef.current !== null) {
@@ -80,13 +85,13 @@ export function InvestmentPositionDetailPanel({
   useEffect(() => {
     if (!isOpen) {
       clearCloseTimeout();
-      setSwipeOffset(0);
+      setSwipeOffsetStyle(0);
       setIsClosing(false);
       setExitOffset(CLOSE_EXIT_OFFSET_FALLBACK);
       touchStartYRef.current = null;
       isTrackingRef.current = false;
     }
-  }, [clearCloseTimeout, isOpen]);
+  }, [clearCloseTimeout, isOpen, setSwipeOffsetStyle]);
 
   useEffect(() => {
     return () => {
@@ -131,7 +136,7 @@ export function InvestmentPositionDetailPanel({
 
     touchStartYRef.current = event.touches[0].clientY;
     isTrackingRef.current = true;
-    setSwipeOffset(0);
+    setSwipeOffsetStyle(0);
   };
 
   const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -144,18 +149,18 @@ export function InvestmentPositionDetailPanel({
     if (startY === null || !panelNode || panelNode.scrollTop > 0) {
       isTrackingRef.current = false;
       touchStartYRef.current = null;
-      setSwipeOffset(0);
+      setSwipeOffsetStyle(0);
       return;
     }
 
     const deltaY = event.touches[0].clientY - startY;
     if (deltaY <= 0) {
-      setSwipeOffset(0);
+      setSwipeOffsetStyle(0);
       return;
     }
 
     event.preventDefault();
-    setSwipeOffset(Math.min(SWIPE_MAX_DISTANCE, deltaY * SWIPE_DAMPING));
+    setSwipeOffsetStyle(Math.min(SWIPE_MAX_DISTANCE, deltaY * SWIPE_DAMPING));
   };
 
   const handleTouchEnd = () => {
@@ -166,22 +171,26 @@ export function InvestmentPositionDetailPanel({
     isTrackingRef.current = false;
     touchStartYRef.current = null;
 
-    if (swipeOffset >= SWIPE_CLOSE_THRESHOLD) {
+    if (swipeOffsetRef.current >= SWIPE_CLOSE_THRESHOLD) {
       requestClose();
       return;
     }
 
-    setSwipeOffset(0);
+    setSwipeOffsetStyle(0);
   };
 
   const handleTouchCancel = () => {
     isTrackingRef.current = false;
     touchStartYRef.current = null;
-    setSwipeOffset(0);
+    setSwipeOffsetStyle(0);
   };
-
-  const panelOffset = swipeOffset + (isClosing ? exitOffset : 0);
   const backdropClassName = isClosing ? "opacity-0" : "opacity-100";
+  const panelStyle: CSSProperties & Record<string, string> = isClosing
+    ? { transform: `translateY(${exitOffset}px)` }
+    : {
+      transform: "translateY(var(--position-detail-swipe-offset, 0px))",
+      "--position-detail-swipe-offset": "0px",
+    };
 
   return (
     <div className="absolute inset-0 z-50">
@@ -202,7 +211,7 @@ export function InvestmentPositionDetailPanel({
           role="dialog"
           aria-modal="true"
           className="relative w-full max-h-[88vh] overflow-auto rounded-t-3xl bg-[var(--panel-bg)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out"
-          style={{ transform: `translateY(${panelOffset}px)` }}
+          style={panelStyle}
         >
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[var(--surface-border)]" />
 

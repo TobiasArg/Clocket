@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CuotaItem, GoalCardSimple, SpendingCategory, Transaction } from "@/types";
 import {
   TRANSACTION_EXPENSE_TEXT_CLASS,
@@ -383,10 +383,15 @@ export const useHomePageModel = (
   ]);
 
   const [activeBalanceSlide, setActiveBalanceSlide] = useState<number>(activeDot);
+  const maxBalanceSlideIndexRef = useRef<number>(Math.max(0, balanceSlides.length - 1));
+
+  useEffect(() => {
+    maxBalanceSlideIndexRef.current = Math.max(0, balanceSlides.length - 1);
+  }, [balanceSlides.length]);
 
   useEffect(() => {
     setActiveBalanceSlide((current) => {
-      const maxIndex = Math.max(0, balanceSlides.length - 1);
+      const maxIndex = maxBalanceSlideIndexRef.current;
       if (current > maxIndex) {
         return maxIndex;
       }
@@ -400,9 +405,9 @@ export const useHomePageModel = (
   }, [balanceSlides.length]);
 
   useEffect(() => {
-    const maxIndex = Math.max(0, balanceSlides.length - 1);
+    const maxIndex = maxBalanceSlideIndexRef.current;
     setActiveBalanceSlide(Math.max(0, Math.min(activeDot, maxIndex)));
-  }, [activeDot, balanceSlides.length]);
+  }, [activeDot]);
 
   return {
     activeBalanceSlide,

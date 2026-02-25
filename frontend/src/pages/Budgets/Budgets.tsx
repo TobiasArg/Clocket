@@ -1,6 +1,6 @@
 import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { NavItem } from "@/modules/budgets";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import type { TouchEvent as ReactTouchEvent } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import {
@@ -75,9 +75,8 @@ export function Budgets({
   const monthTouchStartYRef = useRef<number | null>(null);
   const monthTrackingRef = useRef<boolean>(false);
   const monthPointerIdRef = useRef<number | null>(null);
+  const monthLabelRef = useRef<HTMLDivElement | null>(null);
   const monthDragXRef = useRef<number>(0);
-  const [monthDragX, setMonthDragX] = useState<number>(0);
-  const [isMonthDragging, setIsMonthDragging] = useState<boolean>(false);
 
   const {
     budgetFormValidationLabel,
@@ -115,14 +114,26 @@ export function Budgets({
     selectedMonthLabel,
   } = useBudgetsPageModel({ onAddClick });
 
+  const applyMonthDrag = (nextOffset: number, shouldAnimate: boolean) => {
+    monthDragXRef.current = nextOffset;
+
+    const node = monthLabelRef.current;
+    if (!node) {
+      return;
+    }
+
+    node.style.transition = shouldAnimate
+      ? "transform 200ms ease-out"
+      : "none";
+    node.style.transform = `translateX(${nextOffset}px)`;
+  };
+
   const resetMonthGesture = () => {
     monthTouchStartXRef.current = null;
     monthTouchStartYRef.current = null;
     monthTrackingRef.current = false;
     monthPointerIdRef.current = null;
-    monthDragXRef.current = 0;
-    setIsMonthDragging(false);
-    setMonthDragX(0);
+    applyMonthDrag(0, true);
   };
 
   const handleMonthTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
@@ -133,9 +144,7 @@ export function Budgets({
     monthTouchStartXRef.current = event.touches[0].clientX;
     monthTouchStartYRef.current = event.touches[0].clientY;
     monthTrackingRef.current = true;
-    monthDragXRef.current = 0;
-    setIsMonthDragging(true);
-    setMonthDragX(0);
+    applyMonthDrag(0, false);
   };
 
   const handleMonthTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
@@ -158,8 +167,7 @@ export function Budgets({
 
     event.preventDefault();
     const next = Math.max(-96, Math.min(96, deltaX * 0.72));
-    monthDragXRef.current = next;
-    setMonthDragX(next);
+    applyMonthDrag(next, false);
   };
 
   const handleMonthTouchEnd = () => {
@@ -190,9 +198,7 @@ export function Budgets({
     monthTouchStartYRef.current = event.clientY;
     monthTrackingRef.current = true;
     monthPointerIdRef.current = event.pointerId;
-    monthDragXRef.current = 0;
-    setIsMonthDragging(true);
-    setMonthDragX(0);
+    applyMonthDrag(0, false);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -220,8 +226,7 @@ export function Budgets({
 
     event.preventDefault();
     const next = Math.max(-96, Math.min(96, deltaX * 0.72));
-    monthDragXRef.current = next;
-    setMonthDragX(next);
+    applyMonthDrag(next, false);
   };
 
   const handleMonthPointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -284,8 +289,9 @@ export function Budgets({
                 aria-label="Selector de mes por deslizamiento"
               >
                 <div
-                  className={`flex items-center justify-center ${isMonthDragging ? "" : "transition-transform duration-200 ease-out"}`}
-                  style={{ transform: `translateX(${monthDragX}px)` }}
+                  ref={monthLabelRef}
+                  className="flex items-center justify-center transition-transform duration-200 ease-out"
+                  style={{ transform: "translateX(0px)" }}
                 >
                   <span className="block max-w-full truncate text-xs font-semibold tracking-[0.2px] text-[var(--text-secondary)]">
                     {selectedMonthLabel}

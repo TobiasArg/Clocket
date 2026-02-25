@@ -422,7 +422,7 @@ export const useTransactionsPageModel = (
             return { ...tx, icon: catIcon.icon, iconBg: catIcon.iconBg };
           }),
       }));
-  }, [items, categoryIconById]);
+  }, [appCurrency, items, categoryIconById]);
 
   const closeEditor = useCallback(() => {
     setEditorMode(null);

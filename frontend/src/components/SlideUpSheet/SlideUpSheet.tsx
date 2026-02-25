@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type TouchEvent as ReactTouchEvent,
@@ -53,11 +54,11 @@ export function SlideUpSheet({
   footerClassName = "border-t border-[var(--surface-border)] px-4 py-3",
   handleClassName = "touch-none border-t border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 pb-1.5 pt-2 active:scale-100",
 }: SlideUpSheetProps) {
-  const [dragOffset, setDragOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isClosing, setIsClosing] = useState<boolean>(false);
   const [isEntered, setIsEntered] = useState<boolean>(false);
 
+  const panelRef = useRef<HTMLDivElement | HTMLFormElement | null>(null);
   const gestureStartYRef = useRef<number | null>(null);
   const pointerIdRef = useRef<number | null>(null);
   const dragOffsetRef = useRef<number>(0);
@@ -67,6 +68,11 @@ export function SlideUpSheet({
 
   const supportsPointerEvents = typeof window !== "undefined" && "PointerEvent" in window;
   const closeThreshold = maxDragUpDistance * closeThresholdRatio;
+
+  const setDragOffsetStyle = useCallback((nextOffset: number) => {
+    dragOffsetRef.current = nextOffset;
+    panelRef.current?.style.setProperty("--sheet-drag-offset", `${nextOffset}px`);
+  }, []);
 
   useEffect(() => {
     onRequestCloseRef.current = onRequestClose;
@@ -92,8 +98,7 @@ export function SlideUpSheet({
     setIsDragging(false);
     gestureStartYRef.current = null;
     pointerIdRef.current = null;
-    dragOffsetRef.current = 0;
-    setDragOffset(0);
+    setDragOffsetStyle(0);
 
     if (typeof window === "undefined") {
       onRequestCloseRef.current?.();
@@ -109,7 +114,7 @@ export function SlideUpSheet({
         setIsClosing(false);
       }
     }, closeAnimationMs);
-  }, [clearCloseTimeout, closeAnimationMs]);
+  }, [clearCloseTimeout, closeAnimationMs, setDragOffsetStyle]);
 
   const startGesture = useCallback((clientY: number) => {
     if (isClosingRef.current) {
@@ -117,10 +122,9 @@ export function SlideUpSheet({
     }
 
     gestureStartYRef.current = clientY;
-    dragOffsetRef.current = 0;
-    setDragOffset(0);
+    setDragOffsetStyle(0);
     setIsDragging(true);
-  }, []);
+  }, [setDragOffsetStyle]);
 
   const updateGesture = useCallback((clientY: number) => {
     if (gestureStartYRef.current === null || isClosingRef.current) {
@@ -132,9 +136,8 @@ export function SlideUpSheet({
       ? Math.max(deltaY, -maxDragUpDistance)
       : 0;
 
-    dragOffsetRef.current = nextOffset;
-    setDragOffset(nextOffset);
-  }, [maxDragUpDistance]);
+    setDragOffsetStyle(nextOffset);
+  }, [maxDragUpDistance, setDragOffsetStyle]);
 
   const finishGesture = useCallback(() => {
     if (gestureStartYRef.current === null) {
@@ -151,9 +154,15 @@ export function SlideUpSheet({
       return;
     }
 
-    dragOffsetRef.current = 0;
-    setDragOffset(0);
-  }, [closeThreshold, triggerClose]);
+    if (typeof window === "undefined") {
+      setDragOffsetStyle(0);
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      setDragOffsetStyle(0);
+    });
+  }, [closeThreshold, setDragOffsetStyle, triggerClose]);
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) {
@@ -211,8 +220,7 @@ export function SlideUpSheet({
       return;
     }
 
-    setDragOffset(0);
-    dragOffsetRef.current = 0;
+    setDragOffsetStyle(0);
     setIsDragging(false);
     setIsClosing(false);
     isClosingRef.current = false;
@@ -242,18 +250,26 @@ export function SlideUpSheet({
       pointerIdRef.current = null;
       isClosingRef.current = false;
     };
-  }, [clearCloseTimeout, isOpen, triggerClose]);
+  }, [clearCloseTimeout, isOpen, setDragOffsetStyle, triggerClose]);
 
   if (!isOpen) {
     return null;
   }
 
-  const panelOffset = dragOffset + (isEntered ? 0 : -24);
-  const panelTransform = isClosing
-    ? "translateY(calc(-100% - 48px))"
-    : `translateY(${panelOffset}px)`;
   const panelOpacity = isClosing ? 0 : (isEntered ? 1 : 0);
   const backdropOpacity = isClosing ? 0 : (isEntered ? 1 : 0);
+  const panelStyle: CSSProperties & Record<string, string | number> = {
+    transform: isClosing
+      ? "translateY(calc(-100% - 48px))"
+      : "translateY(calc(var(--sheet-enter-offset) + var(--sheet-drag-offset)))",
+    opacity: panelOpacity,
+    transition: isDragging
+      ? "none"
+      : "transform 280ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease",
+    willChange: "transform, opacity",
+    "--sheet-drag-offset": "0px",
+    "--sheet-enter-offset": isEntered ? "0px" : "-24px",
+  };
 
   const content = (
     <>
@@ -307,33 +323,25 @@ export function SlideUpSheet({
       <div className={viewportClassName}>
         {onSubmit ? (
           <form
+            ref={(node) => {
+              panelRef.current = node;
+            }}
             onSubmit={(event) => {
               event.preventDefault();
               onSubmit();
             }}
             className={panelClassName}
-            style={{
-              transform: panelTransform,
-              opacity: panelOpacity,
-              transition: isDragging
-                ? "none"
-                : "transform 280ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease",
-              willChange: "transform, opacity",
-            }}
+            style={panelStyle}
           >
             {content}
           </form>
         ) : (
           <div
-            className={panelClassName}
-            style={{
-              transform: panelTransform,
-              opacity: panelOpacity,
-              transition: isDragging
-                ? "none"
-                : "transform 280ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease",
-              willChange: "transform, opacity",
+            ref={(node) => {
+              panelRef.current = node;
             }}
+            className={panelClassName}
+            style={panelStyle}
           >
             {content}
           </div>
