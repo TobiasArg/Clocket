@@ -34,6 +34,9 @@ export interface UseInvestmentsResult {
 const FALLBACK_ERROR_MESSAGE =
   "No pudimos completar esa acción de inversión. Intenta nuevamente.";
 
+let sharedPositionsCache: InvestmentPositionItem[] | null = null;
+let sharedPositionsRefreshPromise: Promise<InvestmentPositionItem[]> | null = null;
+
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -49,24 +52,59 @@ export const useInvestments = (
     () => options.repository ?? investmentsRepository,
     [options.repository],
   );
+  const isSharedRepository = repository === investmentsRepository;
 
-  const [positions, setPositions] = useState<InvestmentPositionItem[]>([]);
+  const [positions, setPositions] = useState<InvestmentPositionItem[]>(() => (
+    isSharedRepository && sharedPositionsCache !== null
+      ? sharedPositionsCache
+      : []
+  ));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const loadPositions = useCallback(async (force: boolean) => {
+    if (
+      isSharedRepository &&
+      !force &&
+      sharedPositionsCache !== null
+    ) {
+      setPositions(sharedPositionsCache);
+      setError(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
+    let request: Promise<InvestmentPositionItem[]>;
+    if (isSharedRepository) {
+      if (!sharedPositionsRefreshPromise) {
+        sharedPositionsRefreshPromise = repository.listPositions();
+      }
+      request = sharedPositionsRefreshPromise;
+    } else {
+      request = repository.listPositions();
+    }
+
     try {
-      const nextItems = await repository.listPositions();
+      const nextItems = await request;
+      if (isSharedRepository) {
+        sharedPositionsCache = nextItems;
+      }
       setPositions(nextItems);
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
+      if (isSharedRepository && sharedPositionsRefreshPromise === request) {
+        sharedPositionsRefreshPromise = null;
+      }
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
+
+  const refresh = useCallback(async () => {
+    await loadPositions(true);
+  }, [loadPositions]);
 
   const addPosition = useCallback(
     async (input: CreateInvestmentInput): Promise<InvestmentPositionItem | null> => {
@@ -193,17 +231,20 @@ export const useInvestments = (
 
     try {
       await repository.clearAll();
+      if (isSharedRepository) {
+        sharedPositionsCache = [];
+      }
       setPositions([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void loadPositions(false);
+  }, [loadPositions]);
 
   return {
     positions,

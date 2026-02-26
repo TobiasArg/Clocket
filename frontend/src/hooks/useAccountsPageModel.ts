@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ACCOUNT_ICON_OPTIONS,
   DEFAULT_ACCOUNT_ICON,
@@ -130,35 +130,35 @@ export const useAccountsPageModel = (
     [deleteConfirmAccountId, transactions],
   );
 
-  const resetEditorFields = () => {
+  const resetEditorFields = useCallback(() => {
     setNameInput("");
     setBalanceInput("");
     setSelectedIcon("");
     setShowValidation(false);
-  };
+  }, []);
 
-  const handleCloseEditor = () => {
+  const handleCloseEditor = useCallback(() => {
     setIsEditorOpen(false);
     resetEditorFields();
-  };
+  }, [resetEditorFields]);
 
-  const handleOpenEditor = () => {
+  const handleOpenEditor = useCallback(() => {
     setIsEditorOpen(true);
     setSelectedIcon(DEFAULT_ACCOUNT_ICON);
     setShowValidation(false);
     onAddClick?.();
-  };
+  }, [onAddClick]);
 
-  const handleHeaderAction = () => {
+  const handleHeaderAction = useCallback(() => {
     if (isEditorOpen) {
       handleCloseEditor();
       return;
     }
 
     handleOpenEditor();
-  };
+  }, [isEditorOpen, handleCloseEditor, handleOpenEditor]);
 
-  const handleCreate = async () => {
+  const handleCreate = useCallback(async () => {
     setShowValidation(true);
     if (!isFormValid) {
       return;
@@ -175,9 +175,9 @@ export const useAccountsPageModel = (
     }
 
     handleCloseEditor();
-  };
+  }, [isFormValid, normalizedName, balanceValue, normalizedIcon, create, handleCloseEditor]);
 
-  const requestDeleteAccount = (id: string): void => {
+  const requestDeleteAccount = useCallback((id: string): void => {
     if (!id || pendingDeleteAccountId) {
       return;
     }
@@ -188,17 +188,17 @@ export const useAccountsPageModel = (
     }
 
     setDeleteConfirmAccountId(id);
-  };
+  }, [pendingDeleteAccountId, items]);
 
-  const cancelDeleteAccount = (): void => {
+  const cancelDeleteAccount = useCallback((): void => {
     if (pendingDeleteAccountId) {
       return;
     }
 
     setDeleteConfirmAccountId(null);
-  };
+  }, [pendingDeleteAccountId]);
 
-  const confirmDeleteAccount = async (): Promise<void> => {
+  const confirmDeleteAccount = useCallback(async (): Promise<void> => {
     if (!deleteConfirmAccountId || pendingDeleteAccountId === deleteConfirmAccountId) {
       return;
     }
@@ -210,7 +210,7 @@ export const useAccountsPageModel = (
       setDeleteConfirmAccountId(null);
     }
     setPendingDeleteAccountId((current) => (current === deleteConfirmAccountId ? null : current));
-  };
+  }, [deleteConfirmAccountId, pendingDeleteAccountId, remove, refreshTransactions]);
 
   return {
     accountFlowsById,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCurrency } from "./useCurrency";
 import { useCuotas } from "./useCuotas";
 import type { CuotaPlanStatus, CuotaPlanWithStatus } from "@/types";
@@ -202,7 +202,7 @@ export const usePlansPageModel = (
     isInstallmentsCountValid &&
     isCreationDateValid;
 
-  const resetEditor = () => {
+  const resetEditor = useCallback(() => {
     setIsEditorOpen(false);
     setNameInput("");
     setTotalAmountInput("");
@@ -210,13 +210,13 @@ export const usePlansPageModel = (
     setSelectedCurrency(appCurrency);
     setCreationDateInput(getCurrentDateInputValue());
     setShowValidation(false);
-  };
+  }, [appCurrency]);
 
-  const handleCloseEditor = () => {
+  const handleCloseEditor = useCallback(() => {
     resetEditor();
-  };
+  }, [resetEditor]);
 
-  const handleHeaderAction = () => {
+  const handleHeaderAction = useCallback(() => {
     if (isEditorOpen) {
       handleCloseEditor();
     } else {
@@ -224,9 +224,9 @@ export const usePlansPageModel = (
       setShowValidation(false);
       onAddClick?.();
     }
-  };
+  }, [isEditorOpen, handleCloseEditor, onAddClick]);
 
-  const handleCreate = async () => {
+  const handleCreate = useCallback(async () => {
     setShowValidation(true);
     if (!isFormValid) {
       return;
@@ -253,9 +253,18 @@ export const usePlansPageModel = (
     }
 
     resetEditor();
-  };
+  }, [
+    isFormValid,
+    nameInput,
+    totalAmountValue,
+    selectedCurrency,
+    installmentsCountValue,
+    normalizedCreationDate,
+    create,
+    resetEditor,
+  ]);
 
-  const handleMarkInstallmentPaid = async (id: string) => {
+  const handleMarkInstallmentPaid = useCallback(async (id: string) => {
     const targetPlan = plansWithStatus.find((item) => item.id === id);
     if (!targetPlan || pendingPaidPlanId === id) {
       return;
@@ -308,9 +317,9 @@ export const usePlansPageModel = (
       setPaidFeedbackPlanId((current) => (current === id ? null : current));
       paidFeedbackTimeoutRef.current = null;
     }, 850);
-  };
+  }, [plansWithStatus, pendingPaidPlanId, update]);
 
-  const handleDeletePlan = async (id: string) => {
+  const handleDeletePlan = useCallback(async (id: string) => {
     if (!id || pendingPaidPlanId === id) {
       return;
     }
@@ -324,7 +333,7 @@ export const usePlansPageModel = (
     setPendingPaidPlanId((current) => (current === id ? null : current));
     setPaidFeedbackPlanId((current) => (current === id ? null : current));
     setInvalidDatePlanId((current) => (current === id ? null : current));
-  };
+  }, [pendingPaidPlanId, remove]);
 
   return {
     activeCount,
