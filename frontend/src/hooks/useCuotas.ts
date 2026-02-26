@@ -22,7 +22,10 @@ export interface UseCuotasResult {
   clearAll: () => Promise<void>;
 }
 
-const FALLBACK_ERROR_MESSAGE = "We couldn’t complete that installment action. Please try again.";
+const FALLBACK_ERROR_MESSAGE = "We couldn't complete that installment action. Please try again.";
+
+let sharedCuotasCache: CuotaPlanItem[] | null = null;
+let sharedCuotasRefreshPromise: Promise<CuotaPlanItem[]> | null = null;
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -37,24 +40,59 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
     () => options.repository ?? cuotasRepository,
     [options.repository],
   );
+  const isSharedRepository = repository === cuotasRepository;
 
-  const [items, setItems] = useState<CuotaPlanItem[]>([]);
+  const [items, setItems] = useState<CuotaPlanItem[]>(() => (
+    isSharedRepository && sharedCuotasCache !== null
+      ? sharedCuotasCache
+      : []
+  ));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const loadCuotas = useCallback(async (force: boolean) => {
+    if (
+      isSharedRepository &&
+      !force &&
+      sharedCuotasCache !== null
+    ) {
+      setItems(sharedCuotasCache);
+      setError(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
+    let request: Promise<CuotaPlanItem[]>;
+    if (isSharedRepository) {
+      if (!sharedCuotasRefreshPromise) {
+        sharedCuotasRefreshPromise = repository.list();
+      }
+      request = sharedCuotasRefreshPromise;
+    } else {
+      request = repository.list();
+    }
+
     try {
-      const nextItems = await repository.list();
+      const nextItems = await request;
+      if (isSharedRepository) {
+        sharedCuotasCache = nextItems;
+      }
       setItems(nextItems);
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
+      if (isSharedRepository && sharedCuotasRefreshPromise === request) {
+        sharedCuotasRefreshPromise = null;
+      }
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
+
+  const refresh = useCallback(async () => {
+    await loadCuotas(true);
+  }, [loadCuotas]);
 
   const create = useCallback(
     async (input: CreateCuotaInput): Promise<CuotaPlanItem | null> => {
@@ -63,6 +101,9 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
 
       try {
         const created = await repository.create(input);
+        if (isSharedRepository) {
+          sharedCuotasCache = [...(sharedCuotasCache ?? []), created];
+        }
         setItems((current) => [...current, created]);
         return created;
       } catch (createError) {
@@ -72,7 +113,7 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const update = useCallback(
@@ -86,6 +127,11 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
           return null;
         }
 
+        if (isSharedRepository && sharedCuotasCache !== null) {
+          sharedCuotasCache = sharedCuotasCache.map(
+            (item) => (item.id === updated.id ? updated : item),
+          );
+        }
         setItems((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
@@ -97,7 +143,7 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const remove = useCallback(
@@ -108,6 +154,11 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
       try {
         const removed = await repository.remove(id);
         if (removed) {
+          if (isSharedRepository && sharedCuotasCache !== null) {
+            sharedCuotasCache = sharedCuotasCache.filter(
+              (item) => item.id !== id,
+            );
+          }
           setItems((current) => current.filter((item) => item.id !== id));
         }
         return removed;
@@ -118,7 +169,7 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const clearAll = useCallback(async () => {
@@ -127,17 +178,20 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
 
     try {
       await repository.clearAll();
+      if (isSharedRepository) {
+        sharedCuotasCache = [];
+      }
       setItems([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void loadCuotas(false);
+  }, [loadCuotas]);
 
   return {
     items,

@@ -23,7 +23,10 @@ export interface UseGoalsResult {
 }
 
 const FALLBACK_ERROR_MESSAGE =
-  "We couldn’t complete that goal action. Please try again.";
+  "We couldn't complete that goal action. Please try again.";
+
+let sharedGoalsCache: GoalPlanItem[] | null = null;
+let sharedGoalsRefreshPromise: Promise<GoalPlanItem[]> | null = null;
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -38,24 +41,59 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
     () => options.repository ?? goalsRepository,
     [options.repository],
   );
+  const isSharedRepository = repository === goalsRepository;
 
-  const [items, setItems] = useState<GoalPlanItem[]>([]);
+  const [items, setItems] = useState<GoalPlanItem[]>(() => (
+    isSharedRepository && sharedGoalsCache !== null
+      ? sharedGoalsCache
+      : []
+  ));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const loadGoals = useCallback(async (force: boolean) => {
+    if (
+      isSharedRepository &&
+      !force &&
+      sharedGoalsCache !== null
+    ) {
+      setItems(sharedGoalsCache);
+      setError(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
+    let request: Promise<GoalPlanItem[]>;
+    if (isSharedRepository) {
+      if (!sharedGoalsRefreshPromise) {
+        sharedGoalsRefreshPromise = repository.list();
+      }
+      request = sharedGoalsRefreshPromise;
+    } else {
+      request = repository.list();
+    }
+
     try {
-      const nextItems = await repository.list();
+      const nextItems = await request;
+      if (isSharedRepository) {
+        sharedGoalsCache = nextItems;
+      }
       setItems(nextItems);
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
+      if (isSharedRepository && sharedGoalsRefreshPromise === request) {
+        sharedGoalsRefreshPromise = null;
+      }
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
+
+  const refresh = useCallback(async () => {
+    await loadGoals(true);
+  }, [loadGoals]);
 
   const create = useCallback(
     async (input: CreateGoalInput): Promise<GoalPlanItem | null> => {
@@ -64,6 +102,9 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
 
       try {
         const created = await repository.create(input);
+        if (isSharedRepository) {
+          sharedGoalsCache = [...(sharedGoalsCache ?? []), created];
+        }
         setItems((current) => [...current, created]);
         return created;
       } catch (createError) {
@@ -73,7 +114,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const update = useCallback(
@@ -87,6 +128,11 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
           return null;
         }
 
+        if (isSharedRepository && sharedGoalsCache !== null) {
+          sharedGoalsCache = sharedGoalsCache.map(
+            (item) => (item.id === updated.id ? updated : item),
+          );
+        }
         setItems((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
@@ -98,7 +144,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const remove = useCallback(
@@ -109,6 +155,11 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
       try {
         const removed = await repository.remove(id);
         if (removed) {
+          if (isSharedRepository && sharedGoalsCache !== null) {
+            sharedGoalsCache = sharedGoalsCache.filter(
+              (item) => item.id !== id,
+            );
+          }
           setItems((current) => current.filter((item) => item.id !== id));
         }
         return removed;
@@ -119,7 +170,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const clearAll = useCallback(async () => {
@@ -128,17 +179,20 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
 
     try {
       await repository.clearAll();
+      if (isSharedRepository) {
+        sharedGoalsCache = [];
+      }
       setItems([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void loadGoals(false);
+  }, [loadGoals]);
 
   return {
     items,

@@ -26,7 +26,10 @@ export interface UseTransactionsResult {
 }
 
 const FALLBACK_ERROR_MESSAGE =
-  "We couldn’t complete that transaction action. Please try again.";
+  "We couldn't complete that transaction action. Please try again.";
+
+let sharedTransactionsCache: TransactionItem[] | null = null;
+let sharedTransactionsRefreshPromise: Promise<TransactionItem[]> | null = null;
 
 const dedupeTransactionsById = (items: TransactionItem[]): TransactionItem[] => {
   const seen = new Set<string>();
@@ -91,8 +94,13 @@ export const useTransactions = (
     () => options.repository ?? transactionsRepository,
     [options.repository],
   );
+  const isSharedRepository = repository === transactionsRepository;
 
-  const [rawItems, setRawItems] = useState<TransactionItem[]>([]);
+  const [rawItems, setRawItems] = useState<TransactionItem[]>(() => (
+    isSharedRepository && sharedTransactionsCache !== null
+      ? sharedTransactionsCache
+      : []
+  ));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,26 +118,53 @@ export const useTransactions = (
     });
   }, [currency, rawItems]);
 
-  const refreshTransactions = useCallback(async (showLoading: boolean) => {
+  const refreshTransactions = useCallback(async (showLoading: boolean, force = false) => {
+    if (
+      isSharedRepository &&
+      !force &&
+      sharedTransactionsCache !== null
+    ) {
+      setRawItems(sharedTransactionsCache);
+      setError(null);
+      return;
+    }
+
     if (showLoading) {
       setIsLoading(true);
     }
     setError(null);
 
+    let request: Promise<TransactionItem[]>;
+    if (isSharedRepository) {
+      if (!sharedTransactionsRefreshPromise) {
+        sharedTransactionsRefreshPromise = repository.list();
+      }
+      request = sharedTransactionsRefreshPromise;
+    } else {
+      request = repository.list();
+    }
+
     try {
-      const nextItems = await repository.list();
-      setRawItems(dedupeTransactionsById(nextItems));
+      const nextItems = await request;
+      const deduped = dedupeTransactionsById(nextItems);
+      if (isSharedRepository) {
+        sharedTransactionsCache = deduped;
+      }
+      setRawItems(deduped);
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
+      if (isSharedRepository && sharedTransactionsRefreshPromise === request) {
+        sharedTransactionsRefreshPromise = null;
+      }
       if (showLoading) {
         setIsLoading(false);
       }
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
 
   const refresh = useCallback(async () => {
-    await refreshTransactions(true);
+    await refreshTransactions(true, true);
   }, [refreshTransactions]);
 
   const create = useCallback(
@@ -139,6 +174,12 @@ export const useTransactions = (
 
       try {
         const created = await repository.create(input);
+        if (isSharedRepository) {
+          sharedTransactionsCache = dedupeTransactionsById([
+            ...(sharedTransactionsCache ?? []),
+            created,
+          ]);
+        }
         setRawItems((current) => dedupeTransactionsById([...current, created]));
         return created;
       } catch (createError) {
@@ -148,7 +189,7 @@ export const useTransactions = (
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const update = useCallback(
@@ -165,6 +206,11 @@ export const useTransactions = (
           return null;
         }
 
+        if (isSharedRepository && sharedTransactionsCache !== null) {
+          sharedTransactionsCache = sharedTransactionsCache.map(
+            (item) => (item.id === updated.id ? updated : item),
+          );
+        }
         setRawItems((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
@@ -176,7 +222,7 @@ export const useTransactions = (
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const remove = useCallback(
@@ -187,6 +233,11 @@ export const useTransactions = (
       try {
         const removed = await repository.remove(id);
         if (removed) {
+          if (isSharedRepository && sharedTransactionsCache !== null) {
+            sharedTransactionsCache = sharedTransactionsCache.filter(
+              (item) => item.id !== id,
+            );
+          }
           setRawItems((current) => current.filter((item) => item.id !== id));
         }
         return removed;
@@ -197,7 +248,7 @@ export const useTransactions = (
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const clearAll = useCallback(async () => {
@@ -206,17 +257,20 @@ export const useTransactions = (
 
     try {
       await repository.clearAll();
+      if (isSharedRepository) {
+        sharedTransactionsCache = [];
+      }
       setRawItems([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void refreshTransactions(true, false);
+  }, [refreshTransactions]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -224,7 +278,7 @@ export const useTransactions = (
     }
 
     const handleTransactionsChanged = () => {
-      void refreshTransactions(false);
+      void refreshTransactions(false, false);
     };
 
     window.addEventListener(TRANSACTIONS_CHANGED_EVENT, handleTransactionsChanged);

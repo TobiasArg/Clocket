@@ -513,11 +513,12 @@ export const useInvestmentsPageModel = (
   );
 
   useEffect(() => {
+    let cancelled = false;
     const positionIds = new Set(positions.map((item) => item.id));
     setRows((current) => current.filter((row) => positionIds.has(row.id)));
 
     if (positions.length === 0) {
-      return;
+      return () => { cancelled = true; };
     }
 
     const visiblePositions = positions.slice(0, VISIBLE_POSITIONS_BATCH);
@@ -525,10 +526,12 @@ export const useInvestmentsPageModel = (
 
     void (async () => {
       await runRefresh(visiblePositions, false, positions);
-      if (backgroundPositions.length > 0) {
+      if (!cancelled && backgroundPositions.length > 0) {
         await runRefresh(backgroundPositions, false, positions);
       }
     })();
+
+    return () => { cancelled = true; };
   }, [positions, runRefresh]);
 
   useEffect(() => {
@@ -566,8 +569,26 @@ export const useInvestmentsPageModel = (
       return;
     }
 
-    void loadEntriesForPosition(selectedPositionId);
-  }, [isDetailOpen, loadEntriesForPosition, selectedPositionId]);
+    let cancelled = false;
+    setIsEntriesLoading(true);
+
+    listEntriesByPosition(selectedPositionId)
+      .then((loadedEntries) => {
+        if (!cancelled) {
+          setSelectedEntries(toEntryRows(loadedEntries));
+        }
+      })
+      .catch(() => {
+        // silent — matches existing behavior
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsEntriesLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [isDetailOpen, selectedPositionId, listEntriesByPosition]);
 
   useEffect(() => {
     if (!selectedAccountId && defaultAccountId) {
