@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { NavItem } from "@/modules/investments";
 import {
@@ -85,6 +86,10 @@ export function Investments({
     setBuyPriceInput,
     setCreatedAtInput,
   } = useInvestmentsPageModel();
+
+  const handleSubmitVoid = useCallback(() => { void handleSubmit(); }, [handleSubmit]);
+  const handleDeleteEntryVoid = useCallback((entryId: string) => { void handleDeleteEntry(entryId); }, [handleDeleteEntry]);
+  const handleConfirmDeleteVoid = useCallback(() => { void handleConfirmDelete(); }, [handleConfirmDelete]);
 
   const pendingDeleteTicker = pendingDeletePositionId
     ? rows.find((row) => row.id === pendingDeletePositionId)?.ticker
@@ -179,9 +184,7 @@ export function Investments({
         derivedAmountLabel={derivedAmountLabel}
         validationMessage={formValidationLabel}
         onClose={handleCloseEditor}
-        onSubmit={() => {
-          void handleSubmit();
-        }}
+        onSubmit={handleSubmitVoid}
         onAssetTypeChange={setAssetTypeInput}
         onEntryTypeChange={setEntryTypeInput}
         onSaleInputModeChange={setSaleInputMode}
@@ -201,9 +204,7 @@ export function Investments({
         deletingEntryId={deletingEntryId}
         onClose={handleCloseDetail}
         onAddEntry={handleOpenEdit}
-        onDeleteEntry={(entryId) => {
-          void handleDeleteEntry(entryId);
-        }}
+        onDeleteEntry={handleDeleteEntryVoid}
         onRequestDelete={handleRequestDelete}
       />
 
@@ -212,9 +213,7 @@ export function Investments({
         isLoading={isDeleteSubmitting}
         ticker={pendingDeleteTicker}
         onCancel={handleCancelDelete}
-        onConfirm={() => {
-          void handleConfirmDelete();
-        }}
+        onConfirm={handleConfirmDeleteVoid}
       />
     </div>
   );

@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   AccountDeleteConfirmDialog,
   AccountsListWidget,
@@ -87,6 +88,9 @@ export function Accounts({
     visibleAccounts,
   } = useAccountsPageModel({ onAddClick });
 
+  const handleCreateVoid = useCallback(() => { void handleCreate(); }, [handleCreate]);
+  const handleConfirmDeleteVoid = useCallback(() => { void confirmDeleteAccount(); }, [confirmDeleteAccount]);
+
   return (
     <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <PageHeader
@@ -118,9 +122,7 @@ export function Accounts({
               incomeLabel={incomeLabel}
               expenseLabel={expenseLabel}
               pendingDeleteAccountId={pendingDeleteAccountId}
-              onDeleteAccount={(accountId) => {
-                requestDeleteAccount(accountId);
-              }}
+              onDeleteAccount={requestDeleteAccount}
             />
           </div>
         </div>
@@ -151,9 +153,7 @@ export function Accounts({
           onNameChange={setNameInput}
           onBalanceChange={setBalanceInput}
           onRequestClose={handleCloseEditor}
-          onSubmit={() => {
-            void handleCreate();
-          }}
+          onSubmit={handleCreateVoid}
         />
       </div>
 
@@ -165,9 +165,7 @@ export function Accounts({
           ? "Se eliminará 1 transacción asociada."
           : `Se eliminarán ${deleteConfirmTransactionsCount} transacciones asociadas.`}
         onCancel={cancelDeleteAccount}
-        onConfirm={() => {
-          void confirmDeleteAccount();
-        }}
+        onConfirm={handleConfirmDeleteVoid}
       />
     </div>
   );

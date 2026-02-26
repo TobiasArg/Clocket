@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { StatDisplay, SummaryPanel } from "@/components";
 import { ProgressSection } from "../ProgressSection/ProgressSection";
 import { formatCurrency } from "@/utils";
@@ -14,7 +15,7 @@ export interface BudgetSummaryWidgetProps {
   totalSpentLabel: string;
 }
 
-export function BudgetSummaryWidget({
+export const BudgetSummaryWidget = memo(function BudgetSummaryWidget({
   overspentAmount,
   progress,
   rawProgress,
@@ -64,4 +65,4 @@ export function BudgetSummaryWidget({
       )}
     </SummaryPanel>
   );
-}
+});

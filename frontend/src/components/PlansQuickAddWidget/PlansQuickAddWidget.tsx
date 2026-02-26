@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ActionButton } from "../ActionButton/ActionButton";
 import { SlideUpSheet } from "../SlideUpSheet/SlideUpSheet";
 import type { TransactionInputCurrency } from "@/utils";
@@ -45,7 +46,7 @@ export interface PlansQuickAddWidgetProps {
   currencyLabel?: string;
 }
 
-export function PlansQuickAddWidget({
+export const PlansQuickAddWidget = memo(function PlansQuickAddWidget({
   creationDateErrorLabel = "Usa una fecha válida que no sea futura.",
   creationDateInput = "",
   creationDateLabel = "Fecha de creación",
@@ -185,4 +186,4 @@ export function PlansQuickAddWidget({
       </div>
     </SlideUpSheet>
   );
-}
+});

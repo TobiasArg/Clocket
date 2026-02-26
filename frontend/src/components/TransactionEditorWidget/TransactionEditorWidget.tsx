@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { ActionButton } from "../ActionButton/ActionButton";
 import {
   OptionPickerSheet,
@@ -89,7 +89,7 @@ const normalizeSubcategories = (subcategories: string[] | undefined): string[] =
     .filter((subcategory) => subcategory.length > 0);
 };
 
-export function TransactionEditorWidget({
+export const TransactionEditorWidget = memo(function TransactionEditorWidget({
   accountsError = null,
   amountInput = "",
   categoriesError = null,
@@ -532,4 +532,4 @@ export function TransactionEditorWidget({
       />
     </>
   );
-}
+});

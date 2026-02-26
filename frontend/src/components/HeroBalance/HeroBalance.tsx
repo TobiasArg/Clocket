@@ -1,5 +1,5 @@
 import { PhosphorIcon } from "@/components";
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 export interface HeroBalanceProps {
   label?: string;
@@ -32,7 +32,7 @@ const renderBalanceWithScaledDecimals = (value: string): ReactNode => {
 const BALANCE_SIZE_CLASS_MOBILE = "text-[clamp(1.75rem,7.8vw,2.5rem)]";
 const BALANCE_SIZE_CLASS_DESKTOP = "text-[clamp(2.125rem,4.2vw,2.875rem)]";
 
-export function HeroBalance({
+export const HeroBalance = memo(function HeroBalance({
   label = "TOTAL BALANCE",
   balance,
   incomeLabel = "Ingresos",
@@ -101,4 +101,4 @@ export function HeroBalance({
       </div>
     </div>
   );
-}
+});

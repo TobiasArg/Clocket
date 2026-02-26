@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   useCallback,
   useEffect,
@@ -34,7 +35,7 @@ export interface SlideUpSheetProps {
   handleClassName?: string;
 }
 
-export function SlideUpSheet({
+export const SlideUpSheet = memo(function SlideUpSheet({
   isOpen = false,
   title,
   children,
@@ -349,4 +350,4 @@ export function SlideUpSheet({
       </div>
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { NavItem } from "@/modules/budgets";
-import { useRef } from "react";
+import { useRef, useCallback } from "react";
 import type { TouchEvent as ReactTouchEvent } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import {
@@ -113,6 +113,8 @@ export function Budgets({
     visibleBudgets,
     selectedMonthLabel,
   } = useBudgetsPageModel({ onAddClick });
+
+  const handleCreateVoid = useCallback(() => { void handleCreate(); }, [handleCreate]);
 
   const applyMonthDrag = (nextOffset: number, shouldAnimate: boolean) => {
     monthDragXRef.current = nextOffset;
@@ -362,9 +364,7 @@ export function Budgets({
           onScopeRulesChange={setSelectedScopeRules}
           onCreateCategory={handleCreateCategory}
           onAmountChange={setLimitAmountInput}
-          onSubmit={() => {
-            void handleCreate();
-          }}
+          onSubmit={handleCreateVoid}
         />
       </div>
       <BottomNavigation items={navItems} onItemClick={onNavItemClick} />

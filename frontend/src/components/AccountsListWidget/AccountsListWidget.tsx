@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CardSection } from "@/components";
 import { AccountSwipeDeleteRow } from "./AccountSwipeDeleteRow";
 import type { AccountFlow } from "@/hooks";
@@ -19,7 +20,7 @@ export interface AccountsListWidgetProps {
   updatedPrefix?: string;
 }
 
-export function AccountsListWidget({
+export const AccountsListWidget = memo(function AccountsListWidget({
   accountFlowsById = new Map<string, AccountFlow>(),
   accounts = [],
   deleteActionLabel = "Eliminar",
@@ -85,4 +86,4 @@ export function AccountsListWidget({
       )}
     </CardSection>
   );
-}
+});

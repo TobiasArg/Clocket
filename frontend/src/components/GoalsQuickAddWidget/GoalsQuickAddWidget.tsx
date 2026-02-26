@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ActionButton } from "../ActionButton/ActionButton";
 import { CategoryColorPicker } from "../CategoryColorPicker/CategoryColorPicker";
 import { CategoryIconPicker } from "../CategoryIconPicker/CategoryIconPicker";
@@ -53,7 +54,7 @@ export interface GoalsQuickAddWidgetProps {
   titleInput?: string;
 }
 
-export function GoalsQuickAddWidget({
+export const GoalsQuickAddWidget = memo(function GoalsQuickAddWidget({
   colorOptions = [],
   deadlineDateInput = "",
   descriptionInput = "",
@@ -213,4 +214,4 @@ export function GoalsQuickAddWidget({
       </div>
     </SlideUpSheet>
   );
-}
+});

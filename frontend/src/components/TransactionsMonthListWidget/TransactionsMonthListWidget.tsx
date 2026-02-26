@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CardSection } from "@/components";
 import { TransactionSwipeDeleteRow } from "./TransactionSwipeDeleteRow";
 import type { TransactionsMonthGroup } from "@/hooks";
@@ -24,7 +25,7 @@ export interface TransactionsMonthListWidgetProps {
   resolveCategoryLabel?: (transaction: TransactionItem) => string;
 }
 
-export function TransactionsMonthListWidget({
+export const TransactionsMonthListWidget = memo(function TransactionsMonthListWidget({
   deleteActionLabel = "Eliminar",
   editActionLabel = "Editar",
   emptyHint = "Agrega tu primera transacción para empezar.",
@@ -109,4 +110,4 @@ export function TransactionsMonthListWidget({
         ))}
     </>
   );
-}
+});

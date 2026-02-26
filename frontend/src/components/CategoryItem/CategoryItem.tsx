@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Dot } from "@/components";
 import { ProgressBar } from "@/components";
 
@@ -20,7 +21,7 @@ export interface CategoryItemProps {
   className?: string;
 }
 
-export function CategoryItem({
+export const CategoryItem = memo(function CategoryItem({
   dotColor,
   name,
   value,
@@ -57,4 +58,4 @@ export function CategoryItem({
       )}
     </div>
   );
-}
+});

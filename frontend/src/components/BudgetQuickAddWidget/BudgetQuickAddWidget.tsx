@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import type {
   BudgetCategoryColorOption,
   BudgetCategoryOption,
@@ -112,7 +112,7 @@ export interface BudgetQuickAddWidgetProps {
   title: string;
 }
 
-export function BudgetQuickAddWidget({
+export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
   amountErrorLabel,
   amountLabel,
   budgetFormValidationLabel = null,
@@ -765,4 +765,4 @@ export function BudgetQuickAddWidget({
       </SlideUpSheet>
     </>
   );
-}
+});

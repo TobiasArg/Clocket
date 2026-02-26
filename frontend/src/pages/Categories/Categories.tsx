@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import type { Category } from "@/modules/categories";
 import {
   CategoriesListWidget,
@@ -108,6 +109,11 @@ export function Categories({
     onCategoryClick,
   });
 
+  const handleAddSubcategoryVoid = useCallback(() => { void handleCreateSubcategory(); }, [handleCreateSubcategory]);
+  const handleDeleteSubcategoryVoid = useCallback((subcategoryName: string) => { void handleDeleteSubcategory(subcategoryName); }, [handleDeleteSubcategory]);
+  const handleDeleteCategoryVoid = useCallback((category: Parameters<typeof handleDeleteCategory>[0]) => { void handleDeleteCategory(category); }, [handleDeleteCategory]);
+  const handleCreateCategoryVoid = useCallback(() => { void handleCreateCategory(); }, [handleCreateCategory]);
+
   const isOverlayOpen = isQuickAddOpen || isCategoryDetailOpen;
 
   return (
@@ -145,12 +151,8 @@ export function Categories({
           subcategoryNameInput={subcategoryNameInput}
           isSubcategoryNameValid={isSubcategoryNameValid}
           onSubcategoryNameInputChange={setSubcategoryNameInput}
-          onAddSubcategory={() => {
-            void handleCreateSubcategory();
-          }}
-          onDeleteSubcategory={(subcategoryName) => {
-            void handleDeleteSubcategory(subcategoryName);
-          }}
+          onAddSubcategory={handleAddSubcategoryVoid}
+          onDeleteSubcategory={handleDeleteSubcategoryVoid}
           checkingUsageLabel={checkingUsageLabel}
           categoryDeleteLabel={deleteActionLabel}
           deleteConfirmCategoryId={deleteConfirmCategoryId}
@@ -160,9 +162,7 @@ export function Categories({
           deleteCancelLabel={deleteCancelLabel}
           deleteConfirmLabel={deleteConfirmLabel}
           onRequestClose={handleCloseCategoryDetail}
-          onDeleteCategory={(category) => {
-            void handleDeleteCategory(category);
-          }}
+          onDeleteCategory={handleDeleteCategoryVoid}
         />
 
         <CategoryQuickAddWidget
@@ -191,9 +191,7 @@ export function Categories({
           onIconChange={setSelectedIcon}
           onColorChange={setSelectedColorKey}
           onRequestClose={handleCloseQuickAdd}
-          onSubmit={() => {
-            void handleCreateCategory();
-          }}
+          onSubmit={handleCreateCategoryVoid}
         />
       </div>
     </div>

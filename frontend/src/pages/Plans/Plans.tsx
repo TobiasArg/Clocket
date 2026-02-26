@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   PlanStatusCounter,
   PageHeader,
@@ -122,6 +123,13 @@ export function Plans({
     handleMarkInstallmentPaid,
   } = usePlansPageModel({ onAddClick });
 
+  const setStatusFilterAll = useCallback(() => { setStatusFilter("all"); }, [setStatusFilter]);
+  const setStatusFilterActive = useCallback(() => { setStatusFilter("active"); }, [setStatusFilter]);
+  const setStatusFilterFinished = useCallback(() => { setStatusFilter("finished"); }, [setStatusFilter]);
+  const handleDeletePlanVoid = useCallback((id: string) => { void handleDeletePlan(id); }, [handleDeletePlan]);
+  const handleMarkInstallmentPaidVoid = useCallback((id: string) => { void handleMarkInstallmentPaid(id); }, [handleMarkInstallmentPaid]);
+  const handleCreateVoid = useCallback(() => { void handleCreate(); }, [handleCreate]);
+
   const resolvedEmptyTitle = statusFilter === "all"
     ? emptyAllTitle
     : statusFilter === "active"
@@ -150,21 +158,21 @@ export function Plans({
                 label={totalStatusLabel}
                 count={totalCount}
                 isSelected={statusFilter === "all"}
-                onClick={() => setStatusFilter("all")}
+                onClick={setStatusFilterAll}
               />
               <PlanStatusCounter
                 status="active"
                 label={activeStatusLabel}
                 count={activeCount}
                 isSelected={statusFilter === "active"}
-                onClick={() => setStatusFilter("active")}
+                onClick={setStatusFilterActive}
               />
               <PlanStatusCounter
                 status="finished"
                 label={finishedStatusLabel}
                 count={finishedCount}
                 isSelected={statusFilter === "finished"}
-                onClick={() => setStatusFilter("finished")}
+                onClick={setStatusFilterFinished}
               />
             </div>
 
@@ -190,12 +198,8 @@ export function Plans({
               deleteCancelLabel={deleteCancelLabel}
               deleteConfirmLabel={deleteConfirmLabel}
               onDeleteConfirmPlanIdChange={setDeleteConfirmPlanId}
-              onDeletePlan={(id) => {
-                void handleDeletePlan(id);
-              }}
-              onMarkInstallmentPaid={(id) => {
-                void handleMarkInstallmentPaid(id);
-              }}
+              onDeletePlan={handleDeletePlanVoid}
+              onMarkInstallmentPaid={handleMarkInstallmentPaidVoid}
               onPlanClick={onPlanClick}
             />
           </div>
@@ -233,9 +237,7 @@ export function Plans({
           onCurrencyChange={setSelectedCurrency}
           onCreationDateChange={setCreationDateInput}
           onRequestClose={handleCloseEditor}
-          onSubmit={() => {
-            void handleCreate();
-          }}
+          onSubmit={handleCreateVoid}
         />
       </div>
     </div>

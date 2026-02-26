@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 import { SlideUpSheet } from "../SlideUpSheet/SlideUpSheet";
@@ -29,7 +30,7 @@ export interface OptionPickerSheetProps {
   title?: string;
 }
 
-export function OptionPickerSheet({
+export const OptionPickerSheet = memo(function OptionPickerSheet({
   backdropAriaLabel = "Cerrar selector",
   emptyLabel = "Sin resultados",
   errorLabel = "No pudimos cargar las opciones.",
@@ -127,4 +128,4 @@ export function OptionPickerSheet({
       </div>
     </SlideUpSheet>
   );
-}
+});

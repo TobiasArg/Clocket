@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ActionButton } from "../ActionButton/ActionButton";
 import { CategoryColorPicker, type CategoryColorPickerOption } from "../CategoryColorPicker/CategoryColorPicker";
 import { CategoryIconPicker } from "../CategoryIconPicker/CategoryIconPicker";
@@ -33,7 +34,7 @@ export interface CategoryQuickAddWidgetProps {
   title?: string;
 }
 
-export function CategoryQuickAddWidget({
+export const CategoryQuickAddWidget = memo(function CategoryQuickAddWidget({
   colorOptions = [],
   colorLabel = "Color",
   colorErrorLabel = "Selecciona un color.",
@@ -138,4 +139,4 @@ export function CategoryQuickAddWidget({
       </div>
     </SlideUpSheet>
   );
-}
+});

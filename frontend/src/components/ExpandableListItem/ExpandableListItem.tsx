@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { PhosphorIcon } from "@/components";
 
 export interface ExpandableListItemProps {
@@ -13,7 +13,7 @@ export interface ExpandableListItemProps {
   className?: string;
 }
 
-export function ExpandableListItem({
+export const ExpandableListItem = memo(function ExpandableListItem({
   left,
   title,
   subtitle,
@@ -44,4 +44,4 @@ export function ExpandableListItem({
       {isExpanded && children}
     </div>
   );
-}
+});

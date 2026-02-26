@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 export interface ListItemRowProps {
   left: ReactNode;
@@ -15,7 +15,7 @@ export interface ListItemRowProps {
   className?: string;
 }
 
-export function ListItemRow({
+export const ListItemRow = memo(function ListItemRow({
   left,
   title,
   subtitle,
@@ -53,4 +53,4 @@ export function ListItemRow({
   }
 
   return <div className={classes}>{content}</div>;
-}
+});

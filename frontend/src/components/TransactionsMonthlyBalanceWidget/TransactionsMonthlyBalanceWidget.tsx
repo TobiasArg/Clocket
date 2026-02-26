@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CardSection } from "@/components";
 import { formatCurrency } from "@/utils";
 
@@ -23,7 +24,7 @@ export interface TransactionsMonthlyBalanceWidgetProps {
   cuotasCount?: number;
 }
 
-export function TransactionsMonthlyBalanceWidget({
+export const TransactionsMonthlyBalanceWidget = memo(function TransactionsMonthlyBalanceWidget({
   hasMonthlyTransactions = false,
   isCuotasLoading = false,
   isLoading = false,
@@ -99,4 +100,4 @@ export function TransactionsMonthlyBalanceWidget({
       </div>
     </CardSection>
   );
-}
+});
