@@ -130,14 +130,16 @@ export const StatisticsSavingsWidget = memo(function StatisticsSavingsWidget({
     (view: StatisticsChartView) => {
       const points = trendPointsByView[view] ?? [];
       if (!loadedViews[view]) {
-        return <div className="h-[172px] w-full rounded-xl bg-[var(--panel-bg)]/70" />;
+        return <div className="h-[172px] w-full rounded-xl bg-[var(--surface-muted)] animate-pulse" />;
       }
 
       const ViewComponent = TREND_VIEW_COMPONENTS[view];
+      const viewAnimKey = `${trendAnimationKey}-${view}`;
       return (
-        <Suspense fallback={<div className="h-[172px] w-full rounded-xl bg-[var(--panel-bg)]/70" />}>
+        <Suspense fallback={<div className="h-[172px] w-full rounded-xl bg-[var(--surface-muted)] animate-pulse" />}>
           <ViewComponent
-            animationKey={`${trendAnimationKey}-${view}`}
+            key={viewAnimKey}
+            animationKey={viewAnimKey}
             mode={trendMode}
             onSelectPoint={(_, index) => {
               setSelectedPointIndex(index);

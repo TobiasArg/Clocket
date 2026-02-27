@@ -114,8 +114,8 @@ export const TrendChartView = memo(function TrendChartView({
   };
 
   return (
-    <div ref={containerRef} className="h-[172px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-2 py-2">
-      <svg key={animationKey} viewBox={`0 0 ${width} ${height}`} className="h-full w-full" aria-label="Trend chart">
+    <div ref={containerRef} className="h-[172px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/75 px-2 py-2 animate-chart-in">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" aria-label="Trend chart">
         {[0, 0.25, 0.5, 0.75, 1].map((step) => {
           const y = padding.top + chartHeight * step;
           const tick = Math.round(maxPercent * (1 - step));
