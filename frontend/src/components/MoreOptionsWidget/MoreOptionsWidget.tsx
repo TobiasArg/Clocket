@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { GridOption } from "@/types";
 import { OptionGrid } from "@/components";
 
@@ -7,7 +8,7 @@ export interface MoreOptionsWidgetProps {
   rows?: GridOption[][];
 }
 
-export function MoreOptionsWidget({
+export const MoreOptionsWidget = memo(function MoreOptionsWidget({
   className = "",
   onOptionClick,
   rows = [],
@@ -40,4 +41,4 @@ export function MoreOptionsWidget({
       className={className}
     />
   );
-}
+});

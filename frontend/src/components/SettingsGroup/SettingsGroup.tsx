@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 export interface SettingsGroupProps {
   title: string;
@@ -7,7 +7,7 @@ export interface SettingsGroupProps {
   className?: string;
 }
 
-export function SettingsGroup({
+export const SettingsGroup = memo(function SettingsGroup({
   title,
   titleClassName = "mb-1 text-[11px] font-semibold tracking-[1px] text-[var(--text-secondary)]",
   children,
@@ -21,4 +21,4 @@ export function SettingsGroup({
       </div>
     </div>
   );
-}
+});

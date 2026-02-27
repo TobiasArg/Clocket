@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { PullToRefreshState } from "@/hooks/usePullToRefresh";
 
 export interface PullToRefreshIndicatorProps {
@@ -5,7 +6,7 @@ export interface PullToRefreshIndicatorProps {
   progress: number;
 }
 
-export function PullToRefreshIndicator({ state, progress }: PullToRefreshIndicatorProps) {
+export const PullToRefreshIndicator = memo(function PullToRefreshIndicator({ state, progress }: PullToRefreshIndicatorProps) {
   const isVisible = state !== "idle" || progress > 0;
   const containerAnimationClass = isVisible ? "max-h-12 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1";
   const spinnerOpacity = Math.max(0.25, Math.min(1, progress + 0.2));
@@ -36,4 +37,4 @@ export function PullToRefreshIndicator({ state, progress }: PullToRefreshIndicat
       </div>
     </div>
   );
-}
+});

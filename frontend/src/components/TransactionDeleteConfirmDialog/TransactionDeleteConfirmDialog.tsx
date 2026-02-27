@@ -1,3 +1,4 @@
+import { memo } from "react";
 export interface TransactionDeleteConfirmDialogProps {
   cancelLabel?: string;
   confirmLabel?: string;
@@ -10,7 +11,7 @@ export interface TransactionDeleteConfirmDialogProps {
   transactionName?: string;
 }
 
-export function TransactionDeleteConfirmDialog({
+export const TransactionDeleteConfirmDialog = memo(function TransactionDeleteConfirmDialog({
   cancelLabel = "Cancelar",
   confirmLabel = "Eliminar",
   isLoading = false,
@@ -65,4 +66,4 @@ export function TransactionDeleteConfirmDialog({
       </div>
     </div>
   );
-}
+});

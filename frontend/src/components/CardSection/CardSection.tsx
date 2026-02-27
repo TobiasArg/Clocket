@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 export interface CardSectionProps {
   title?: string;
@@ -9,7 +9,7 @@ export interface CardSectionProps {
   className?: string;
 }
 
-export function CardSection({
+export const CardSection = memo(function CardSection({
   title,
   titleClassName = "text-xl font-bold text-[var(--text-primary)] font-['Outfit']",
   action,
@@ -28,4 +28,4 @@ export function CardSection({
       {children}
     </div>
   );
-}
+});

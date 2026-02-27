@@ -1,3 +1,4 @@
+import { memo } from "react";
 export interface CategoryColorPickerOption {
   key: string;
   label: string;
@@ -14,7 +15,7 @@ export interface CategoryColorPickerProps {
   errorLabel?: string;
 }
 
-export function CategoryColorPicker({
+export const CategoryColorPicker = memo(function CategoryColorPicker({
   options = [],
   selectedColorKey = "",
   onChange,
@@ -48,4 +49,4 @@ export function CategoryColorPicker({
       )}
     </div>
   );
-}
+});
