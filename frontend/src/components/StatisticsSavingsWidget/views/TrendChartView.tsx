@@ -1,6 +1,6 @@
 import { useAppSettings } from "@/hooks";
 import type { StatisticsTrendPoint } from "@/hooks/useStatisticsPageModel";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 export type TrendChartMode = "line" | "bars";
 
@@ -22,7 +22,7 @@ const clampNumber = (value: number, min: number, max: number): number => {
   return value;
 };
 
-export function TrendChartView({
+export const TrendChartView = memo(function TrendChartView({
   animationKey,
   mode = "line",
   onSelectPoint,
@@ -265,4 +265,4 @@ export function TrendChartView({
       </svg>
     </div>
   );
-}
+});

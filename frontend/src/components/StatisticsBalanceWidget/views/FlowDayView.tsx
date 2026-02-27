@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { FlowChartView } from "./FlowChartView";
 import type { FlowChartViewProps } from "./FlowChartView";
 
-export function FlowDayView(props: FlowChartViewProps) {
+export const FlowDayView = memo(function FlowDayView(props: FlowChartViewProps) {
   return <FlowChartView {...props} />;
-}
+});
