@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { StatDisplay } from "@/components";
 import { ProgressSection } from "../ProgressSection/ProgressSection";
 import { formatCurrency, type CuotaPlanItem } from "@/utils";
@@ -29,7 +30,7 @@ export interface PlansListWidgetProps {
   totalLabel?: string;
 }
 
-export function PlansListWidget({
+export const PlansListWidget = memo(function PlansListWidget({
   cuotaLabel = "Cuota mensual",
   deleteActionLabel = "Eliminar",
   deleteCancelLabel = "Cancelar",
@@ -219,4 +220,4 @@ export function PlansListWidget({
       )}
     </>
   );
-}
+});

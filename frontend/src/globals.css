@@ -219,4 +219,25 @@ textarea {
       --glass-sheen-blur: 10px;
     }
   }
+
+  .animate-chart-in {
+    animation: chart-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-chart-in {
+      animation: none;
+    }
+  }
+}
+
+@keyframes chart-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

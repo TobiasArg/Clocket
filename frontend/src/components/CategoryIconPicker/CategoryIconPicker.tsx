@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { PhosphorIcon } from "@/components";
 
 export interface CategoryIconPickerProps {
@@ -10,7 +11,7 @@ export interface CategoryIconPickerProps {
   errorLabel?: string;
 }
 
-export function CategoryIconPicker({
+export const CategoryIconPicker = memo(function CategoryIconPicker({
   options = [],
   selectedIcon = "",
   onChange,
@@ -47,4 +48,4 @@ export function CategoryIconPicker({
       )}
     </div>
   );
-}
+});

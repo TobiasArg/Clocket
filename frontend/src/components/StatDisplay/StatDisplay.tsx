@@ -1,3 +1,4 @@
+import { memo } from "react";
 export interface StatDisplayProps {
   label: string;
   value: string;
@@ -8,7 +9,7 @@ export interface StatDisplayProps {
   className?: string;
 }
 
-export function StatDisplay({
+export const StatDisplay = memo(function StatDisplay({
   label,
   value,
   labelClassName = "text-xs font-normal text-[var(--text-secondary)]",
@@ -23,4 +24,4 @@ export function StatDisplay({
       <span className={`block max-w-full truncate ${valueClassName}`}>{value}</span>
     </div>
   );
-}
+});

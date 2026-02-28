@@ -100,8 +100,8 @@ export const FlowChartView = memo(function FlowChartView({
   const svgHeight = 210;
 
   return (
-    <div ref={containerRef} className="h-[220px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/70 px-2 py-2">
-      <svg key={animationKey} viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="h-full w-full" aria-label="Flow chart">
+    <div ref={containerRef} className="h-[220px] w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)]/70 px-2 py-2 animate-chart-in">
+      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="h-full w-full" aria-label="Flow chart">
         {(() => {
           const padding = { bottom: 24, left: 10, right: 10, top: 8 };
           const plotWidth = svgWidth - padding.left - padding.right;

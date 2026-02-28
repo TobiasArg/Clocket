@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ProgressSection } from "../ProgressSection/ProgressSection";
 
 export interface BudgetDetailProgressWidgetProps {
@@ -8,7 +9,7 @@ export interface BudgetDetailProgressWidgetProps {
   usedTextColor?: string;
 }
 
-export function BudgetDetailProgressWidget({
+export const BudgetDetailProgressWidget = memo(function BudgetDetailProgressWidget({
   percent = 0,
   progressColor = "bg-[#DC2626]",
   remainingLabel = "$0.00 restante",
@@ -26,4 +27,4 @@ export function BudgetDetailProgressWidget({
       rightLabelClassName="text-xs font-medium text-[var(--text-secondary)]"
     />
   );
-}
+});

@@ -23,7 +23,10 @@ export interface UseBudgetsResult {
 }
 
 const FALLBACK_ERROR_MESSAGE =
-  "We couldn’t complete that budget action. Please try again.";
+  "We couldn't complete that budget action. Please try again.";
+
+let sharedBudgetsCache: BudgetPlanItem[] | null = null;
+let sharedBudgetsRefreshPromise: Promise<BudgetPlanItem[]> | null = null;
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -38,24 +41,59 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
     () => options.repository ?? budgetsRepository,
     [options.repository],
   );
+  const isSharedRepository = repository === budgetsRepository;
 
-  const [items, setItems] = useState<BudgetPlanItem[]>([]);
+  const [items, setItems] = useState<BudgetPlanItem[]>(() => (
+    isSharedRepository && sharedBudgetsCache !== null
+      ? sharedBudgetsCache
+      : []
+  ));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const loadBudgets = useCallback(async (force: boolean) => {
+    if (
+      isSharedRepository &&
+      !force &&
+      sharedBudgetsCache !== null
+    ) {
+      setItems(sharedBudgetsCache);
+      setError(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
+    let request: Promise<BudgetPlanItem[]>;
+    if (isSharedRepository) {
+      if (!sharedBudgetsRefreshPromise) {
+        sharedBudgetsRefreshPromise = repository.list();
+      }
+      request = sharedBudgetsRefreshPromise;
+    } else {
+      request = repository.list();
+    }
+
     try {
-      const nextItems = await repository.list();
+      const nextItems = await request;
+      if (isSharedRepository) {
+        sharedBudgetsCache = nextItems;
+      }
       setItems(nextItems);
     } catch (refreshError) {
       setError(getErrorMessage(refreshError));
     } finally {
+      if (isSharedRepository && sharedBudgetsRefreshPromise === request) {
+        sharedBudgetsRefreshPromise = null;
+      }
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
+
+  const refresh = useCallback(async () => {
+    await loadBudgets(true);
+  }, [loadBudgets]);
 
   const create = useCallback(
     async (input: CreateBudgetInput): Promise<BudgetPlanItem | null> => {
@@ -64,6 +102,9 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
 
       try {
         const created = await repository.create(input);
+        if (isSharedRepository) {
+          sharedBudgetsCache = [...(sharedBudgetsCache ?? []), created];
+        }
         setItems((current) => [...current, created]);
         return created;
       } catch (createError) {
@@ -73,7 +114,7 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const update = useCallback(
@@ -87,6 +128,11 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
           return null;
         }
 
+        if (isSharedRepository && sharedBudgetsCache !== null) {
+          sharedBudgetsCache = sharedBudgetsCache.map(
+            (item) => (item.id === updated.id ? updated : item),
+          );
+        }
         setItems((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
@@ -98,7 +144,7 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const remove = useCallback(
@@ -109,6 +155,11 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
       try {
         const removed = await repository.remove(id);
         if (removed) {
+          if (isSharedRepository && sharedBudgetsCache !== null) {
+            sharedBudgetsCache = sharedBudgetsCache.filter(
+              (item) => item.id !== id,
+            );
+          }
           setItems((current) => current.filter((item) => item.id !== id));
         }
         return removed;
@@ -119,7 +170,7 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
         setIsLoading(false);
       }
     },
-    [repository],
+    [isSharedRepository, repository],
   );
 
   const clearAll = useCallback(async () => {
@@ -128,17 +179,20 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
 
     try {
       await repository.clearAll();
+      if (isSharedRepository) {
+        sharedBudgetsCache = [];
+      }
       setItems([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
       setIsLoading(false);
     }
-  }, [repository]);
+  }, [isSharedRepository, repository]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void loadBudgets(false);
+  }, [loadBudgets]);
 
   return {
     items,

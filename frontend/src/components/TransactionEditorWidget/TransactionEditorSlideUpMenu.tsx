@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { PhosphorIcon } from "@/components/PhosphorIcon/PhosphorIcon";
 
 const CLOSE_ANIMATION_MS = 240;
@@ -13,7 +13,7 @@ export interface TransactionEditorSlideUpMenuProps {
   title?: string;
 }
 
-export function TransactionEditorSlideUpMenu({
+export const TransactionEditorSlideUpMenu = memo(function TransactionEditorSlideUpMenu({
   children,
   isOpen,
   onClose,
@@ -192,4 +192,4 @@ export function TransactionEditorSlideUpMenu({
       </div>
     </div>
   );
-}
+});

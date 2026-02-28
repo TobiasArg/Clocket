@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 export interface SummaryPanelProps {
   title?: string;
@@ -11,7 +11,7 @@ export interface SummaryPanelProps {
   className?: string;
 }
 
-export function SummaryPanel({
+export const SummaryPanel = memo(function SummaryPanel({
   title,
   titleClassName = "text-xs font-semibold text-[var(--text-secondary)] tracking-[2px]",
   bg = "bg-black",
@@ -27,4 +27,4 @@ export function SummaryPanel({
       {children}
     </div>
   );
-}
+});

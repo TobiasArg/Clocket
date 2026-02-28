@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { GridOption } from "@/types";
 import { PhosphorIcon } from "@/components";
 
@@ -13,7 +14,7 @@ export interface OptionGridProps {
   className?: string;
 }
 
-export function OptionGrid({
+export const OptionGrid = memo(function OptionGrid({
   rows,
   onOptionClick,
   buttonBg = "bg-[var(--text-primary)]",
@@ -78,4 +79,4 @@ export function OptionGrid({
       ))}
     </div>
   );
-}
+});

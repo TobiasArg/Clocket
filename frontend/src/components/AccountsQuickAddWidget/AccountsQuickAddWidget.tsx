@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ActionButton } from "../ActionButton/ActionButton";
 import { CategoryIconPicker } from "../CategoryIconPicker/CategoryIconPicker";
 import { SlideUpSheet } from "../SlideUpSheet/SlideUpSheet";
@@ -31,7 +32,7 @@ export interface AccountsQuickAddWidgetProps {
   title?: string;
 }
 
-export function AccountsQuickAddWidget({
+export const AccountsQuickAddWidget = memo(function AccountsQuickAddWidget({
   balanceErrorLabel = "Ingresa un balance válido.",
   balanceInput = "",
   balanceLabel = "Balance inicial",
@@ -127,4 +128,4 @@ export function AccountsQuickAddWidget({
       </div>
     </SlideUpSheet>
   );
-}
+});

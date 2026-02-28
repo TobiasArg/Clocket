@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { StockMetric } from "@/types";
 import { Divider } from "@/components";
 import { TextBadge } from "@/components";
@@ -20,7 +21,7 @@ export interface StockCardProps {
   className?: string;
 }
 
-export function StockCard({
+export const StockCard = memo(function StockCard({
   ticker,
   name,
   exchange,
@@ -87,4 +88,4 @@ export function StockCard({
   }
 
   return <div className={classes}>{content}</div>;
-}
+});

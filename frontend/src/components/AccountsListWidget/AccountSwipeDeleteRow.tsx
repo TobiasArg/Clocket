@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   useEffect,
   useMemo,
@@ -80,7 +81,7 @@ const createInitialDragState = (): DragState => ({
   translateX: 0,
 });
 
-export function AccountSwipeDeleteRow({
+export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
   account,
   deleteActionLabel,
   expenseLabel,
@@ -323,4 +324,4 @@ export function AccountSwipeDeleteRow({
       </div>
     </div>
   );
-}
+});

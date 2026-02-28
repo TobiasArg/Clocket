@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 
@@ -14,7 +15,7 @@ export interface BudgetHeroProps {
   className?: string;
 }
 
-export function BudgetHero({
+export const BudgetHero = memo(function BudgetHero({
   headerBg = "bg-[#DC2626]",
   icon,
   name,
@@ -77,4 +78,4 @@ export function BudgetHero({
       </div>
     </div>
   );
-}
+});

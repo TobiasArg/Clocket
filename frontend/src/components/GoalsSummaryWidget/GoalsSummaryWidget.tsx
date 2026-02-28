@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { StatDisplay, SummaryPanel } from "@/components";
 import { ProgressSection } from "../ProgressSection/ProgressSection";
 import { formatCurrency } from "@/utils";
@@ -12,7 +13,7 @@ export interface GoalsSummaryWidgetProps {
   percent?: number;
 }
 
-export function GoalsSummaryWidget({
+export const GoalsSummaryWidget = memo(function GoalsSummaryWidget({
   goalLabel = "Meta Total",
   progressLabel = "completado",
   summaryTitle = "RESUMEN DE AHORRO",
@@ -55,4 +56,4 @@ export function GoalsSummaryWidget({
       />
     </SummaryPanel>
   );
-}
+});

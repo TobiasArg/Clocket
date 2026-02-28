@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { GoalsQuickAddWidget } from "@/components/GoalsQuickAddWidget/GoalsQuickAddWidget";
 import { IconBadge } from "@/components/IconBadge/IconBadge";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
@@ -63,6 +64,9 @@ export function GoalDetail({
     visibleAccounts,
     visibleGoalsForRedirect,
   } = useGoalDetailPageModel({ goalId });
+
+  const handleSaveEditVoid = useCallback(() => { void handleSaveEdit(); }, [handleSaveEdit]);
+  const handleColorKeyChange = useCallback((value: string) => { setSelectedColorKey(value as GoalColorKey); }, [setSelectedColorKey]);
 
   if (!goal) {
     return (
@@ -209,9 +213,7 @@ export function GoalDetail({
         isOpen={isEditSheetOpen}
         title="Editar meta"
         onRequestClose={handleCloseEdit}
-        onSubmit={() => {
-          void handleSaveEdit();
-        }}
+        onSubmit={handleSaveEditVoid}
         isFormValid={isEditFormValid}
         isLoading={isLoading}
         showValidation={showEditValidation}
@@ -233,7 +235,7 @@ export function GoalDetail({
         onIconChange={setSelectedIcon}
         iconOptions={iconOptions}
         selectedColorKey={selectedColorKey}
-        onColorKeyChange={(value) => setSelectedColorKey(value as GoalColorKey)}
+        onColorKeyChange={handleColorKeyChange}
         colorOptions={colorOptions}
         quickAddSubmitLabel="Guardar cambios"
       />

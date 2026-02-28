@@ -1,5 +1,5 @@
 import type { ReactNode, UIEvent as ReactUIEvent } from "react";
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import type { StatisticsChartView } from "@/hooks";
 
 export interface StatisticsViewOption {
@@ -22,7 +22,7 @@ export const STATISTICS_VIEW_OPTIONS: ReadonlyArray<StatisticsViewOption> = [
   { id: "month", label: "Mes" },
 ];
 
-export function StatisticsViewCarousel({
+export const StatisticsViewCarousel = memo(function StatisticsViewCarousel({
   activeView,
   className = "",
   contentClassName = "",
@@ -141,4 +141,4 @@ export function StatisticsViewCarousel({
       </div>
     </div>
   );
-}
+});

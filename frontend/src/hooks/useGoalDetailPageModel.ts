@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useCurrency } from "./useCurrency";
 import { useAccounts } from "./useAccounts";
 import { useCategories } from "./useCategories";
@@ -243,12 +243,12 @@ export const useGoalDetailPageModel = (
     [],
   );
 
-  const closeEdit = () => {
+  const closeEdit = useCallback(() => {
     setIsEditSheetOpen(false);
     setShowEditValidation(false);
-  };
+  }, []);
 
-  const handleOpenEdit = () => {
+  const handleOpenEdit = useCallback(() => {
     if (!goal) {
       return;
     }
@@ -264,13 +264,13 @@ export const useGoalDetailPageModel = (
     setSelectedColorKey(goal.colorKey);
     setShowEditValidation(false);
     setIsEditSheetOpen(true);
-  };
+  }, [goal, appCurrency]);
 
-  const handleCloseEdit = () => {
+  const handleCloseEdit = useCallback(() => {
     closeEdit();
-  };
+  }, [closeEdit]);
 
-  const setSelectedCurrency = (value: TransactionInputCurrency) => {
+  const setSelectedCurrency = useCallback((value: TransactionInputCurrency) => {
     if (value === selectedCurrency) {
       return;
     }
@@ -283,9 +283,9 @@ export const useGoalDetailPageModel = (
     }
 
     setSelectedCurrencyState(value);
-  };
+  }, [selectedCurrency, targetAmountInput]);
 
-  const handleSaveEdit = async (): Promise<void> => {
+  const handleSaveEdit = useCallback(async (): Promise<void> => {
     if (!goal) {
       return;
     }
@@ -323,9 +323,23 @@ export const useGoalDetailPageModel = (
     }
 
     closeEdit();
-  };
+  }, [
+    goal,
+    isEditFormValid,
+    normalizedTitle,
+    normalizedDescription,
+    targetAmountValue,
+    selectedCurrency,
+    deadlineDateInput,
+    selectedIcon,
+    selectedColorKey,
+    goalEntries,
+    updateGoal,
+    updateTransaction,
+    closeEdit,
+  ]);
 
-  const handleDeleteGoal = async (): Promise<boolean> => {
+  const handleDeleteGoal = useCallback(async (): Promise<boolean> => {
     if (!goal || !canConfirmDelete) {
       return false;
     }
@@ -381,7 +395,20 @@ export const useGoalDetailPageModel = (
 
     setIsDeleteDialogOpen(false);
     return true;
-  };
+  }, [
+    goal,
+    canConfirmDelete,
+    deleteResolution,
+    redirectGoalId,
+    goals,
+    goalEntries,
+    categories,
+    createCategory,
+    redirectAccountId,
+    updateTransaction,
+    removeTransaction,
+    removeGoal,
+  ]);
 
   return {
     canConfirmDelete,

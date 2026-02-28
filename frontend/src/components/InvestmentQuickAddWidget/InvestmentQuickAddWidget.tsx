@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import type { AssetType, EntryType } from "@/domain/investments/portfolioTypes";
 import { ActionButton } from "../ActionButton/ActionButton";
 import {
@@ -80,7 +80,7 @@ export interface InvestmentQuickAddWidgetProps {
   onCreatedAtChange: (value: string) => void;
 }
 
-export function InvestmentQuickAddWidget({
+export const InvestmentQuickAddWidget = memo(function InvestmentQuickAddWidget({
   isOpen,
   isEditing,
   isLoading,
@@ -398,4 +398,4 @@ export function InvestmentQuickAddWidget({
       />
     </>
   );
-}
+});

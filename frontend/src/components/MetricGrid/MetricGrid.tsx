@@ -1,3 +1,4 @@
+import { memo } from "react";
 export interface MetricGridProps {
   metrics: Array<{
     label: string;
@@ -9,7 +10,7 @@ export interface MetricGridProps {
   className?: string;
 }
 
-export function MetricGrid({
+export const MetricGrid = memo(function MetricGrid({
   metrics,
   labelClassName = "text-[11px] font-normal text-[var(--text-secondary)]",
   valueClassName = "text-base font-semibold font-['Outfit'] text-[var(--text-primary)]",
@@ -25,4 +26,4 @@ export function MetricGrid({
       ))}
     </div>
   );
-}
+});

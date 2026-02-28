@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { ListItemRow } from "../ListItemRow/ListItemRow";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
@@ -66,7 +66,7 @@ const createInitialDragState = (): DragState => ({
   translateX: 0,
 });
 
-export function TransactionSwipeDeleteRow({
+export const TransactionSwipeDeleteRow = memo(function TransactionSwipeDeleteRow({
   deleteActionLabel,
   editActionLabel,
   isDeleting,
@@ -333,4 +333,4 @@ export function TransactionSwipeDeleteRow({
       </div>
     </div>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { PhosphorIcon } from "@/components";
 
 export interface ActionButtonProps {
@@ -14,7 +15,7 @@ export interface ActionButtonProps {
   className?: string;
 }
 
-export function ActionButton({
+export const ActionButton = memo(function ActionButton({
   type = "button",
   icon,
   label,
@@ -38,4 +39,4 @@ export function ActionButton({
       <span className={`text-base font-semibold ${labelColor}`}>{label}</span>
     </button>
   );
-}
+});

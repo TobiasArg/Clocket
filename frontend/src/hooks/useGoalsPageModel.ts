@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useCurrency } from "./useCurrency";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
@@ -191,7 +191,7 @@ export const useGoalsPageModel = (
     });
   }, [items, savedByGoalId]);
 
-  const resetEditor = () => {
+  const resetEditor = useCallback(() => {
     setIsEditorOpen(false);
     setTitleInput("");
     setDescriptionInput("");
@@ -201,13 +201,13 @@ export const useGoalsPageModel = (
     setSelectedIcon(GOAL_ICON_OPTIONS[0] ?? "target");
     setSelectedColorKey("emerald");
     setShowValidation(false);
-  };
+  }, [appCurrency]);
 
-  const handleCloseEditor = () => {
+  const handleCloseEditor = useCallback(() => {
     resetEditor();
-  };
+  }, [resetEditor]);
 
-  const handleHeaderAction = () => {
+  const handleHeaderAction = useCallback(() => {
     if (isEditorOpen) {
       handleCloseEditor();
     } else {
@@ -216,9 +216,9 @@ export const useGoalsPageModel = (
       setShowValidation(false);
       onAddClick?.();
     }
-  };
+  }, [isEditorOpen, handleCloseEditor, appCurrency, onAddClick]);
 
-  const handleCreate = async () => {
+  const handleCreate = useCallback(async () => {
     setShowValidation(true);
     if (!isFormValid) {
       return;
@@ -240,7 +240,18 @@ export const useGoalsPageModel = (
     }
 
     resetEditor();
-  };
+  }, [
+    isFormValid,
+    targetAmountValue,
+    selectedCurrency,
+    normalizedTitle,
+    normalizedDescription,
+    deadlineDateInput,
+    selectedIcon,
+    selectedColorKey,
+    create,
+    resetEditor,
+  ]);
 
   return {
     colorOptions: GOAL_COLOR_OPTIONS.map((option) => ({

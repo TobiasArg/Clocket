@@ -104,14 +104,16 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
     (view: StatisticsChartView) => {
       const flowDays = flowByView[view] ?? [];
       if (!loadedViews[view]) {
-        return <div className="h-[220px] w-full rounded-xl bg-[var(--panel-bg)]/70" />;
+        return <div className="h-[220px] w-full rounded-xl bg-[var(--surface-muted)] animate-pulse" />;
       }
 
       const ViewComponent = FLOW_VIEW_COMPONENTS[view];
+      const viewAnimKey = `${chartAnimationKey}-${view}`;
       return (
-        <Suspense fallback={<div className="h-[220px] w-full rounded-xl bg-[var(--panel-bg)]/70" />}>
+        <Suspense fallback={<div className="h-[220px] w-full rounded-xl bg-[var(--surface-muted)] animate-pulse" />}>
           <ViewComponent
-            animationKey={`${chartAnimationKey}-${view}`}
+            key={viewAnimKey}
+            animationKey={viewAnimKey}
             flowDays={flowDays}
             emptyLabel={emptyLabel}
             onSelectDay={setSelectedDay}

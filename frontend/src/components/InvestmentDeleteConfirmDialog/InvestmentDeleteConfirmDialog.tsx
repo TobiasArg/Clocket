@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 
 export interface InvestmentDeleteConfirmDialogProps {
   isOpen: boolean;
@@ -8,7 +8,7 @@ export interface InvestmentDeleteConfirmDialogProps {
   onConfirm: () => void;
 }
 
-export function InvestmentDeleteConfirmDialog({
+export const InvestmentDeleteConfirmDialog = memo(function InvestmentDeleteConfirmDialog({
   isOpen,
   isLoading = false,
   ticker = "",
@@ -87,4 +87,4 @@ export function InvestmentDeleteConfirmDialog({
       </div>
     </div>
   );
-}
+});

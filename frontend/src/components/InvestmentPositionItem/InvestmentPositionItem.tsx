@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { TrendLine } from "@/components/TrendLine/TrendLine";
 import type { InvestmentTableRow } from "@/hooks/useInvestmentsPageModel";
 import { useCurrency } from "@/hooks";
@@ -14,7 +15,7 @@ const formatHeldAmount = (amount: number): string => {
   });
 };
 
-export function InvestmentPositionItem({ item, onOpenDetail }: InvestmentPositionItemProps) {
+export const InvestmentPositionItem = memo(function InvestmentPositionItem({ item, onOpenDetail }: InvestmentPositionItemProps) {
   const { currency } = useCurrency();
   const currentPrice = currency === "ARS" ? item.currentPrice * getUsdRate() : item.currentPrice;
   const currentPriceLabel = formatCurrency(currentPrice);
@@ -59,4 +60,4 @@ export function InvestmentPositionItem({ item, onOpenDetail }: InvestmentPositio
       </div>
     </button>
   );
-}
+});

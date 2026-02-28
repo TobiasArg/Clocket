@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Category } from "@/types";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
@@ -32,7 +33,7 @@ export interface CategoryDetailWidgetProps {
   usageCount?: number;
 }
 
-export function CategoryDetailWidget({
+export const CategoryDetailWidget = memo(function CategoryDetailWidget({
   addSubcategoryActionLabel = "Agregar",
   addSubcategoryPlaceholder = "Nueva subcategoría",
   categoryDeleteLabel = "Eliminar categoría",
@@ -237,4 +238,4 @@ export function CategoryDetailWidget({
     )}
   </>
   );
-}
+});

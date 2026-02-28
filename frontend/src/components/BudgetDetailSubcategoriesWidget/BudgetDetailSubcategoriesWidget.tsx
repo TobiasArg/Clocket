@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { SubcategoryItem } from "@/types";
 import {
   CardSection,
@@ -14,7 +15,7 @@ export interface BudgetDetailSubcategoriesWidgetProps {
   subcategoriesTitle?: string;
 }
 
-export function BudgetDetailSubcategoriesWidget({
+export const BudgetDetailSubcategoriesWidget = memo(function BudgetDetailSubcategoriesWidget({
   addSubLabel = "Agregar",
   emptyLabel = "No hay detalles para este budget.",
   items = [],
@@ -71,4 +72,4 @@ export function BudgetDetailSubcategoriesWidget({
       </div>
     </CardSection>
   );
-}
+});

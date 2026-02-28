@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { DEFAULT_NAV_ITEMS } from "@/constants";
 import type { GoalColorKey, NavItem } from "@/modules/goals";
 import {
@@ -104,6 +105,10 @@ export function Goals({
     titleInput,
   } = useGoalsPageModel({ onAddClick });
 
+  const handleOpenGoal = useCallback((id: string) => { onGoalClick?.(id); }, [onGoalClick]);
+  const handleColorKeyChange = useCallback((value: string) => { setSelectedColorKey(value as GoalColorKey); }, [setSelectedColorKey]);
+  const handleCreateVoid = useCallback(() => { void handleCreate(); }, [handleCreate]);
+
   return (
     <div className="relative flex h-full w-full flex-col bg-[var(--panel-bg)]">
       <PageHeader
@@ -133,9 +138,7 @@ export function Goals({
             emptyTitle={emptyTitle}
             emptyHint={emptyHint}
             items={goalRows}
-            onOpenGoal={(id) => {
-              onGoalClick?.(id);
-            }}
+            onOpenGoal={handleOpenGoal}
           />
         </div>
 
@@ -178,10 +181,8 @@ export function Goals({
           onCurrencyChange={setSelectedCurrency}
           onDeadlineDateChange={setDeadlineDateInput}
           onIconChange={setSelectedIcon}
-          onColorKeyChange={(value) => setSelectedColorKey(value as GoalColorKey)}
-          onSubmit={() => {
-            void handleCreate();
-          }}
+          onColorKeyChange={handleColorKeyChange}
+          onSubmit={handleCreateVoid}
         />
       </div>
       <BottomNavigation

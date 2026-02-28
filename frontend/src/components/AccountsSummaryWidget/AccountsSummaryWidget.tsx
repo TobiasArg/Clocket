@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CardSection } from "@/components";
 import { formatCurrency } from "@/utils";
 
@@ -6,7 +7,7 @@ export interface AccountsSummaryWidgetProps {
   totalBalance?: number;
 }
 
-export function AccountsSummaryWidget({
+export const AccountsSummaryWidget = memo(function AccountsSummaryWidget({
   summaryTitle = "Balance total",
   totalBalance = 0,
 }: AccountsSummaryWidgetProps) {
@@ -21,4 +22,4 @@ export function AccountsSummaryWidget({
       </span>
     </CardSection>
   );
-}
+});

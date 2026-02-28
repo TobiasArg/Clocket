@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { ProgressSection } from "@/components";
 
 export interface ProgressCardProps {
@@ -19,7 +19,7 @@ export interface ProgressCardProps {
   className?: string;
 }
 
-export function ProgressCard({
+export const ProgressCard = memo(function ProgressCard({
   topLeft,
   topRight,
   percent,
@@ -66,4 +66,4 @@ export function ProgressCard({
   }
 
   return <div className={classes}>{content}</div>;
-}
+});

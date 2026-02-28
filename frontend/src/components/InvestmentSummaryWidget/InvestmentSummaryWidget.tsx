@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { InvestmentsSummary } from "@/hooks/useInvestmentsPageModel";
 import { useCurrency } from "@/hooks";
 import { formatCurrency, getUsdRate } from "@/utils";
@@ -18,7 +19,7 @@ const signedPct = (value: number): string => {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 };
 
-export function InvestmentSummaryWidget({ summary }: InvestmentSummaryWidgetProps) {
+export const InvestmentSummaryWidget = memo(function InvestmentSummaryWidget({ summary }: InvestmentSummaryWidgetProps) {
   const { currency } = useCurrency();
   const totalPositions = Math.max(summary.totalPositions, 0);
   const stocksPct = totalPositions > 0 ? (summary.stocksCount / totalPositions) * 100 : 0;
@@ -90,4 +91,4 @@ export function InvestmentSummaryWidget({ summary }: InvestmentSummaryWidgetProp
       </div>
     </div>
   );
-}
+});

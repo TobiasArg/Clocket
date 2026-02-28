@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { BudgetQuickAddWidget } from "@/components/BudgetQuickAddWidget/BudgetQuickAddWidget";
 import type { SubcategoryItem } from "@/modules/budget-detail";
 import {
@@ -105,10 +106,11 @@ export function BudgetDetail({
     subcategories,
   });
 
-  const handleEditClick = () => {
+  const handleSubmitEditVoid = useCallback(() => { void handleSubmitEdit(); }, [handleSubmitEdit]);
+  const handleEditClick = useCallback(() => {
     handleOpenEditor();
     onEditClick?.();
-  };
+  }, [handleOpenEditor, onEditClick]);
 
   if (isLoading) {
     return (
@@ -194,9 +196,7 @@ export function BudgetDetail({
         onScopeRulesChange={setSelectedScopeRules}
         onCreateCategory={handleCreateCategory}
         onAmountChange={setLimitAmountInput}
-        onSubmit={() => {
-          void handleSubmitEdit();
-        }}
+        onSubmit={handleSubmitEditVoid}
       />
 
     </div>

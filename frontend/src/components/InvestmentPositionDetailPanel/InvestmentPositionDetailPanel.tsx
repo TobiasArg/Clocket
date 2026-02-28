@@ -2,7 +2,7 @@ import { TrendLine } from "@/components/TrendLine/TrendLine";
 import type { InvestmentTableRow, PositionEntryRow } from "@/hooks/useInvestmentsPageModel";
 import { useCurrency } from "@/hooks";
 import { formatCurrency, getUsdRate } from "@/utils";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 export interface InvestmentPositionDetailPanelProps {
   isOpen: boolean;
@@ -26,7 +26,7 @@ const SWIPE_DAMPING = 0.82;
 const CLOSE_ANIMATION_MS = 280;
 const CLOSE_EXIT_OFFSET_FALLBACK = 420;
 
-export function InvestmentPositionDetailPanel({
+export const InvestmentPositionDetailPanel = memo(function InvestmentPositionDetailPanel({
   isOpen,
   row,
   entries,
@@ -352,4 +352,4 @@ export function InvestmentPositionDetailPanel({
       </div>
     </div>
   );
-}
+});

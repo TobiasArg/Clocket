@@ -1,3 +1,4 @@
+import { memo } from "react";
 export interface AccountDeleteConfirmDialogProps {
   accountName?: string;
   confirmLabel?: string;
@@ -10,7 +11,7 @@ export interface AccountDeleteConfirmDialogProps {
   titleLabel?: string;
 }
 
-export function AccountDeleteConfirmDialog({
+export const AccountDeleteConfirmDialog = memo(function AccountDeleteConfirmDialog({
   accountName = "",
   confirmLabel = "Eliminar",
   countLabel = "transacciones asociadas",
@@ -68,4 +69,4 @@ export function AccountDeleteConfirmDialog({
       </div>
     </div>
   );
-}
+});

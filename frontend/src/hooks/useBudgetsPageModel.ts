@@ -408,42 +408,42 @@ export const useBudgetsPageModel = (
     ? "Ya existe un budget para el alcance seleccionado en este mes."
     : null;
 
-  const resetEditor = () => {
+  const resetEditor = useCallback(() => {
     setSelectedScopeRulesState([]);
     setBudgetNameInput("");
     setLimitAmountInput("");
     setShowValidation(false);
-  };
+  }, []);
 
-  const handleOpenEditor = () => {
+  const handleOpenEditor = useCallback(() => {
     setIsEditorOpen(true);
     setShowValidation(false);
     onAddClick?.();
-  };
+  }, [onAddClick]);
 
-  const handleCloseEditor = () => {
+  const handleCloseEditor = useCallback(() => {
     setIsEditorOpen(false);
     resetEditor();
-  };
+  }, [resetEditor]);
 
-  const handlePreviousMonth = () => {
+  const handlePreviousMonth = useCallback(() => {
     setSelectedMonth((current) => shiftYearMonth(current, -1));
-  };
+  }, []);
 
-  const handleNextMonth = () => {
+  const handleNextMonth = useCallback(() => {
     setSelectedMonth((current) => shiftYearMonth(current, 1));
-  };
+  }, []);
 
-  const handleHeaderAction = () => {
+  const handleHeaderAction = useCallback(() => {
     if (isEditorOpen) {
       handleCloseEditor();
       onAddClick?.();
     } else {
       handleOpenEditor();
     }
-  };
+  }, [isEditorOpen, handleCloseEditor, handleOpenEditor, onAddClick]);
 
-  const handleCreateCategory = async (
+  const handleCreateCategory = useCallback(async (
     input: BudgetCreateCategoryInput,
   ): Promise<BudgetCategoryOption | null> => {
     const normalizedName = input.name.trim();
@@ -481,9 +481,9 @@ export const useBudgetsPageModel = (
       iconBg: created.iconBg,
       subcategories: normalizeSubcategories(created.subcategories),
     };
-  };
+  }, [createCategory]);
 
-  const handleCreate = async () => {
+  const handleCreate = useCallback(async () => {
     setShowValidation(true);
     if (!isFormValid) {
       return;
@@ -508,7 +508,16 @@ export const useBudgetsPageModel = (
 
     setIsEditorOpen(false);
     resetEditor();
-  };
+  }, [
+    isFormValid,
+    selectedScopeRules,
+    sortedCategories,
+    normalizedBudgetName,
+    limitAmountValue,
+    selectedMonth,
+    create,
+    resetEditor,
+  ]);
 
   return {
     categoryById,
