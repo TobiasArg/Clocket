@@ -1,266 +1,176 @@
-# Agents – Product & Brand Rules (Clocket)
+# Product-Oriented Rules (Clocket)
 
-This document defines the **product, brand, and experience rules** for Clocket.  
-It must be used together with the technical `Agents.md`.
+Este documento define reglas de producto, marca y experiencia de usuario.
+Se usa junto con:
 
-If a change complies technically but violates this document, it is **not acceptable**.
+- `/Users/argtobias/clocket-app/AGENTS.md`
+- `/Users/argtobias/clocket-app/TecnicalAgents.md`
 
----
+Si una propuesta es tecnicamente correcta pero rompe estas reglas de producto, no se acepta.
 
-# 1. Product Identity
+## 1. Product Identity
 
-Clocket is a personal finance clarity application.
+Clocket es una app de claridad financiera personal.
 
-Clocket is not:
+Clocket no es:
 
-- An accounting system
-- A corporate financial platform
-- A banking replacement
-- A complex financial analytics tool
+- un sistema contable profesional
+- una plataforma financiera corporativa
+- un reemplazo de banca tradicional
+- un tablero de analitica financiera compleja
 
-Clocket is:
+Clocket si es:
 
-- A clarity tool
-- A daily money awareness interface
-- A clean financial overview system
+- una herramienta de claridad cotidiana
+- una interfaz simple para entender el estado del dinero personal
+- una experiencia de bajo estres cognitivo
 
-Clocket connects:
+## 2. Core Product Principles
 
-- Time (Clock)
-- Personal money (Pocket)
+Toda decision de producto debe reforzar:
 
-Every expense represents life energy.  
-Every financial decision represents time allocation.
+- simplicidad
+- claridad visual
+- calma emocional
+- transparencia
+- bajo esfuerzo de uso
+- orientacion humana
 
-The product must always reinforce that philosophy.
+Si una propuesta aumenta carga cognitiva, ruido visual, ansiedad o complejidad sin claridad, debe simplificarse o descartarse.
 
----
+## 3. UX and Visual Direction
 
-# 2. Core Product Principles
+La experiencia debe sentirse:
 
-All features must reinforce these values:
+- limpia
+- moderna
+- confiable
+- calmada
+- liviana
 
-- Simplicity
-- Visual clarity
-- Emotional calm
-- Transparency
-- Low friction
-- Human-centered design
+Evitar:
 
-If a feature increases:
+- saturacion visual
+- densidad excesiva de datos
+- patrones agresivos o alarmistas
+- jerarquia visual confusa
 
-- Cognitive load
-- Visual noise
-- Anxiety
-- Excessive control mechanisms
-- Complexity without clarity
+### 3.1 Visual Hierarchy Rules
 
-It must be rejected or simplified.
+- Los datos principales (balance, gasto total, disponible) deben ser visibles en menos de 5 segundos.
+- La informacion secundaria no compite con los KPI principales.
+- Priorizar resumen + expansion progresiva de detalle.
+- Evitar tablas densas cuando una vista resumida cubre el objetivo.
 
----
+### 3.2 Emotional UX Rules
 
-# 3. Design & UX Rules
+- Nunca culpabilizar al usuario.
+- Nunca usar lenguaje catastrofico para errores comunes.
+- Mensajes de error: claros, neutrales y orientados a accion.
 
-Clocket must feel:
+Ejemplo correcto:
 
-- Minimal
-- Professional
-- Modern
-- Calm
-- Clean
-- Trustworthy
-- Light
+> No se pudo guardar la transaccion. Intenta nuevamente.
 
-Never:
+Ejemplo incorrecto:
 
-- Overloaded
-- Aggressive
-- Alarmist
-- Visually saturated
-- Data-dense without hierarchy
+> Error financiero critico.
 
----
+## 4. Feature Design Filter (Mandatory)
 
-## 3.1 Visual Hierarchy
+Antes de implementar una feature, validar:
 
-- Important numbers must stand out clearly.
-- Secondary information must not compete visually.
-- Avoid excessive badges.
-- Avoid unnecessary color variety.
-- Avoid aggressive red tones unless strictly required.
-- Avoid dense tables when a summarized view works better.
+1. Reduce friccion real?
+2. Mejora claridad real?
+3. Puede simplificarse mas?
+4. Es necesaria para uso financiero cotidiano?
+5. Si se elimina, mejora el foco del producto?
 
-Clocket is not a spreadsheet.
+Si no supera este filtro, no se implementa.
 
----
+## 5. Scope Boundaries
 
-## 3.2 Emotional UX
+En foco:
 
-Clocket does not:
+- registro de ingresos y gastos
+- categorizacion clara
+- balance mensual
+- seguimiento de cuotas activas
+- metas de ahorro simples
+- lectura rapida de situacion financiera
 
-- Shame the user
-- Alarm excessively
-- Use dramatic warnings
-- Create urgency pressure
+Fuera de foco:
 
-Error states must be calm and neutral.
+- instrumentos financieros avanzados
+- modelos impositivos complejos
+- cumplimiento contable empresarial
+- reporting institucional
 
-Correct:
+## 6. Component and Interaction Philosophy
 
-> We couldn’t save this transaction. Please try again.
+Todo componente debe priorizar:
 
-Incorrect:
+- claridad sobre densidad
+- legibilidad sobre compactacion
+- consistencia sobre creatividad visual aislada
 
-> Critical financial error!
+Preguntas obligatorias al disenar/intervenir UI:
 
----
+1. Esto se entiende rapido?
+2. Esto reduce friccion?
+3. Esto mantiene un tono calmado?
 
-# 4. Feature Design Filter (Mandatory)
+## 7. Data Presentation Rules
 
-Before implementing any new feature, ask:
+Al presentar datos financieros:
 
-1. Does this reduce friction?
-2. Does this improve clarity?
-3. Can this be simplified further?
-4. Is this necessary for everyday financial awareness?
-5. Would removing it improve focus?
+- empezar por resumen
+- revelar detalle bajo demanda
+- evitar mostrar metricas avanzadas sin necesidad
+- limitar el numero de indicadores simultaneos
 
-If the feature cannot clearly justify its existence, it should not be built.
+El usuario debe entender rapidamente:
 
----
+- cuanto tiene
+- cuanto gasto
+- cuanto queda
+- que compromisos estan pendientes
 
-# 5. Product Scope Boundaries
+## 8. Product Copy and Tone
 
-Clocket focuses on:
+El copy de UI debe ser:
 
-- Income registration
-- Expense tracking
-- Clear categorization
-- Monthly balance visualization
-- Active installments (cuotas)
-- Simple goal tracking
-- Basic financial awareness
+- directo
+- neutral
+- profesional
+- humano
 
-Clocket does not focus on:
+Evitar:
 
-- Advanced financial instruments
-- Complex tax systems
-- Accounting compliance
-- Enterprise financial reporting
-- Institutional analytics
+- exageracion de marketing
+- tono moralizante
+- lenguaje sensacionalista
+- emojis en copy de producto
 
----
+## 9. Change Acceptance Criteria
 
-# 6. UI Component Philosophy
+Una entrega de producto/UX se considera aceptable cuando:
 
-Reusable components must:
+- respeta foco de claridad financiera
+- no introduce complejidad innecesaria
+- mantiene consistencia con flujos existentes
+- conserva tono calmado en estados normales y de error
+- no contradice `TecnicalAgents.md` ni `AGENTS.md` principal
 
-- Be clean and neutral
-- Avoid visual clutter
-- Prefer whitespace over density
-- Prefer clarity over compactness
-- Prefer readable typography over compressed layouts
+## 10. Relationship With Technical Rules
 
-Every component must answer:
+- `AGENTS.md` define gobernanza general, skills, ramas, commits y PR.
+- `TecnicalAgents.md` define arquitectura, capas y reglas tecnicas.
+- Este documento define el que y el para que del producto.
 
-> Does this feel calm?
+Los tres son obligatorios.
 
----
+## 11. Final Guiding Principle
 
-# 7. Data Presentation Rules
-
-When presenting financial data:
-
-- Prioritize summary over detail.
-- Detail should be expandable, not default.
-- Avoid showing too many metrics at once.
-- Avoid advanced ratios unless essential.
-- Balance must be understandable in under 5 seconds.
-
-The user should open Clocket and quickly understand:
-
-- How much they have
-- How much they spent
-- What remains
-- What is pending
-
----
-
-# 8. Tone of Communication
-
-All UI copy must be:
-
-- Direct
-- Calm
-- Professional
-- Neutral
-- Human
-
-Avoid:
-
-- Marketing exaggeration
-- Emojis in product UI
-- Sensational language
-- Judgmental tone
-
-Clocket does not shout.  
-Clocket organizes.
-
-Clocket does not judge.  
-Clocket shows.
-
-Clocket does not complicate.  
-Clocket simplifies.
-
----
-
-# 9. Future Feature Discipline
-
-Clocket must avoid feature creep.
-
-Before expanding functionality:
-
-- Confirm it aligns with clarity.
-- Confirm it reduces friction.
-- Confirm it keeps the product light.
-- Confirm it serves the target audience (20–40 digital professionals).
-
-More features do not equal better product.  
-Better clarity equals better product.
-
----
-
-# 10. Relationship Between Technical and Product Rules
-
-The technical `Agents.md` defines:
-
-- Folder structure
-- Export rules
-- Architecture constraints
-- Import policies
-- Styling restrictions
-
-This file defines:
-
-- What should be built
-- Why it should be built
-- How it should feel
-- What must not be built
-
-Both documents are mandatory.
-
-Technical compliance without product coherence is invalid.  
-Product alignment without technical compliance is invalid.
-
----
-
-# 11. Final Guiding Principle
-
-Clocket should feel like:
-
-A clean space where the user enters,  
-understands their financial situation,  
-and leaves with mental clarity.
-
-If the implementation does not create clarity,  
-it is not Clocket.
+Clocket debe sentirse como una herramienta que ordena, no que abruma.
+Cada nueva decision debe aumentar claridad y reducir friccion.
