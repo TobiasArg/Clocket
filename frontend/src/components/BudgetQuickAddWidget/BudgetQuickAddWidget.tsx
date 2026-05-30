@@ -15,10 +15,7 @@ import { ActionButton } from "../ActionButton/ActionButton";
 import { CategoryColorPicker } from "../CategoryColorPicker/CategoryColorPicker";
 import { CategoryIconPicker } from "../CategoryIconPicker/CategoryIconPicker";
 import { IconBadge } from "../IconBadge/IconBadge";
-import {
-  OptionPickerSheet,
-  type OptionPickerItem,
-} from "../OptionPickerSheet/OptionPickerSheet";
+import { OptionPickerSheet, type OptionPickerItem } from "../OptionPickerSheet/OptionPickerSheet";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
 import { SlideUpSheet } from "../SlideUpSheet/SlideUpSheet";
 
@@ -64,7 +61,9 @@ const getRuleSummaryLabel = (
   }
 
   const names = (rule.subcategoryNames ?? [])
-    .map((subcategory) => subcategory === BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN ? noneLabel : subcategory)
+    .map((subcategory) =>
+      subcategory === BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN ? noneLabel : subcategory,
+    )
     .filter((subcategory) => subcategory.trim().length > 0);
 
   if (names.length === 0) {
@@ -155,7 +154,9 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState<boolean>(false);
   const [createCategoryNameInput, setCreateCategoryNameInput] = useState<string>("");
   const [createCategoryIcon, setCreateCategoryIcon] = useState<string>(DEFAULT_CATEGORY_ICON);
-  const [createCategoryColorKey, setCreateCategoryColorKey] = useState<string>(DEFAULT_CATEGORY_COLOR_KEY);
+  const [createCategoryColorKey, setCreateCategoryColorKey] = useState<string>(
+    DEFAULT_CATEGORY_COLOR_KEY,
+  );
   const [showCreateCategoryValidation, setShowCreateCategoryValidation] = useState<boolean>(false);
   const [isCreateCategorySubmitting, setIsCreateCategorySubmitting] = useState<boolean>(false);
 
@@ -217,6 +218,7 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
       icon: "plus",
       iconBg: "bg-[var(--surface-border)]",
       subtitle: "Crear una categoría nueva",
+      meta: undefined,
     });
 
     return items;
@@ -242,18 +244,18 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
   }, [isOpen, resetCreateCategoryDraft]);
 
   const normalizedCreateCategoryName = createCategoryNameInput.trim();
-  const previewCategoryName = normalizedCreateCategoryName.length > 0
-    ? normalizedCreateCategoryName
-    : "Vista previa";
-  const previewCategoryColorClass = categoryColorOptions.find(
-    (option) => option.key === createCategoryColorKey,
-  )?.swatchClass ?? "bg-[#71717A]";
+  const previewCategoryName =
+    normalizedCreateCategoryName.length > 0 ? normalizedCreateCategoryName : "Vista previa";
+  const previewCategoryColorClass =
+    categoryColorOptions.find((option) => option.key === createCategoryColorKey)?.swatchClass ??
+    "bg-[#71717A]";
   const isCreateCategoryNameValid = normalizedCreateCategoryName.length > 0;
   const isCreateCategoryIconValid = createCategoryIcon.trim().length > 0;
-  const isCreateCategoryColorValid = categoryColorOptions.some((option) => option.key === createCategoryColorKey);
-  const isCreateCategoryFormValid = isCreateCategoryNameValid
-    && isCreateCategoryIconValid
-    && isCreateCategoryColorValid;
+  const isCreateCategoryColorValid = categoryColorOptions.some(
+    (option) => option.key === createCategoryColorKey,
+  );
+  const isCreateCategoryFormValid =
+    isCreateCategoryNameValid && isCreateCategoryIconValid && isCreateCategoryColorValid;
 
   const openSubcategoryPicker = (categoryId: string) => {
     const category = categoriesById.get(categoryId);
@@ -319,9 +321,7 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
         mode: "selected_subcategories",
         subcategoryNames: (() => {
           const selected = Array.from(buildSelectedSubcategorySet(rule));
-          return selected.length > 0
-            ? selected
-            : [BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN];
+          return selected.length > 0 ? selected : [BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN];
         })(),
       } satisfies BudgetScopeRule;
     });
@@ -419,23 +419,27 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
         onSubmit={onSubmit}
         backdropAriaLabel="Cerrar formulario de budget"
         handleAriaLabel="Desliza hacia arriba para cerrar"
-        footer={(
+        footer={
           <ActionButton
             type="submit"
             icon="plus"
             label={isLoading ? "Guardando..." : submitLabel}
             iconColor="text-[var(--text-primary)]"
             labelColor="text-[var(--text-primary)]"
-            bg={isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"}
+            bg={
+              isFormValid && !isLoading ? "bg-[var(--surface-border)]" : "bg-[var(--surface-muted)]"
+            }
             padding="px-4 py-3"
             className={isFormValid && !isLoading ? "" : "opacity-70"}
             disabled={!isFormValid || isLoading}
           />
-        )}
+        }
       >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[var(--text-secondary)]">{budgetNameLabel}</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">
+              {budgetNameLabel}
+            </span>
             <input
               type="text"
               value={budgetNameInput}
@@ -444,12 +448,16 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
               className="w-full rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] focus:border-[#A1A1AA]"
             />
             {showValidation && !isBudgetNameValid && (
-              <span className="text-[11px] font-medium text-[var(--text-secondary)]">{budgetNameErrorLabel}</span>
+              <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+                {budgetNameErrorLabel}
+              </span>
             )}
           </label>
 
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium text-[var(--text-secondary)]">{categoryLabel}</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">
+              {categoryLabel}
+            </span>
             <button
               type="button"
               onClick={() => {
@@ -461,7 +469,11 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
               className="flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2.5 text-left text-sm font-medium text-[var(--text-primary)]"
             >
               <span className="truncate">Agregar o editar categorías</span>
-              <PhosphorIcon name="caret-right" size="text-[16px]" className="text-[var(--text-secondary)]" />
+              <PhosphorIcon
+                name="caret-right"
+                size="text-[16px]"
+                className="text-[var(--text-secondary)]"
+              />
             </button>
 
             {selectedRuleRows.length > 0 && (
@@ -521,7 +533,9 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleModeChange(rule.categoryId, "selected_subcategories")}
+                              onClick={() =>
+                                handleModeChange(rule.categoryId, "selected_subcategories")
+                              }
                               className={`rounded-xl px-3 py-2 text-xs font-semibold ${
                                 rule.mode === "selected_subcategories"
                                   ? "bg-[var(--surface-border)] text-[var(--text-primary)]"
@@ -563,16 +577,24 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
             )}
 
             {showValidation && !isScopeValid && (
-              <span className="text-[11px] font-medium text-[var(--text-secondary)]">{categoryErrorLabel}</span>
+              <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+                {categoryErrorLabel}
+              </span>
             )}
             {showValidation && budgetFormValidationLabel && (
-              <span className="text-[11px] font-medium text-[var(--text-secondary)]">{budgetFormValidationLabel}</span>
+              <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+                {budgetFormValidationLabel}
+              </span>
             )}
             {isCategoriesLoading && (
-              <span className="text-[11px] font-medium text-[var(--text-secondary)]">Cargando categorías...</span>
+              <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+                Cargando categorías...
+              </span>
             )}
             {categoriesError && (
-              <span className="text-[11px] font-medium text-[var(--text-secondary)]">No pudimos cargar las categorías.</span>
+              <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+                No pudimos cargar las categorías.
+              </span>
             )}
           </div>
 
@@ -620,14 +642,18 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
 
       <SlideUpSheet
         isOpen={isSubcategoryPickerOpen}
-        title={activeSubcategoryCategory ? `Subcategorías · ${activeSubcategoryCategory.name}` : "Subcategorías"}
+        title={
+          activeSubcategoryCategory
+            ? `Subcategorías · ${activeSubcategoryCategory.name}`
+            : "Subcategorías"
+        }
         onRequestClose={() => {
           setIsSubcategoryPickerOpen(false);
           setSubcategoryCategoryId("");
         }}
         backdropAriaLabel="Cerrar selector de subcategorías"
         handleAriaLabel="Desliza hacia arriba para cerrar"
-        footer={(
+        footer={
           <ActionButton
             type="button"
             icon="check"
@@ -641,43 +667,47 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
               setSubcategoryCategoryId("");
             }}
           />
-        )}
+        }
       >
         <div className="flex flex-col">
-          {activeSubcategoryCategory && availableSubcategoryTokens.map((token, index) => {
-            const isSelected = activeSelectedSubcategories.has(token);
-            const label = token === BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN
-              ? scopeNoSubcategoryLabel
-              : token;
+          {activeSubcategoryCategory &&
+            availableSubcategoryTokens.map((token, index) => {
+              const isSelected = activeSelectedSubcategories.has(token);
+              const label =
+                token === BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN ? scopeNoSubcategoryLabel : token;
 
-            return (
-              <button
-                key={token}
-                type="button"
-                onClick={() => toggleActiveSubcategory(token)}
-                className={`flex items-center justify-between gap-2 px-1 py-2 text-left ${
-                  index < availableSubcategoryTokens.length - 1 ? "border-b border-[var(--surface-border)]" : ""
-                }`}
-              >
-                <div className="min-w-0 flex items-center gap-3">
-                  <IconBadge
-                    icon={activeSubcategoryCategory.icon}
-                    bg={activeSubcategoryCategory.iconBg}
-                    size="h-[34px] w-[34px]"
-                    rounded="rounded-lg"
-                  />
-                  <span className="block truncate text-sm font-medium text-[var(--text-primary)]">{label}</span>
-                </div>
-                {isSelected && (
-                  <PhosphorIcon
-                    name="check"
-                    size="text-[16px]"
-                    className="text-[var(--text-secondary)]"
-                  />
-                )}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={token}
+                  type="button"
+                  onClick={() => toggleActiveSubcategory(token)}
+                  className={`flex items-center justify-between gap-2 px-1 py-2 text-left ${
+                    index < availableSubcategoryTokens.length - 1
+                      ? "border-b border-[var(--surface-border)]"
+                      : ""
+                  }`}
+                >
+                  <div className="min-w-0 flex items-center gap-3">
+                    <IconBadge
+                      icon={activeSubcategoryCategory.icon}
+                      bg={activeSubcategoryCategory.iconBg}
+                      size="h-[34px] w-[34px]"
+                      rounded="rounded-lg"
+                    />
+                    <span className="block truncate text-sm font-medium text-[var(--text-primary)]">
+                      {label}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <PhosphorIcon
+                      name="check"
+                      size="text-[16px]"
+                      className="text-[var(--text-secondary)]"
+                    />
+                  )}
+                </button>
+              );
+            })}
 
           {activeSubcategoryCategory && activeSelectedSubcategories.size === 0 && (
             <span className="mt-2 block text-[11px] font-medium text-[var(--text-secondary)]">
@@ -694,21 +724,23 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
         onSubmit={handleCreateCategorySubmit}
         backdropAriaLabel="Cerrar formulario de categoría"
         handleAriaLabel="Desliza hacia arriba para cerrar"
-        footer={(
+        footer={
           <ActionButton
             type="submit"
             icon="plus"
             label={isCreateCategorySubmitting ? "Guardando..." : "Guardar categoría"}
             iconColor="text-[var(--text-primary)]"
             labelColor="text-[var(--text-primary)]"
-            bg={isCreateCategoryFormValid && !isCreateCategorySubmitting
-              ? "bg-[var(--surface-border)]"
-              : "bg-[var(--surface-muted)]"}
+            bg={
+              isCreateCategoryFormValid && !isCreateCategorySubmitting
+                ? "bg-[var(--surface-border)]"
+                : "bg-[var(--surface-muted)]"
+            }
             padding="px-4 py-3"
             className={isCreateCategoryFormValid && !isCreateCategorySubmitting ? "" : "opacity-70"}
             disabled={!isCreateCategoryFormValid || isCreateCategorySubmitting}
           />
-        )}
+        }
       >
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-muted)] p-3">
@@ -722,7 +754,9 @@ export const BudgetQuickAddWidget = memo(function BudgetQuickAddWidget({
               <span className="block truncate font-['Outfit'] text-sm font-semibold text-[var(--text-primary)]">
                 {previewCategoryName}
               </span>
-              <span className="block text-xs font-medium text-[var(--text-secondary)]">Categoría</span>
+              <span className="block text-xs font-medium text-[var(--text-secondary)]">
+                Categoría
+              </span>
             </div>
           </div>
 

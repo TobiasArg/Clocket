@@ -1,17 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type {
-  CategoryBreakdown,
-  DonutSegment,
-  StatisticsFlowDay,
-} from "@/types";
+import type { CategoryBreakdown, DonutSegment, StatisticsFlowDay } from "@/types";
 import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
-import {
-  formatCurrency,
-  getMonthlyBalance,
-  getTransactionDateForMonthBalance,
-} from "@/utils";
+import { formatCurrency, getMonthlyBalance, getTransactionDateForMonthBalance } from "@/utils";
 import type { TransactionItem } from "@/domain/transactions/repository";
 import { getGoalColorOption } from "@/domain/goals/goalAppearance";
 import {
@@ -89,13 +81,9 @@ const parseSignedAmount = (value: string): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const clampPercentValue = (value: number): number => (
-  Math.max(0, Math.min(100, value))
-);
+const clampPercentValue = (value: number): number => Math.max(0, Math.min(100, value));
 
-const roundToSingleDecimal = (value: number): number => (
-  Math.round(value * 10) / 10
-);
+const roundToSingleDecimal = (value: number): number => Math.round(value * 10) / 10;
 
 const clampPercent = (value: number): number => {
   if (!Number.isFinite(value)) {
@@ -135,29 +123,25 @@ const buildMonthLabel = (date: Date): string => {
     .toUpperCase();
 };
 
-const buildDateKey = (date: Date): string => (
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-);
+const buildDateKey = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-const buildWeekdayLabel = (date: Date): string => (
-  new Intl.DateTimeFormat("es-ES", { weekday: "short" }).format(date).replace(".", "").toUpperCase()
-);
+const buildWeekdayLabel = (date: Date): string =>
+  new Intl.DateTimeFormat("es-ES", { weekday: "short" })
+    .format(date)
+    .replace(".", "")
+    .toUpperCase();
 
-const buildDateLabel = (date: Date): string => (
-  new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short" }).format(date).replace(".", "")
-);
+const buildDateLabel = (date: Date): string =>
+  new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short" })
+    .format(date)
+    .replace(".", "");
 
-const buildNumericDateLabel = (date: Date): string => (
-  new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit" }).format(date)
-);
+const buildNumericDateLabel = (date: Date): string =>
+  new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit" }).format(date);
 
-const buildMonthYearLabel = (date: Date): string => (
-  new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(date)
-);
-
-const sortByAmountDesc = (entries: [string, number][]): [string, number][] => (
-  entries.sort((left, right) => right[1] - left[1])
-);
+const buildMonthYearLabel = (date: Date): string =>
+  new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(date);
 
 interface FlowCategoryEntry {
   amount: number;
@@ -165,13 +149,11 @@ interface FlowCategoryEntry {
   label: string;
 }
 
-const buildCategoryFallbackKey = (label: string): string => (
-  `name:${label.toLocaleLowerCase("es-ES")}`
-);
+const buildCategoryFallbackKey = (label: string): string =>
+  `name:${label.toLocaleLowerCase("es-ES")}`;
 
-const startOfDay = (value: Date): Date => (
-  new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0)
-);
+const startOfDay = (value: Date): Date =>
+  new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
 
 const addDays = (value: Date, days: number): Date => {
   const next = new Date(value);
@@ -288,7 +270,10 @@ const buildGoalSavingsTrendPoints = (
   let cumulativeSaved = baselineSaved;
 
   return buckets.map((bucket) => {
-    const savedByGoalKey = new Map<string, { amount: number; color: string; goalId: string | null; label: string }>();
+    const savedByGoalKey = new Map<
+      string,
+      { amount: number; color: string; goalId: string | null; label: string }
+    >();
     const bucketSaved = transactions.reduce((sum, transaction) => {
       const date = getTransactionDateForMonthBalance(transaction);
       if (!date || date < bucket.start || date >= bucket.end) {
@@ -317,9 +302,7 @@ const buildGoalSavingsTrendPoints = (
 
     cumulativeSaved += bucketSaved;
 
-    const percent = totalGoalAmount > 0
-      ? (cumulativeSaved / totalGoalAmount) * 100
-      : 0;
+    const percent = totalGoalAmount > 0 ? (cumulativeSaved / totalGoalAmount) * 100 : 0;
     const goalSegments = Array.from(savedByGoalKey.values())
       .sort((left, right) => right.amount - left.amount)
       .map((segment) => ({
@@ -327,9 +310,10 @@ const buildGoalSavingsTrendPoints = (
         color: segment.color,
         goalId: segment.goalId,
         label: segment.label,
-        percentOfBucket: bucketSaved > 0
-          ? roundToSingleDecimal(clampPercentValue((segment.amount / bucketSaved) * 100))
-          : 0,
+        percentOfBucket:
+          bucketSaved > 0
+            ? roundToSingleDecimal(clampPercentValue((segment.amount / bucketSaved) * 100))
+            : 0,
       }));
     const rangeLabel = `${buildDateLabel(bucket.start)} - ${buildDateLabel(addDays(bucket.end, -1))}`;
 
@@ -404,7 +388,15 @@ const buildMonthFlowBuckets = (now: Date): FlowBucket[] => {
 
   return Array.from({ length: 6 }).map((_, index) => {
     const bucketStart = new Date(start.getFullYear(), start.getMonth() + index, 1, 0, 0, 0, 0);
-    const bucketEnd = new Date(bucketStart.getFullYear(), bucketStart.getMonth() + 1, 1, 0, 0, 0, 0);
+    const bucketEnd = new Date(
+      bucketStart.getFullYear(),
+      bucketStart.getMonth() + 1,
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
 
     return {
       dateLabel: buildMonthYearLabel(bucketStart),
@@ -435,9 +427,9 @@ const buildFlowRows = (
       return;
     }
 
-    const bucket = buckets.find((entry) => (
-      transactionDate >= entry.start && transactionDate < entry.end
-    ));
+    const bucket = buckets.find(
+      (entry) => transactionDate >= entry.start && transactionDate < entry.end,
+    );
     if (!bucket) {
       return;
     }
@@ -449,10 +441,7 @@ const buildFlowRows = (
 
     const absoluteAmount = Math.abs(amount);
     const defaultCategoryLabel = amount > 0 ? "Ingreso" : "Uncategorized";
-    const categoryLabel = (
-      transaction.category?.trim() ||
-      defaultCategoryLabel
-    );
+    const categoryLabel = transaction.category?.trim() || defaultCategoryLabel;
     const categoryKey = transaction.categoryId
       ? `id:${transaction.categoryId}`
       : buildCategoryFallbackKey(categoryLabel);
@@ -460,7 +449,8 @@ const buildFlowRows = (
       ? categoryInfoById.get(transaction.categoryId)
       : undefined;
     const resolvedLabel = categoryInfo?.name ?? categoryLabel;
-    const resolvedColor = categoryInfo?.color ??
+    const resolvedColor =
+      categoryInfo?.color ??
       resolveCssColorFromBgClass(transaction.iconBg, DEFAULT_CATEGORY_FLOW_COLOR);
 
     if (amount > 0) {
@@ -648,10 +638,11 @@ export const useStatisticsPageModel = (
       const categoryInfo = transaction.categoryId
         ? categoryInfoById.get(transaction.categoryId)
         : undefined;
-      const categoryName = categoryInfo?.name
-        ?? (transaction.categoryId ? categoryNameById.get(transaction.categoryId) : undefined)
-        ?? transaction.category
-        ?? "Uncategorized";
+      const categoryName =
+        categoryInfo?.name ??
+        (transaction.categoryId ? categoryNameById.get(transaction.categoryId) : undefined) ??
+        transaction.category ??
+        "Uncategorized";
       const categoryColor = categoryInfo?.color ?? DEFAULT_CATEGORY_FLOW_COLOR;
       const categoryKey = transaction.categoryId
         ? `id:${transaction.categoryId}`
@@ -705,14 +696,15 @@ export const useStatisticsPageModel = (
   );
 
   const totalGoalsSaved = useMemo(
-    () => scopedSavingTransactions.reduce((sum, transaction) => {
-      const amount = parseSignedAmount(transaction.amount);
-      if (amount >= 0) {
-        return sum;
-      }
+    () =>
+      scopedSavingTransactions.reduce((sum, transaction) => {
+        const amount = parseSignedAmount(transaction.amount);
+        if (amount >= 0) {
+          return sum;
+        }
 
-      return sum + Math.abs(amount);
-    }, 0),
+        return sum + Math.abs(amount);
+      }, 0),
     [scopedSavingTransactions],
   );
 
@@ -752,9 +744,7 @@ export const useStatisticsPageModel = (
   const trendPoints = trendPointsByView.day;
 
   const monthlyGoal = Math.max(0, totalGoalsTarget);
-  const savingsPercent = monthlyGoal > 0
-    ? clampPercent((totalGoalsSaved / monthlyGoal) * 100)
-    : 0;
+  const savingsPercent = monthlyGoal > 0 ? clampPercent((totalGoalsSaved / monthlyGoal) * 100) : 0;
 
   return {
     categoryRows,
@@ -770,15 +760,11 @@ export const useStatisticsPageModel = (
     scopeLabel: SCOPE_LABELS[scope],
     setScope,
     resolvedCategoryTotal: categoryTotal ?? formatCurrency(monthlyBalance.expense),
-    resolvedSavingsBadge:
-      savingsBadge ?? `${savingsPercent}%`,
-    resolvedSavingsGoalValue:
-      savingsGoalValue ?? formatCurrency(monthlyGoal),
+    resolvedSavingsBadge: savingsBadge ?? `${savingsPercent}%`,
+    resolvedSavingsGoalValue: savingsGoalValue ?? formatCurrency(monthlyGoal),
     resolvedSavingsValue: savingsValue ?? formatCurrency(totalGoalsSaved),
-    resolvedTotalExpenseValue:
-      totalExpenseValue ?? formatCurrency(monthlyBalance.expense),
-    resolvedTotalIncomeValue:
-      totalIncomeValue ?? formatCurrency(monthlyBalance.income),
+    resolvedTotalExpenseValue: totalExpenseValue ?? formatCurrency(monthlyBalance.expense),
+    resolvedTotalIncomeValue: totalIncomeValue ?? formatCurrency(monthlyBalance.income),
     trendPoints,
     trendPointsByView,
   };

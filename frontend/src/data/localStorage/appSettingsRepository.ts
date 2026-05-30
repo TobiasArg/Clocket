@@ -53,9 +53,7 @@ const buildInitialState = (): AppSettingsStorageV2 => ({
   settings: cloneSettings(DEFAULT_SETTINGS),
 });
 
-const isProfile = (
-  value: unknown,
-): value is AppSettingsItem["profile"] => {
+const isProfile = (value: unknown): value is AppSettingsItem["profile"] => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -68,9 +66,7 @@ const isProfile = (
   );
 };
 
-const isSecurity = (
-  value: unknown,
-): value is AppSettingsItem["security"] => {
+const isSecurity = (value: unknown): value is AppSettingsItem["security"] => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -96,9 +92,7 @@ const isAppSettingsV2 = (value: unknown): value is AppSettingsItem => {
   );
 };
 
-const isLegacySettingsV1 = (
-  value: unknown,
-): value is AppSettingsStorageV1["settings"] => {
+const isLegacySettingsV1 = (value: unknown): value is AppSettingsStorageV1["settings"] => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -136,10 +130,14 @@ const normalizeText = (value: string, fallback: string): string => {
 };
 
 const normalizePartialSettings = (
-  settings: Partial<AppSettingsItem>,
+  settings: Partial<Omit<AppSettingsItem, "currency" | "profile" | "security">> & {
+    currency?: AppSettingsItem["currency"] | "EUR";
+    profile?: Partial<AppSettingsItem["profile"]>;
+    security?: Partial<AppSettingsItem["security"]>;
+  },
 ): AppSettingsItem => {
-  const profile = settings.profile ?? {};
-  const security = settings.security ?? {};
+  const profile: Partial<AppSettingsItem["profile"]> = settings.profile ?? {};
+  const security: Partial<AppSettingsItem["security"]> = settings.security ?? {};
   const currency = (settings as { currency?: string }).currency;
 
   return {
@@ -148,8 +146,14 @@ const normalizePartialSettings = (
     notificationsEnabled: settings.notificationsEnabled ?? true,
     theme: settings.theme === "dark" ? "dark" : "light",
     profile: {
-      name: normalizeText(profile.name ?? DEFAULT_SETTINGS.profile.name, DEFAULT_SETTINGS.profile.name),
-      email: normalizeText(profile.email ?? DEFAULT_SETTINGS.profile.email, DEFAULT_SETTINGS.profile.email),
+      name: normalizeText(
+        profile.name ?? DEFAULT_SETTINGS.profile.name,
+        DEFAULT_SETTINGS.profile.name,
+      ),
+      email: normalizeText(
+        profile.email ?? DEFAULT_SETTINGS.profile.email,
+        DEFAULT_SETTINGS.profile.email,
+      ),
       avatarIcon: normalizeText(
         profile.avatarIcon ?? DEFAULT_SETTINGS.profile.avatarIcon,
         DEFAULT_SETTINGS.profile.avatarIcon,
@@ -255,7 +259,8 @@ export class LocalStorageAppSettingsRepository implements AppSettingsRepository 
       const parsed: unknown = JSON.parse(raw);
       if (isStorageShapeV2(parsed)) {
         const normalizedSettings = normalizePartialSettings(parsed.settings);
-        const isNormalizedDifferent = JSON.stringify(parsed.settings) !== JSON.stringify(normalizedSettings);
+        const isNormalizedDifferent =
+          JSON.stringify(parsed.settings) !== JSON.stringify(normalizedSettings);
         if (isNormalizedDifferent) {
           const migrated: AppSettingsStorageV2 = {
             version: STORAGE_VERSION,
@@ -302,5 +307,4 @@ export class LocalStorageAppSettingsRepository implements AppSettingsRepository 
   }
 }
 
-export const appSettingsRepository: AppSettingsRepository =
-  new LocalStorageAppSettingsRepository();
+export const appSettingsRepository: AppSettingsRepository = new LocalStorageAppSettingsRepository();

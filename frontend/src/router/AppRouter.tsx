@@ -93,12 +93,13 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
   const { settings } = useAppSettings();
   const profile = settings?.profile;
   const userName = profile?.name?.trim() || "Usuario";
-  const avatarInitials = userName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || "U";
+  const avatarInitials =
+    userName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "U";
 
   const desktopUser = {
     initial: avatarInitials,
@@ -110,7 +111,10 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
   const goToPlans = useCallback(() => navigateTo("/plans"), [navigateTo]);
   const goToGoal = useCallback((id: string) => navigateTo(toGoalDetailPath(id)), [navigateTo]);
   const goToBudget = useCallback((id: string) => navigateTo(toBudgetDetailPath(id)), [navigateTo]);
-  const goToGoalFromList = useCallback((id: string) => navigateTo(toGoalDetailPath(id)), [navigateTo]);
+  const goToGoalFromList = useCallback(
+    (id: string) => navigateTo(toGoalDetailPath(id)),
+    [navigateTo],
+  );
   const noopTransactionClick = useCallback(() => undefined, []);
 
   useEffect(() => {
@@ -132,9 +136,9 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
       };
     }
 
-    const timeoutId = window.setTimeout(prefetch, 300);
+    const timeoutId = globalThis.setTimeout(prefetch, 300);
     return () => {
-      window.clearTimeout(timeoutId);
+      globalThis.clearTimeout(timeoutId);
     };
   }, [currentPath]);
 
@@ -189,10 +193,7 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
     case "/budgets":
       return (
         <Suspense fallback={<RouterFallback />}>
-          <BudgetsLazy
-            avatarInitials={avatarInitials}
-            onBudgetClick={goToBudget}
-          />
+          <BudgetsLazy avatarInitials={avatarInitials} onBudgetClick={goToBudget} />
         </Suspense>
       );
     case "/budget-detail":
@@ -204,10 +205,7 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
     case "/goals":
       return (
         <Suspense fallback={<RouterFallback />}>
-          <GoalsLazy
-            onBackClick={goBack}
-            onGoalClick={goToGoalFromList}
-          />
+          <GoalsLazy onBackClick={goBack} onGoalClick={goToGoalFromList} />
         </Suspense>
       );
     case "/investments":

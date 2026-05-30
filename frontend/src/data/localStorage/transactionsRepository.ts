@@ -21,7 +21,10 @@ const TRANSACTION_TYPES = new Set([TRANSACTION_TYPE_REGULAR, TRANSACTION_TYPE_SA
 
 const STORAGE_VERSION_V4 = 4 as const;
 
-interface LegacyTransactionItem extends Omit<TransactionItem, "date" | "accountId" | "transactionType" | "goalId"> {
+interface LegacyTransactionItem extends Omit<
+  TransactionItem,
+  "date" | "accountId" | "transactionType" | "goalId"
+> {
   accountId?: string;
   transactionType?: string;
   goalId?: string;
@@ -52,6 +55,17 @@ interface GoalLinkLookup {
   goalCategoryIds: Set<string>;
   goalIdBySubcategory: Map<string, string>;
 }
+
+type NormalizableTransactionItem = Omit<
+  TransactionItem,
+  "date" | "meta" | "accountId" | "transactionType" | "goalId"
+> & {
+  accountId?: string;
+  transactionType?: string;
+  goalId?: string;
+  date?: string;
+  meta: string;
+};
 
 const cloneItem = (item: TransactionItem): TransactionItem => ({ ...item });
 const cloneItems = (items: TransactionItem[]): TransactionItem[] => items.map(cloneItem);
@@ -131,7 +145,7 @@ const normalizeAccountId = (value?: string): string => {
 
 const normalizeTransactionType = (value?: string): TransactionItem["transactionType"] => {
   return value && TRANSACTION_TYPES.has(value as TransactionItem["transactionType"])
-    ? value as TransactionItem["transactionType"]
+    ? (value as TransactionItem["transactionType"])
     : TRANSACTION_TYPE_REGULAR;
 };
 
@@ -160,15 +174,7 @@ const getNormalizedDate = (item: { date?: string; createdAt?: string; meta: stri
   );
 };
 
-const normalizeTransactionItem = (
-  item: Omit<TransactionItem, "date" | "meta" | "accountId"> & {
-    accountId?: string;
-    transactionType?: string;
-    goalId?: string;
-    date?: string;
-    meta: string;
-  },
-): TransactionItem => {
+const normalizeTransactionItem = (item: NormalizableTransactionItem): TransactionItem => {
   const date = getNormalizedDate(item);
   const transactionType = normalizeTransactionType(item.transactionType);
   return {
@@ -354,11 +360,14 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
     const state = await this.readAndSynchronizeState();
     const goalLookup = await this.buildGoalLinkLookup();
 
-    const createdDraft = this.applyGoalLinkOnCreate({
-      ...input,
-      createdAt: input.createdAt ?? new Date().toISOString(),
-      id: createTransactionId(),
-    }, goalLookup);
+    const createdDraft = this.applyGoalLinkOnCreate(
+      {
+        ...input,
+        createdAt: input.createdAt ?? new Date().toISOString(),
+        id: createTransactionId(),
+      },
+      goalLookup,
+    );
 
     const created = normalizeTransactionItem(createdDraft);
 
@@ -406,21 +415,9 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
   }
 
   private applyGoalLinkOnCreate(
-    input: Omit<TransactionItem, "date" | "meta" | "accountId"> & {
-      accountId?: string;
-      transactionType?: string;
-      goalId?: string;
-      date?: string;
-      meta: string;
-    },
+    input: NormalizableTransactionItem,
     goalLookup: GoalLinkLookup,
-  ): Omit<TransactionItem, "date" | "meta" | "accountId"> & {
-    accountId?: string;
-    transactionType?: string;
-    goalId?: string;
-    date?: string;
-    meta: string;
-  } {
+  ): NormalizableTransactionItem {
     const autoGoalId = resolveGoalIdByCategorySubcategory(input, goalLookup);
     if (autoGoalId) {
       return {
@@ -437,13 +434,7 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
     current: TransactionItem,
     patch: UpdateTransactionPatch,
     goalLookup: GoalLinkLookup,
-  ): Omit<TransactionItem, "date" | "meta" | "accountId"> & {
-    accountId?: string;
-    transactionType?: string;
-    goalId?: string;
-    date?: string;
-    meta: string;
-  } {
+  ): NormalizableTransactionItem {
     const merged = {
       ...current,
       ...patch,
@@ -458,7 +449,8 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
       };
     }
 
-    const categoryRelatedPatch = patch.categoryId !== undefined || patch.subcategoryName !== undefined;
+    const categoryRelatedPatch =
+      patch.categoryId !== undefined || patch.subcategoryName !== undefined;
     const shouldResetGoalLink = categoryRelatedPatch && patch.goalId === undefined;
 
     if (shouldResetGoalLink) {
@@ -487,13 +479,11 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
     const synchronizedItems = state.items.map((item) => {
       const autoGoalId = resolveGoalIdByCategorySubcategory(item, goalLookup);
       const categoryId = item.categoryId?.trim();
-      const isGoalsCategory = Boolean(categoryId) && goalLookup.goalCategoryIds.has(categoryId as string);
+      const isGoalsCategory =
+        Boolean(categoryId) && goalLookup.goalCategoryIds.has(categoryId as string);
 
       if (autoGoalId) {
-        if (
-          item.goalId === autoGoalId &&
-          item.transactionType === TRANSACTION_TYPE_SAVING
-        ) {
+        if (item.goalId === autoGoalId && item.transactionType === TRANSACTION_TYPE_SAVING) {
           return item;
         }
 
@@ -541,7 +531,10 @@ export class LocalStorageTransactionsRepository implements TransactionsRepositor
 
     const goalsCategoryIds = new Set<string>(
       categories
-        .filter((category) => normalizeLookupKey(category.name) === normalizeLookupKey(GOALS_PARENT_CATEGORY_NAME))
+        .filter(
+          (category) =>
+            normalizeLookupKey(category.name) === normalizeLookupKey(GOALS_PARENT_CATEGORY_NAME),
+        )
         .map((category) => category.id),
     );
 

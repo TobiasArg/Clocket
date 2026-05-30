@@ -6,7 +6,10 @@ import type { AssetType, EntryType, HistoricalPoint } from "@/domain/investments
 import { TRANSACTION_EXPENSE_TEXT_CLASS } from "@/constants";
 import { categoriesRepository } from "@/data/localStorage/categoriesRepository";
 import { transactionsRepository } from "@/data/localStorage/transactionsRepository";
-import { refreshPositions, type RefreshedPositionViewModel } from "@/domain/investments/refreshPositions";
+import {
+  refreshPositions,
+  type RefreshedPositionViewModel,
+} from "@/domain/investments/refreshPositions";
 import { toArsTransactionAmount } from "@/utils";
 import { useAccounts } from "./useAccounts";
 import { usePullToRefresh, type PullToRefreshState } from "./usePullToRefresh";
@@ -42,9 +45,8 @@ const exceedsPrecision = (value: string, precision: number): boolean => {
     return false;
   }
 
-  const normalized = trimmed.startsWith("+") || trimmed.startsWith("-")
-    ? trimmed.slice(1)
-    : trimmed;
+  const normalized =
+    trimmed.startsWith("+") || trimmed.startsWith("-") ? trimmed.slice(1) : trimmed;
   const decimalPart = normalized.split(".")[1] ?? "";
   return decimalPart.length > precision;
 };
@@ -160,7 +162,9 @@ const toSparklineLabel = (timestamp: string): string => {
 const ensureInvestmentsCategory = async (): Promise<CategoryItem> => {
   const categories = await categoriesRepository.list();
   const existing = categories.find((category) => {
-    return normalizeLookupKey(category.name) === normalizeLookupKey(INVESTMENTS_PARENT_CATEGORY_NAME);
+    return (
+      normalizeLookupKey(category.name) === normalizeLookupKey(INVESTMENTS_PARENT_CATEGORY_NAME)
+    );
   });
 
   if (existing) {
@@ -174,9 +178,7 @@ const ensureInvestmentsCategory = async (): Promise<CategoryItem> => {
   });
 };
 
-const ensureInvestmentTickerSubcategory = async (
-  ticker: string,
-): Promise<CategoryItem> => {
+const ensureInvestmentTickerSubcategory = async (ticker: string): Promise<CategoryItem> => {
   const parentCategory = await ensureInvestmentsCategory();
   const normalizedTicker = ticker.trim().toUpperCase();
   const currentSubcategories = Array.isArray(parentCategory.subcategories)
@@ -333,7 +335,7 @@ export interface InvestmentTableRow extends RefreshedPositionViewModel {
   pnlTotalText: string;
 }
 
-export interface UseInvestmentsPageModelOptions {}
+export type UseInvestmentsPageModelOptions = Record<string, never>;
 
 export interface UseInvestmentsPageModelResult {
   rows: InvestmentTableRow[];
@@ -518,7 +520,9 @@ export const useInvestmentsPageModel = (
     setRows((current) => current.filter((row) => positionIds.has(row.id)));
 
     if (positions.length === 0) {
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
 
     const visiblePositions = positions.slice(0, VISIBLE_POSITIONS_BATCH);
@@ -531,7 +535,9 @@ export const useInvestmentsPageModel = (
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [positions, runRefresh]);
 
   useEffect(() => {
@@ -553,15 +559,18 @@ export const useInvestmentsPageModel = (
   }, [accounts]);
   const defaultAccountId = sortedAccounts[0]?.id ?? "";
 
-  const loadEntriesForPosition = useCallback(async (positionId: string): Promise<void> => {
-    setIsEntriesLoading(true);
-    try {
-      const loadedEntries = await listEntriesByPosition(positionId);
-      setSelectedEntries(toEntryRows(loadedEntries));
-    } finally {
-      setIsEntriesLoading(false);
-    }
-  }, [listEntriesByPosition]);
+  const loadEntriesForPosition = useCallback(
+    async (positionId: string): Promise<void> => {
+      setIsEntriesLoading(true);
+      try {
+        const loadedEntries = await listEntriesByPosition(positionId);
+        setSelectedEntries(toEntryRows(loadedEntries));
+      } finally {
+        setIsEntriesLoading(false);
+      }
+    },
+    [listEntriesByPosition],
+  );
 
   useEffect(() => {
     if (!isDetailOpen || !selectedPositionId) {
@@ -587,7 +596,9 @@ export const useInvestmentsPageModel = (
         }
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isDetailOpen, selectedPositionId, listEntriesByPosition]);
 
   useEffect(() => {
@@ -623,32 +634,41 @@ export const useInvestmentsPageModel = (
   const isPurchase = entryTypeInput === "ingreso";
   const quantityPrecision = getQuantityPrecisionByAsset(assetTypeInput);
   const isSaleByUsd = !isPurchase && saleInputMode === "usd";
-  const saleSharesPrecisionExceeded = !isPurchase && saleInputMode === "shares" &&
+  const saleSharesPrecisionExceeded =
+    !isPurchase &&
+    saleInputMode === "shares" &&
     exceedsPrecision(saleSharesInput, quantityPrecision);
   const saleQuantityValue = isSaleByUsd ? usdSpent : saleShares;
   const derivedAmountRaw = isPurchase
-    ? (usdSpent > 0 && buyPrice > 0 ? usdSpent / buyPrice : 0)
-    : (isSaleByUsd
-      ? (saleQuantityValue > 0 && buyPrice > 0 ? saleQuantityValue / buyPrice : 0)
-      : saleQuantityValue);
+    ? usdSpent > 0 && buyPrice > 0
+      ? usdSpent / buyPrice
+      : 0
+    : isSaleByUsd
+      ? saleQuantityValue > 0 && buyPrice > 0
+        ? saleQuantityValue / buyPrice
+        : 0
+      : saleQuantityValue;
   const derivedAmount = roundWithPrecision(derivedAmountRaw, quantityPrecision);
-  const resolvedUsdAmount = (derivedAmount > 0 && buyPrice > 0)
-    ? derivedAmount * buyPrice
-    : 0;
+  const resolvedUsdAmount = derivedAmount > 0 && buyPrice > 0 ? derivedAmount * buyPrice : 0;
 
-  const targetPosition = normalizedTicker.length > 0
-    ? positions.find((position) => buildAssetKey(position.assetType, position.ticker) === buildAssetKey(assetTypeInput, normalizedTicker))
-    : null;
+  const targetPosition =
+    normalizedTicker.length > 0
+      ? positions.find(
+          (position) =>
+            buildAssetKey(position.assetType, position.ticker) ===
+            buildAssetKey(assetTypeInput, normalizedTicker),
+        )
+      : null;
   const availableAmount = targetPosition?.amount ?? 0;
   const isAccountValid = !isPurchase || selectedAccountId.trim().length > 0;
   const isSaleQuantityValid = isPurchase
     ? derivedAmount > 0
-    : (saleQuantityValue > 0 && !saleSharesPrecisionExceeded && derivedAmount > 0);
+    : saleQuantityValue > 0 && !saleSharesPrecisionExceeded && derivedAmount > 0;
 
-  const egresoExceedsAvailable = entryTypeInput === "egreso" && (
-    availableAmount <= POSITION_AMOUNT_EPSILON ||
-    derivedAmount > availableAmount + POSITION_AMOUNT_EPSILON
-  );
+  const egresoExceedsAvailable =
+    entryTypeInput === "egreso" &&
+    (availableAmount <= POSITION_AMOUNT_EPSILON ||
+      derivedAmount > availableAmount + POSITION_AMOUNT_EPSILON);
 
   const isFormValid =
     normalizedTicker.length > 0 &&
@@ -658,20 +678,20 @@ export const useInvestmentsPageModel = (
     isAccountValid &&
     !egresoExceedsAvailable;
 
-  const formValidationLabel = showValidation && !isFormValid
-    ? (entryTypeInput === "egreso" && egresoExceedsAvailable
-      ? `No podés vender más de ${availableAmount.toFixed(quantityPrecision)} unidades disponibles.`
-      : (!isSaleQuantityValid
-        ? (saleSharesPrecisionExceeded
-          ? `Para ${assetTypeInput === "stock" ? "acciones" : "cripto"} el máximo es ${quantityPrecision} decimales.`
-          : (isSaleByUsd
-          ? "Ingresá una cantidad de USD mayor a 0 para la venta."
-          : "Ingresá una cantidad de acciones mayor a 0 para la venta."))
-        : (!isAccountValid
-        ? "Seleccioná una cuenta para registrar la compra."
-        : "Completá ticker, precio y cantidad con valores mayores a 0."))
-      )
-    : null;
+  const formValidationLabel =
+    showValidation && !isFormValid
+      ? entryTypeInput === "egreso" && egresoExceedsAvailable
+        ? `No podés vender más de ${availableAmount.toFixed(quantityPrecision)} unidades disponibles.`
+        : !isSaleQuantityValid
+          ? saleSharesPrecisionExceeded
+            ? `Para ${assetTypeInput === "stock" ? "acciones" : "cripto"} el máximo es ${quantityPrecision} decimales.`
+            : isSaleByUsd
+              ? "Ingresá una cantidad de USD mayor a 0 para la venta."
+              : "Ingresá una cantidad de acciones mayor a 0 para la venta."
+          : !isAccountValid
+            ? "Seleccioná una cuenta para registrar la compra."
+            : "Completá ticker, precio y cantidad con valores mayores a 0."
+      : null;
 
   const resetEditor = useCallback(() => {
     setIsEditorOpen(false);
@@ -766,9 +786,10 @@ export const useInvestmentsPageModel = (
     }
 
     const parsedCreatedAt = createdAtInput ? new Date(createdAtInput) : null;
-    const createdAt = parsedCreatedAt && !Number.isNaN(parsedCreatedAt.getTime())
-      ? parsedCreatedAt.toISOString()
-      : undefined;
+    const createdAt =
+      parsedCreatedAt && !Number.isNaN(parsedCreatedAt.getTime())
+        ? parsedCreatedAt.toISOString()
+        : undefined;
 
     const payload = {
       assetType: assetTypeInput,
@@ -823,7 +844,9 @@ export const useInvestmentsPageModel = (
       await runRefresh([created.position], true, nextPositions);
     } else {
       const keyToRemove = buildAssetKey(payload.assetType, payload.ticker);
-      setRows((current) => current.filter((row) => buildAssetKey(row.assetType, row.ticker) !== keyToRemove));
+      setRows((current) =>
+        current.filter((row) => buildAssetKey(row.assetType, row.ticker) !== keyToRemove),
+      );
     }
 
     if (selectedPositionId) {
@@ -834,44 +857,49 @@ export const useInvestmentsPageModel = (
       kind: purchaseSyncError ? "error" : "success",
       text: purchaseSyncError
         ? purchaseSyncError
-        : (entryTypeInput === "ingreso"
+        : entryTypeInput === "ingreso"
           ? `${payload.ticker} registró una compra correctamente.`
-          : `${payload.ticker} registró una venta correctamente.`),
+          : `${payload.ticker} registró una venta correctamente.`,
     });
 
     resetEditor();
   };
 
-  const handleDeleteEntry = useCallback(async (entryId: string): Promise<void> => {
-    if (!selectedPositionId || deletingEntryId) {
-      return;
-    }
-
-    const confirmed = window.confirm("¿Eliminar esta entrada? Esta acción recalculará la posición.");
-    if (!confirmed) {
-      return;
-    }
-
-    setDeletingEntryId(entryId);
-    try {
-      const removed = await deleteEntry(entryId);
-      if (!removed) {
-        setUiMessage({
-          kind: "error",
-          text: "No se pudo eliminar la entrada seleccionada.",
-        });
+  const handleDeleteEntry = useCallback(
+    async (entryId: string): Promise<void> => {
+      if (!selectedPositionId || deletingEntryId) {
         return;
       }
 
-      await loadEntriesForPosition(selectedPositionId);
-      setUiMessage({
-        kind: "success",
-        text: "La entrada fue eliminada y la posición se recalculó.",
-      });
-    } finally {
-      setDeletingEntryId(null);
-    }
-  }, [deleteEntry, deletingEntryId, loadEntriesForPosition, selectedPositionId]);
+      const confirmed = window.confirm(
+        "¿Eliminar esta entrada? Esta acción recalculará la posición.",
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      setDeletingEntryId(entryId);
+      try {
+        const removed = await deleteEntry(entryId);
+        if (!removed) {
+          setUiMessage({
+            kind: "error",
+            text: "No se pudo eliminar la entrada seleccionada.",
+          });
+          return;
+        }
+
+        await loadEntriesForPosition(selectedPositionId);
+        setUiMessage({
+          kind: "success",
+          text: "La entrada fue eliminada y la posición se recalculó.",
+        });
+      } finally {
+        setDeletingEntryId(null);
+      }
+    },
+    [deleteEntry, deletingEntryId, loadEntriesForPosition, selectedPositionId],
+  );
 
   const handleRequestDelete = (id: string) => {
     setPendingDeletePositionId(id);
