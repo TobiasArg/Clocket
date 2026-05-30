@@ -1,20 +1,21 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Project: Clocket, a personal finance monorepo.
+  Frontend: Vite, React 18, TypeScript, Tailwind CSS v4.
+  Backend current state: Next.js 14 Pages Router API Routes in backend/pages/api, JavaScript, Axios, Alpha Vantage market quote proxy.
+  Backend target direction: keep Next.js API Routes first, migrate backend code to TypeScript service boundaries, document NestJS only as an escalation option if domain complexity requires it later, use Prisma ORM and PostgreSQL for persistence in a later phase, and do not implement auth yet.
+  Current persistence: frontend localStorage repositories own most financial data and business rules.
+  Audit baseline: BACKEND_RESTRUCTURE_AUDIT.md documents migration priorities and must be treated as the source of context for backend restructuring.
+  Repo conventions: use Conventional Commits, branch from dev, keep changes staged by medium-sized validated steps, and avoid broad rewrites before contracts and tests exist.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Include explicit non-goals when the change intentionally documents future work without implementing it.
+    - Reference BACKEND_RESTRUCTURE_AUDIT.md for audit-derived scope.
+  design:
+    - State technology decisions and alternatives, including Next.js, NestJS, Prisma ORM, PostgreSQL, runtime validation, tests, API docs, logging, and cache/rate-limit options.
+    - Separate current implementation from future persistence/auth phases.
+  tasks:
+    - Use medium-sized stages that can be validated and committed independently.
+    - Include validation commands for each implementation stage.
