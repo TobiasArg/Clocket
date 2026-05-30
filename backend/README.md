@@ -22,3 +22,15 @@ Endpoint:
 Required environment variables:
 
 - `ALPHA_VANTAGE_API_KEY`
+
+Optional environment variables:
+
+- `ALPHA_VANTAGE_TIMEOUT_MS` (defaults to `12000`)
+
+Validation:
+
+```bash
+npm run typecheck
+npm test
+npm run build
+```
