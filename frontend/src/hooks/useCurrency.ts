@@ -1,1 +1,1 @@
-export { useCurrency } from "@/context";
+export { useCurrency } from "@/context/useCurrency";

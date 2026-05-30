@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import {
   formatCurrency,
@@ -6,15 +6,7 @@ import {
   setGlobalCurrency,
   type SupportedCurrency,
 } from "@/utils";
-
-export interface CurrencyContextValue {
-  currency: SupportedCurrency;
-  isLoading: boolean;
-  locale: string;
-  formatMoney: (value: number) => string;
-}
-
-const CurrencyContext = createContext<CurrencyContextValue | null>(null);
+import { CurrencyContext, type CurrencyContextValue } from "./currencyContextObject";
 
 export interface CurrencyProviderProps {
   children: ReactNode;
@@ -29,25 +21,15 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
     setGlobalCurrency(currency);
   }, [currency]);
 
-  const value = useMemo<CurrencyContextValue>(() => ({
-    currency,
-    isLoading,
-    locale,
-    formatMoney: (amount: number) => formatCurrency(amount, { currency, locale }),
-  }), [currency, isLoading, locale]);
-
-  return (
-    <CurrencyContext.Provider value={value}>
-      {children}
-    </CurrencyContext.Provider>
+  const value = useMemo<CurrencyContextValue>(
+    () => ({
+      currency,
+      isLoading,
+      locale,
+      formatMoney: (amount: number) => formatCurrency(amount, { currency, locale }),
+    }),
+    [currency, isLoading, locale],
   );
+
+  return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
 }
-
-export const useCurrency = (): CurrencyContextValue => {
-  const context = useContext(CurrencyContext);
-  if (!context) {
-    throw new Error("useCurrency must be used within CurrencyProvider.");
-  }
-
-  return context;
-};

@@ -1,2 +1,4 @@
-export { CurrencyProvider, useCurrency } from "./CurrencyContext";
-export type { CurrencyContextValue, CurrencyProviderProps } from "./CurrencyContext";
+export { CurrencyProvider } from "./CurrencyContext";
+export type { CurrencyProviderProps } from "./CurrencyContext";
+export type { CurrencyContextValue } from "./currencyContextObject";
+export { useCurrency } from "./useCurrency";

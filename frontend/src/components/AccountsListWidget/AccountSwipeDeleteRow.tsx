@@ -1,5 +1,6 @@
 import { memo } from "react";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -108,7 +109,7 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
   const formattedExpense = useMemo(() => formatCurrency(flow.expense), [flow.expense]);
   const balanceColorClass = account.balance >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
 
-  const applySwipeProgress = (value: number): void => {
+  const applySwipeProgress = useCallback((value: number): void => {
     const progress = Math.min(1, Math.abs(value) / MAX_REVEAL_PX);
     const revealViewportNode = revealViewportRef.current;
     const iconNode = deleteIconRef.current;
@@ -133,33 +134,39 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
         iconNode.style.transform = nextTransform;
       }
     }
-  };
+  }, []);
 
-  const applyTranslate = (value: number, withTransition: boolean): void => {
-    const node = swipeLayerRef.current;
-    if (!node) {
-      return;
-    }
+  const applyTranslate = useCallback(
+    (value: number, withTransition: boolean): void => {
+      const node = swipeLayerRef.current;
+      if (!node) {
+        return;
+      }
 
-    const transitionValue = withTransition
-      ? `transform ${RESET_TRANSITION_MS}ms ease-out`
-      : "none";
-    if (node.style.transition !== transitionValue) {
-      node.style.transition = transitionValue;
-    }
+      const transitionValue = withTransition
+        ? `transform ${RESET_TRANSITION_MS}ms ease-out`
+        : "none";
+      if (node.style.transition !== transitionValue) {
+        node.style.transition = transitionValue;
+      }
 
-    if (renderedTranslateRef.current !== value) {
-      node.style.transform = `translate3d(${value}px, 0, 0)`;
-      renderedTranslateRef.current = value;
-      applySwipeProgress(value);
-    }
+      if (renderedTranslateRef.current !== value) {
+        node.style.transform = `translate3d(${value}px, 0, 0)`;
+        renderedTranslateRef.current = value;
+        applySwipeProgress(value);
+      }
 
-    dragStateRef.current.translateX = value;
-  };
+      dragStateRef.current.translateX = value;
+    },
+    [applySwipeProgress],
+  );
 
-  const resetSwipePosition = (withTransition: boolean): void => {
-    applyTranslate(0, withTransition);
-  };
+  const resetSwipePosition = useCallback(
+    (withTransition: boolean): void => {
+      applyTranslate(0, withTransition);
+    },
+    [applyTranslate],
+  );
 
   const clearDragState = (): void => {
     dragStateRef.current = createInitialDragState();
@@ -236,7 +243,8 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
-    const shouldTriggerDelete = !cancelled &&
+    const shouldTriggerDelete =
+      !cancelled &&
       state.axisLock === "horizontal" &&
       Math.abs(state.translateX) >= SWIPE_TRIGGER_PX;
 
@@ -253,7 +261,7 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
       resetSwipePosition(true);
       clearDragState();
     }
-  }, [isInteractionLocked]);
+  }, [isInteractionLocked, resetSwipePosition]);
 
   return (
     <div className="relative overflow-hidden rounded-2xl touch-pan-y">
@@ -288,7 +296,7 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
         }}
       >
         <ListItemRow
-          left={(
+          left={
             <IconBadge
               icon={account.icon || "wallet"}
               bg={ACCOUNT_ICON_NEUTRAL_BG}
@@ -296,12 +304,12 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
               size="w-[40px] h-[40px]"
               rounded="rounded-xl"
             />
-          )}
+          }
           title={account.name}
           subtitle={subtitle}
           titleClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
           subtitleClassName="text-xs font-medium text-[var(--text-secondary)]"
-          right={(
+          right={
             <div className="flex flex-col items-end gap-0.5">
               <span className={`text-base font-bold font-['Outfit'] ${balanceColorClass}`}>
                 {formattedBalance}
@@ -315,7 +323,7 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
                 </span>
               )}
             </div>
-          )}
+          }
           showBorder={showBorder}
           borderColor="border-[var(--surface-border)]"
           padding="px-3 py-3.5"

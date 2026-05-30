@@ -74,20 +74,37 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
     setSelectedDay(null);
   }, [activeView]);
 
-  const hasFlowData = useMemo(() => (
-    Object.values(flowByView).some((rows) => rows.some((day) => day.incomeTotal > 0 || day.expenseTotal > 0))
-  ), [flowByView]);
-  const activeFlowRows = flowByView[activeView] ?? [];
+  const hasFlowData = useMemo(
+    () =>
+      Object.values(flowByView).some((rows) =>
+        rows.some((day) => day.incomeTotal > 0 || day.expenseTotal > 0),
+      ),
+    [flowByView],
+  );
+  const activeFlowRows = useMemo(() => flowByView[activeView] ?? [], [activeView, flowByView]);
   const activeSummary = useMemo(() => {
-    return activeFlowRows.reduce((summary, day) => ({
-      expense: summary.expense + day.expenseTotal,
-      income: summary.income + day.incomeTotal,
-      net: summary.net + (day.incomeTotal - day.expenseTotal),
-    }), { expense: 0, income: 0, net: 0 });
+    return activeFlowRows.reduce(
+      (summary, day) => ({
+        expense: summary.expense + day.expenseTotal,
+        income: summary.income + day.incomeTotal,
+        net: summary.net + (day.incomeTotal - day.expenseTotal),
+      }),
+      { expense: 0, income: 0, net: 0 },
+    );
   }, [activeFlowRows]);
   const summaryCards = [
-    { key: "income", label: popupIncomeLabel, value: formatCurrency(activeSummary.income), valueClassName: "text-[#16A34A]" },
-    { key: "expense", label: popupExpenseLabel, value: formatCurrency(activeSummary.expense), valueClassName: "text-[var(--text-primary)]" },
+    {
+      key: "income",
+      label: popupIncomeLabel,
+      value: formatCurrency(activeSummary.income),
+      valueClassName: "text-[#16A34A]",
+    },
+    {
+      key: "expense",
+      label: popupExpenseLabel,
+      value: formatCurrency(activeSummary.expense),
+      valueClassName: "text-[var(--text-primary)]",
+    },
     {
       key: "net",
       label: "Neto",
@@ -100,17 +117,23 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
     setSelectedDay(null);
   }, []);
 
-  const renderFlowSlide = useMemo(() => (
-    (view: StatisticsChartView) => {
+  const renderFlowSlide = useMemo(
+    () => (view: StatisticsChartView) => {
       const flowDays = flowByView[view] ?? [];
       if (!loadedViews[view]) {
-        return <div className="h-[220px] w-full rounded-xl bg-[var(--surface-muted)] animate-pulse" />;
+        return (
+          <div className="h-[220px] w-full rounded-xl bg-[var(--surface-muted)] animate-pulse" />
+        );
       }
 
       const ViewComponent = FLOW_VIEW_COMPONENTS[view];
       const viewAnimKey = `${chartAnimationKey}-${view}`;
       return (
-        <Suspense fallback={<div className="h-[220px] w-full rounded-xl bg-[var(--surface-muted)] animate-pulse" />}>
+        <Suspense
+          fallback={
+            <div className="h-[220px] w-full rounded-xl bg-[var(--surface-muted)] animate-pulse" />
+          }
+        >
           <ViewComponent
             key={viewAnimKey}
             animationKey={viewAnimKey}
@@ -121,8 +144,9 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
           />
         </Suspense>
       );
-    }
-  ), [chartAnimationKey, chartMode, emptyLabel, flowByView, loadedViews]);
+    },
+    [chartAnimationKey, chartMode, emptyLabel, flowByView, loadedViews],
+  );
 
   return (
     <>
@@ -130,12 +154,14 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
         title={balanceTitle}
         titleClassName="text-base font-bold text-[var(--text-primary)] font-['Outfit']"
         className="clocket-aurora-card rounded-[22px] p-5"
-        action={(
+        action={
           <div className="flex items-center rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] p-1">
-            {([
-              { id: "stacked", label: "Barras" },
-              { id: "net", label: "Neto" },
-            ] as const).map((option) => {
+            {(
+              [
+                { id: "stacked", label: "Barras" },
+                { id: "net", label: "Neto" },
+              ] as const
+            ).map((option) => {
               const isActive = chartMode === option.id;
               return (
                 <button
@@ -153,7 +179,7 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
               );
             })}
           </div>
-        )}
+        }
       >
         {!hasFlowData ? (
           <span className="text-sm font-medium text-[var(--text-secondary)]">{emptyLabel}</span>
@@ -161,11 +187,16 @@ export const StatisticsBalanceWidget = memo(function StatisticsBalanceWidget({
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-3 gap-2">
               {summaryCards.map((card) => (
-                <div key={card.key} className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-2.5 py-2">
+                <div
+                  key={card.key}
+                  className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-2.5 py-2"
+                >
                   <span className="block text-[10px] font-semibold uppercase tracking-[0.8px] text-[var(--text-secondary)]">
                     {card.label}
                   </span>
-                  <span className={`mt-1 block text-xs font-semibold ${card.valueClassName}`}>{card.value}</span>
+                  <span className={`mt-1 block text-xs font-semibold ${card.valueClassName}`}>
+                    {card.value}
+                  </span>
                 </div>
               ))}
             </div>

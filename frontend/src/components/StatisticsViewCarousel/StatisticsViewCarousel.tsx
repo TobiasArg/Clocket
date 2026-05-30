@@ -1,6 +1,7 @@
 import type { ReactNode, UIEvent as ReactUIEvent } from "react";
 import { memo, useEffect, useRef } from "react";
 import type { StatisticsChartView } from "@/hooks";
+import { STATISTICS_VIEW_OPTIONS } from "./statisticsViewOptions";
 
 export interface StatisticsViewOption {
   id: StatisticsChartView;
@@ -16,12 +17,6 @@ export interface StatisticsViewCarouselProps {
   renderSlide: (view: StatisticsChartView, isActive: boolean) => ReactNode;
 }
 
-export const STATISTICS_VIEW_OPTIONS: ReadonlyArray<StatisticsViewOption> = [
-  { id: "day", label: "Día" },
-  { id: "week", label: "Semana" },
-  { id: "month", label: "Mes" },
-];
-
 export const StatisticsViewCarousel = memo(function StatisticsViewCarousel({
   activeView,
   className = "",
@@ -33,7 +28,10 @@ export const StatisticsViewCarousel = memo(function StatisticsViewCarousel({
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const syncSourceRef = useRef<"dot" | "scroll" | null>(null);
   const scrollCommitTimeoutRef = useRef<number | null>(null);
-  const activeViewIndex = Math.max(0, options.findIndex((option) => option.id === activeView));
+  const activeViewIndex = Math.max(
+    0,
+    options.findIndex((option) => option.id === activeView),
+  );
 
   useEffect(() => {
     return () => {

@@ -218,8 +218,9 @@ export const buildBudgetDetailSubcategoryItems = ({
     grouped.set(key, current);
   });
 
-  const sorted = Array.from(grouped.entries())
-    .sort((left, right) => right[1].amount - left[1].amount);
+  const sorted = Array.from(grouped.entries()).sort(
+    (left, right) => right[1].amount - left[1].amount,
+  );
 
   const total = sorted.reduce((sum, entry) => sum + entry[1].amount, 0);
   if (total <= 0) {
@@ -258,11 +259,7 @@ export const useBudgetDetailPageModel = (
     subcategories,
   } = options;
 
-  const {
-    items: budgets,
-    isLoading: isBudgetsLoading,
-    update,
-  } = useBudgets();
+  const { items: budgets, isLoading: isBudgetsLoading, update } = useBudgets();
   const {
     items: categories,
     isLoading: isCategoriesLoading,
@@ -320,7 +317,7 @@ export const useBudgetDetailPageModel = (
   );
 
   const resolvedScopeRules = useMemo(
-    () => resolvedBudget ? resolveBudgetScopeRulesFromBudget(resolvedBudget) : [],
+    () => (resolvedBudget ? resolveBudgetScopeRulesFromBudget(resolvedBudget) : []),
     [resolvedBudget],
   );
 
@@ -335,28 +332,40 @@ export const useBudgetDetailPageModel = (
         return sum;
       }
 
-      if (transactionDate < selectedMonthWindow.start || transactionDate >= selectedMonthWindow.end) {
+      if (
+        transactionDate < selectedMonthWindow.start ||
+        transactionDate >= selectedMonthWindow.end
+      ) {
         return sum;
       }
 
-      if (!doesBudgetScopeMatchTransaction(resolvedScopeRules, transaction, resolvedBudget.categoryId)) {
+      if (
+        !doesBudgetScopeMatchTransaction(resolvedScopeRules, transaction, resolvedBudget.categoryId)
+      ) {
         return sum;
       }
 
       const amount = parseSignedAmount(transaction.amount);
       return amount < 0 ? sum + Math.abs(amount) : sum;
     }, 0);
-  }, [resolvedBudget, resolvedScopeRules, selectedMonthWindow.end, selectedMonthWindow.start, transactions]);
+  }, [
+    resolvedBudget,
+    resolvedScopeRules,
+    selectedMonthWindow.end,
+    selectedMonthWindow.start,
+    transactions,
+  ]);
 
   const primaryCategoryId = useMemo(
-    () => resolvedBudget
-      ? getPrimaryBudgetCategoryId(resolvedScopeRules, resolvedBudget.categoryId)
-      : null,
+    () =>
+      resolvedBudget
+        ? getPrimaryBudgetCategoryId(resolvedScopeRules, resolvedBudget.categoryId)
+        : null,
     [resolvedBudget, resolvedScopeRules],
   );
 
   const primaryCategoryMeta = primaryCategoryId
-    ? categoryById.get(primaryCategoryId) ?? null
+    ? (categoryById.get(primaryCategoryId) ?? null)
     : null;
 
   const categoryAccentColor = primaryCategoryMeta?.iconBg ?? "bg-[#DC2626]";
@@ -383,8 +392,7 @@ export const useBudgetDetailPageModel = (
     categoryById,
     resolvedBudget,
     resolvedScopeRules,
-    selectedMonthWindow.end,
-    selectedMonthWindow.start,
+    selectedMonthWindow,
     subcategories,
     transactions,
   ]);
@@ -438,18 +446,20 @@ export const useBudgetDetailPageModel = (
   const isScopeValid = selectedScopeRules.length > 0 && !hasInvalidScopeRules;
 
   const isDuplicateCategoryMonth = resolvedBudget
-    ? budgets.some((budget) => (
-      budget.id !== resolvedBudget.id
-      && budget.month === resolvedBudget.month
-      && doBudgetScopeRulesOverlap(selectedScopeRules, resolveBudgetScopeRulesFromBudget(budget))
-    ))
+    ? budgets.some(
+        (budget) =>
+          budget.id !== resolvedBudget.id &&
+          budget.month === resolvedBudget.month &&
+          doBudgetScopeRulesOverlap(selectedScopeRules, resolveBudgetScopeRulesFromBudget(budget)),
+      )
     : false;
 
-  const isFormValid = Boolean(resolvedBudget)
-    && isAmountValid
-    && isBudgetNameValid
-    && isScopeValid
-    && !isDuplicateCategoryMonth;
+  const isFormValid =
+    Boolean(resolvedBudget) &&
+    isAmountValid &&
+    isBudgetNameValid &&
+    isScopeValid &&
+    !isDuplicateCategoryMonth;
 
   const budgetFormValidationLabel = hasInvalidScopeRules
     ? "El alcance tiene categorías/subcategorías inválidas. Revísalo antes de guardar."
@@ -457,47 +467,52 @@ export const useBudgetDetailPageModel = (
       ? "Ya existe un budget para parte del alcance seleccionado en el mes."
       : null;
 
-  const handleCreateCategory = useCallback(async (
-    input: BudgetDetailCreateCategoryInput,
-  ): Promise<BudgetDetailCategoryOption | null> => {
-    const normalizedName = input.name.trim();
-    if (normalizedName.length === 0) {
-      return null;
-    }
+  const handleCreateCategory = useCallback(
+    async (input: BudgetDetailCreateCategoryInput): Promise<BudgetDetailCategoryOption | null> => {
+      const normalizedName = input.name.trim();
+      if (normalizedName.length === 0) {
+        return null;
+      }
 
-    const normalizedIcon = input.icon.trim().length > 0 ? input.icon.trim() : DEFAULT_CATEGORY_ICON;
-    const resolvedColorKey = CATEGORY_COLOR_OPTIONS.find((option) => option.key === input.colorKey)?.key
-      ?? DEFAULT_CATEGORY_COLOR_KEY;
-    const iconBg = getCategoryColorOption(resolvedColorKey).iconBgClass;
+      const normalizedIcon =
+        input.icon.trim().length > 0 ? input.icon.trim() : DEFAULT_CATEGORY_ICON;
+      const resolvedColorKey =
+        CATEGORY_COLOR_OPTIONS.find((option) => option.key === input.colorKey)?.key ??
+        DEFAULT_CATEGORY_COLOR_KEY;
+      const iconBg = getCategoryColorOption(resolvedColorKey).iconBgClass;
 
-    const created = await createCategory({
-      name: normalizedName,
-      icon: normalizedIcon,
-      iconBg,
-    });
+      const created = await createCategory({
+        name: normalizedName,
+        icon: normalizedIcon,
+        iconBg,
+      });
 
-    if (!created?.id) {
-      return null;
-    }
+      if (!created?.id) {
+        return null;
+      }
 
-    setSelectedScopeRulesState((current) => normalizeBudgetScopeRules([
-      ...current,
-      {
-        categoryId: created.id,
-        mode: "all_subcategories",
-      },
-    ]));
+      setSelectedScopeRulesState((current) =>
+        normalizeBudgetScopeRules([
+          ...current,
+          {
+            categoryId: created.id,
+            mode: "all_subcategories",
+          },
+        ]),
+      );
 
-    setBudgetNameInput((current) => current.trim().length > 0 ? current : created.name);
+      setBudgetNameInput((current) => (current.trim().length > 0 ? current : created.name));
 
-    return {
-      id: created.id,
-      icon: created.icon,
-      iconBg: created.iconBg,
-      name: created.name,
-      subcategories: normalizeSubcategories(created.subcategories),
-    };
-  }, [createCategory]);
+      return {
+        id: created.id,
+        icon: created.icon,
+        iconBg: created.iconBg,
+        name: created.name,
+        subcategories: normalizeSubcategories(created.subcategories),
+      };
+    },
+    [createCategory],
+  );
 
   const handleSubmitEdit = useCallback(async () => {
     setShowValidation(true);
@@ -508,13 +523,17 @@ export const useBudgetDetailPageModel = (
 
     setIsEditorSubmitting(true);
     try {
-      const updatedScopeRules = sanitizeScopeRulesForCategories(selectedScopeRules, sortedCategories);
+      const updatedScopeRules = sanitizeScopeRulesForCategories(
+        selectedScopeRules,
+        sortedCategories,
+      );
       if (updatedScopeRules.length === 0) {
         return;
       }
 
       const updated = await update(resolvedBudget.id, {
-        categoryId: getPrimaryBudgetCategoryId(updatedScopeRules, resolvedBudget.categoryId) ?? undefined,
+        categoryId:
+          getPrimaryBudgetCategoryId(updatedScopeRules, resolvedBudget.categoryId) ?? undefined,
         scopeRules: updatedScopeRules,
         name: normalizedBudgetName,
         limitAmount: limitAmountValue,
@@ -544,9 +563,8 @@ export const useBudgetDetailPageModel = (
   const isEmpty = !resolvedBudget;
 
   const budgetLimit = resolvedBudget?.limitAmount ?? 0;
-  const resolvedProgressPercent = progressPercent ?? (
-    budgetLimit > 0 ? clampPercent((spentAmount / budgetLimit) * 100) : 0
-  );
+  const resolvedProgressPercent =
+    progressPercent ?? (budgetLimit > 0 ? clampPercent((spentAmount / budgetLimit) * 100) : 0);
   const remaining = Math.max(0, budgetLimit - spentAmount);
 
   const resolvedBudgetName = budgetName ?? resolvedBudget?.name ?? "";

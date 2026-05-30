@@ -1,11 +1,14 @@
-import { memo, useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { IconBadge } from "../IconBadge/IconBadge";
 import { ListItemRow } from "../ListItemRow/ListItemRow";
 import { PhosphorIcon } from "../PhosphorIcon/PhosphorIcon";
-import {
-  TRANSACTION_EXPENSE_TEXT_CLASS,
-  TRANSACTION_INCOME_TEXT_CLASS,
-} from "@/constants";
+import { TRANSACTION_EXPENSE_TEXT_CLASS, TRANSACTION_INCOME_TEXT_CLASS } from "@/constants";
 import type { TransactionItem } from "@/utils";
 
 export interface TransactionSwipeDeleteRowProps {
@@ -84,7 +87,7 @@ export const TransactionSwipeDeleteRow = memo(function TransactionSwipeDeleteRow
   const shouldSuppressClickRef = useRef<boolean>(false);
   const renderedTranslateRef = useRef(0);
 
-  const applySwipeProgress = (value: number): void => {
+  const applySwipeProgress = useCallback((value: number): void => {
     const progress = Math.min(1, Math.abs(value) / MAX_REVEAL_PX);
     const revealViewportNode = revealViewportRef.current;
     const iconNode = deleteIconRef.current;
@@ -109,33 +112,39 @@ export const TransactionSwipeDeleteRow = memo(function TransactionSwipeDeleteRow
         iconNode.style.transform = nextTransform;
       }
     }
-  };
+  }, []);
 
-  const applyTranslate = (value: number, withTransition: boolean): void => {
-    const node = swipeLayerRef.current;
-    if (!node) {
-      return;
-    }
+  const applyTranslate = useCallback(
+    (value: number, withTransition: boolean): void => {
+      const node = swipeLayerRef.current;
+      if (!node) {
+        return;
+      }
 
-    const transitionValue = withTransition
-      ? `transform ${RESET_TRANSITION_MS}ms ease-out`
-      : "none";
-    if (node.style.transition !== transitionValue) {
-      node.style.transition = transitionValue;
-    }
+      const transitionValue = withTransition
+        ? `transform ${RESET_TRANSITION_MS}ms ease-out`
+        : "none";
+      if (node.style.transition !== transitionValue) {
+        node.style.transition = transitionValue;
+      }
 
-    if (renderedTranslateRef.current !== value) {
-      node.style.transform = `translate3d(${value}px, 0, 0)`;
-      renderedTranslateRef.current = value;
-      applySwipeProgress(value);
-    }
+      if (renderedTranslateRef.current !== value) {
+        node.style.transform = `translate3d(${value}px, 0, 0)`;
+        renderedTranslateRef.current = value;
+        applySwipeProgress(value);
+      }
 
-    dragStateRef.current.translateX = value;
-  };
+      dragStateRef.current.translateX = value;
+    },
+    [applySwipeProgress],
+  );
 
-  const resetSwipePosition = (withTransition: boolean): void => {
-    applyTranslate(0, withTransition);
-  };
+  const resetSwipePosition = useCallback(
+    (withTransition: boolean): void => {
+      applyTranslate(0, withTransition);
+    },
+    [applyTranslate],
+  );
 
   const clearDragState = (): void => {
     dragStateRef.current = createInitialDragState();
@@ -214,7 +223,8 @@ export const TransactionSwipeDeleteRow = memo(function TransactionSwipeDeleteRow
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
-    const shouldTriggerDelete = !cancelled &&
+    const shouldTriggerDelete =
+      !cancelled &&
       state.axisLock === "horizontal" &&
       Math.abs(state.translateX) >= SWIPE_TRIGGER_PX;
 
@@ -250,7 +260,7 @@ export const TransactionSwipeDeleteRow = memo(function TransactionSwipeDeleteRow
     resetSwipePosition(false);
     clearDragState();
     shouldSuppressClickRef.current = false;
-  }, [isDeleting, isInteractionLocked, transaction.id]);
+  }, [isDeleting, isInteractionLocked, resetSwipePosition, transaction.id]);
 
   return (
     <div className="relative overflow-hidden touch-pan-y">
@@ -295,7 +305,7 @@ export const TransactionSwipeDeleteRow = memo(function TransactionSwipeDeleteRow
           subtitle={subtitle}
           titleClassName="text-[15px] font-semibold text-[var(--text-primary)] font-['Outfit']"
           subtitleClassName="text-[11px] font-medium text-[var(--text-secondary)] truncate"
-          right={(
+          right={
             <div className="flex flex-col gap-0.5 items-end shrink-0">
               <span
                 className={`text-[15px] font-bold font-['Outfit'] ${
@@ -324,7 +334,7 @@ export const TransactionSwipeDeleteRow = memo(function TransactionSwipeDeleteRow
                 </div>
               )}
             </div>
-          )}
+          }
           onClick={handleRowClick}
           showBorder={showBorder}
           className="w-full"

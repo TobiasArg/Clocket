@@ -20,10 +20,7 @@ export type {
   UseBudgetsPageModelResult,
 } from "./budgets";
 export { useCategoriesPageModel } from "./categories";
-export type {
-  UseCategoriesPageModelOptions,
-  UseCategoriesPageModelResult,
-} from "./categories";
+export type { UseCategoriesPageModelOptions, UseCategoriesPageModelResult } from "./categories";
 export { useGoalsPageModel } from "./goals";
 export type {
   GoalDeleteResolution,
@@ -52,15 +49,9 @@ export type {
   UseInvestmentsPageModelResult,
 } from "./investments";
 export { useMorePageModel } from "./more";
-export type {
-  UseMorePageModelOptions,
-  UseMorePageModelResult,
-} from "./more";
+export type { UseMorePageModelOptions, UseMorePageModelResult } from "./more";
 export { usePlansPageModel } from "./plans";
-export type {
-  UsePlansPageModelOptions,
-  UsePlansPageModelResult,
-} from "./plans";
+export type { UsePlansPageModelOptions, UsePlansPageModelResult } from "./plans";
 export { Settings } from "./settings";
 export type { SettingsProps } from "./settings";
 export { useStatisticsPageModel } from "./statistics";
