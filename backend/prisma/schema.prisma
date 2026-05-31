@@ -1,0 +1,374 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CurrencyCode {
+  USD
+  ARS
+}
+
+enum TransactionType {
+  REGULAR @map("regular")
+  SAVING  @map("saving")
+}
+
+enum BudgetScopeMode {
+  ALL_SUBCATEGORIES      @map("all_subcategories")
+  SELECTED_SUBCATEGORIES @map("selected_subcategories")
+}
+
+enum GoalColorKey {
+  EMERALD @map("emerald")
+  SKY     @map("sky")
+  INDIGO  @map("indigo")
+  VIOLET  @map("violet")
+  ROSE    @map("rose")
+  AMBER   @map("amber")
+  CYAN    @map("cyan")
+  LIME    @map("lime")
+}
+
+enum AssetType {
+  STOCK  @map("stock")
+  CRYPTO @map("crypto")
+}
+
+enum InvestmentEntryType {
+  INCOME  @map("ingreso")
+  EXPENSE @map("egreso")
+}
+
+enum SnapshotSource {
+  GLOBAL_QUOTE
+  CURRENCY_EXCHANGE_RATE
+}
+
+enum ImportBatchStatus {
+  PENDING
+  VALIDATED
+  IMPORTED
+  FAILED
+}
+
+model Account {
+  id           String        @id @default(uuid()) @db.Uuid
+  legacyId     String?       @unique
+  name         String
+  balance      Decimal       @default(0) @db.Decimal(18, 2)
+  currency     CurrencyCode  @default(USD)
+  icon         String
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+  deletedAt    DateTime?     @db.Timestamptz(3)
+  transactions Transaction[]
+
+  @@index([deletedAt])
+  @@map("accounts")
+}
+
+model Category {
+  id            String        @id @default(uuid()) @db.Uuid
+  legacyId      String?       @unique
+  name          String
+  icon          String
+  iconBg        String
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+  deletedAt     DateTime?     @db.Timestamptz(3)
+  subcategories Subcategory[]
+  transactions  Transaction[]
+  budgets       Budget[]
+  budgetScopes  BudgetScopeRule[]
+  goals         Goal[]
+  installments  InstallmentPlan[]
+
+  @@index([deletedAt])
+  @@map("categories")
+}
+
+model Subcategory {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  legacyKey            String?
+  categoryId           String                    @db.Uuid
+  name                 String
+  sortOrder            Int                       @default(0)
+  createdAt            DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime                  @updatedAt @db.Timestamptz(3)
+  category             Category                  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  transactions         Transaction[]
+  budgetSelections     BudgetScopeSubcategory[]
+  goals                Goal[]
+  installmentPlans     InstallmentPlan[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@map("subcategories")
+}
+
+model Transaction {
+  id                       String           @id @default(uuid()) @db.Uuid
+  legacyId                 String?          @unique
+  accountId                String           @db.Uuid
+  categoryId               String?          @db.Uuid
+  subcategoryId            String?          @db.Uuid
+  goalId                   String?          @db.Uuid
+  installmentPlanId        String?          @db.Uuid
+  transactionType          TransactionType  @default(REGULAR)
+  name                     String
+  amount                   Decimal          @db.Decimal(18, 2)
+  currency                 CurrencyCode     @default(USD)
+  date                     DateTime         @db.Date
+  notes                    String?
+  uiIcon                   String?
+  uiIconBg                 String?
+  cuotaInstallmentIndex    Int?
+  cuotaInstallmentsCount   Int?
+  createdAt                DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime         @updatedAt @db.Timestamptz(3)
+  deletedAt                DateTime?        @db.Timestamptz(3)
+  account                  Account          @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  category                 Category?        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory              Subcategory?     @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  goal                     Goal?            @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  installmentPlan          InstallmentPlan? @relation(fields: [installmentPlanId], references: [id], onDelete: SetNull)
+  investmentEntry          InvestmentEntry?
+
+  @@index([accountId, date])
+  @@index([categoryId, date])
+  @@index([subcategoryId, date])
+  @@index([goalId])
+  @@index([installmentPlanId])
+  @@index([date])
+  @@index([deletedAt])
+  @@map("transactions")
+}
+
+model Budget {
+  id          String            @id @default(uuid()) @db.Uuid
+  legacyId    String?           @unique
+  categoryId  String?           @db.Uuid
+  name        String
+  limitAmount Decimal           @db.Decimal(18, 2)
+  currency    CurrencyCode      @default(USD)
+  periodMonth DateTime          @db.Date
+  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime          @updatedAt @db.Timestamptz(3)
+  deletedAt   DateTime?         @db.Timestamptz(3)
+  category    Category?         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  scopeRules  BudgetScopeRule[]
+
+  @@index([periodMonth])
+  @@index([categoryId])
+  @@index([deletedAt])
+  @@map("budgets")
+}
+
+model BudgetScopeRule {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  budgetId              String                    @db.Uuid
+  categoryId            String                    @db.Uuid
+  mode                  BudgetScopeMode
+  budget                Budget                    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category              Category                  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  selectedSubcategories BudgetScopeSubcategory[]
+
+  @@unique([budgetId, categoryId])
+  @@index([categoryId])
+  @@map("budget_scope_rules")
+}
+
+model BudgetScopeSubcategory {
+  id                String          @id @default(uuid()) @db.Uuid
+  budgetScopeRuleId String          @db.Uuid
+  subcategoryId     String          @db.Uuid
+  budgetScopeRule   BudgetScopeRule @relation(fields: [budgetScopeRuleId], references: [id], onDelete: Cascade)
+  subcategory       Subcategory     @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+
+  @@unique([budgetScopeRuleId, subcategoryId])
+  @@index([subcategoryId])
+  @@map("budget_scope_subcategories")
+}
+
+model Goal {
+  id             String          @id @default(uuid()) @db.Uuid
+  legacyId       String?         @unique
+  title          String
+  description    String
+  targetAmount   Decimal         @db.Decimal(18, 2)
+  currency       CurrencyCode    @default(USD)
+  deadlineDate   DateTime        @db.Date
+  icon           String
+  colorKey       GoalColorKey
+  categoryId     String?         @db.Uuid
+  subcategoryId  String?         @db.Uuid
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime?       @db.Timestamptz(3)
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory    Subcategory?    @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  transactions   Transaction[]
+
+  @@index([deadlineDate])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([deletedAt])
+  @@map("goals")
+}
+
+model InstallmentPlan {
+  id                    String        @id @default(uuid()) @db.Uuid
+  legacyId              String?       @unique
+  title                 String
+  description           String?
+  totalAmount           Decimal       @db.Decimal(18, 2)
+  currency              CurrencyCode  @default(USD)
+  installmentsCount     Int
+  installmentAmount     Decimal       @db.Decimal(18, 2)
+  startMonth            DateTime      @db.Date
+  paidInstallmentsCount Int           @default(0)
+  categoryId            String?       @db.Uuid
+  subcategoryId         String?       @db.Uuid
+  createdAt             DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime      @updatedAt @db.Timestamptz(3)
+  deletedAt             DateTime?     @db.Timestamptz(3)
+  category              Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory           Subcategory?  @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  transactions          Transaction[]
+
+  @@index([startMonth])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([deletedAt])
+  @@map("installment_plans")
+}
+
+model InvestmentAsset {
+  id          String                 @id @default(uuid()) @db.Uuid
+  assetType   AssetType
+  ticker      String
+  displayName String?
+  createdAt   DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime               @updatedAt @db.Timestamptz(3)
+  positions   InvestmentPosition[]
+  entries     InvestmentEntry[]
+  snapshots   MarketQuoteSnapshot[]
+  refs        InvestmentAssetRef?
+
+  @@unique([assetType, ticker])
+  @@index([ticker])
+  @@map("investment_assets")
+}
+
+model InvestmentPosition {
+  id              String            @id @default(uuid()) @db.Uuid
+  legacyId        String?           @unique
+  assetId         String            @db.Uuid
+  totalInvested   Decimal           @db.Decimal(18, 2)
+  averageBuyPrice Decimal           @db.Decimal(28, 10)
+  amount          Decimal           @db.Decimal(28, 10)
+  createdAt       DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
+  deletedAt       DateTime?         @db.Timestamptz(3)
+  asset           InvestmentAsset   @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  entries         InvestmentEntry[]
+
+  @@unique([assetId])
+  @@index([deletedAt])
+  @@map("investment_positions")
+}
+
+model InvestmentEntry {
+  id             String             @id @default(uuid()) @db.Uuid
+  legacyId       String?            @unique
+  positionId     String             @db.Uuid
+  assetId        String             @db.Uuid
+  entryType      InvestmentEntryType
+  amountUsd      Decimal            @db.Decimal(18, 2)
+  buyPrice       Decimal            @db.Decimal(28, 10)
+  units          Decimal            @db.Decimal(28, 10)
+  transactionId  String?            @unique @db.Uuid
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
+  position       InvestmentPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  asset          InvestmentAsset    @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  transaction    Transaction?       @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([positionId, createdAt])
+  @@index([assetId, createdAt])
+  @@map("investment_entries")
+}
+
+model MarketQuoteSnapshot {
+  id           String           @id @default(uuid()) @db.Uuid
+  assetId      String           @db.Uuid
+  price        Decimal          @db.Decimal(28, 10)
+  source       SnapshotSource
+  bid          Decimal?         @db.Decimal(28, 10)
+  ask          Decimal?         @db.Decimal(28, 10)
+  providerAsOf DateTime?        @db.Timestamptz(3)
+  fetchedAt    DateTime         @default(now()) @db.Timestamptz(3)
+  asset        InvestmentAsset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId, fetchedAt])
+  @@map("market_quote_snapshots")
+}
+
+model InvestmentAssetRef {
+  id                 String          @id @default(uuid()) @db.Uuid
+  assetId            String          @unique @db.Uuid
+  dailyRefPrice      Decimal         @db.Decimal(28, 10)
+  dailyRefTimestamp  DateTime        @db.Timestamptz(3)
+  monthRefPrice      Decimal         @db.Decimal(28, 10)
+  monthRefTimestamp  DateTime        @db.Timestamptz(3)
+  updatedAt          DateTime        @updatedAt @db.Timestamptz(3)
+  asset              InvestmentAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("investment_asset_refs")
+}
+
+model AppSettings {
+  id                   String       @id @default("default")
+  currency             CurrencyCode @default(USD)
+  language             String       @default("es")
+  notificationsEnabled Boolean      @default(false)
+  theme                String       @default("light")
+  profileName          String       @default("")
+  profileEmail         String       @default("")
+  avatarIcon           String       @default("user")
+  pinHash              String?
+  updatedAt            DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@map("app_settings")
+}
+
+model ImportBatch {
+  id          String            @id @default(uuid()) @db.Uuid
+  source      String
+  status      ImportBatchStatus @default(PENDING)
+  startedAt   DateTime          @default(now()) @db.Timestamptz(3)
+  completedAt DateTime?         @db.Timestamptz(3)
+  summaryJson Json?
+  legacyIds   LegacyIdMap[]
+
+  @@index([status])
+  @@map("import_batches")
+}
+
+model LegacyIdMap {
+  id            String       @id @default(uuid()) @db.Uuid
+  importBatchId String?      @db.Uuid
+  entityType    String
+  legacyId      String
+  targetId      String
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
+  @@unique([entityType, legacyId])
+  @@index([targetId])
+  @@index([importBatchId])
+  @@map("legacy_id_maps")
+}

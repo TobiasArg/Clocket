@@ -7,11 +7,11 @@
 
 ## 2. Deferred Implementation Stage
 
-- [ ] 2.1 Add Prisma dependencies and scripts in `backend/package.json`.
-- [ ] 2.2 Add `backend/prisma/schema.prisma` matching this spec.
-- [ ] 2.3 Add PostgreSQL local development/test orchestration and `.env.example` DB variables.
-- [ ] 2.4 Add Prisma client initialization under `backend/src/persistence`.
-- [ ] 2.5 Add DB smoke tests for connection, Decimal round-trip, and migration state.
+- [x] 2.1 Add Prisma dependencies and scripts in `backend/package.json`.
+- [x] 2.2 Add `backend/prisma/schema.prisma` matching this spec.
+- [x] 2.3 Add PostgreSQL local development/test orchestration and `.env.example` DB variables.
+- [x] 2.4 Add Prisma client initialization under `backend/src/persistence`.
+- [x] 2.5 Add DB smoke tests for connection, Decimal round-trip, and migration state.
 
 ## 3. Deferred Core Domain Stage
 

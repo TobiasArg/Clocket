@@ -34,3 +34,24 @@ npm run typecheck
 npm test
 npm run build
 ```
+
+## PostgreSQL + Prisma foundation
+
+The persistence schema targets Prisma ORM + PostgreSQL. Start the local database with:
+
+```bash
+docker compose up -d postgres
+```
+
+Then validate and generate Prisma artifacts:
+
+```bash
+npm run prisma:validate
+npm run prisma:generate
+```
+
+Database-backed smoke tests are opt-in so normal unit tests do not require a running PostgreSQL instance:
+
+```bash
+npm run test:db
+```
