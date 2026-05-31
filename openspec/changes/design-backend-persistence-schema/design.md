@@ -55,7 +55,7 @@ Prisma will own schema, migrations, generated types, and DB access under `backen
 Backend entities should use UUID/CUID-style string IDs at the API boundary and Prisma-generated IDs in the DB.
 
 - Rationale: frontend already uses string IDs; preserving string IDs minimizes API churn.
-- Migration note: imported localStorage IDs may be stored either as canonical IDs when valid or in `legacyId` fields during import mapping.
+- Clean-start note: existing localStorage IDs do not need to be preserved. Backend IDs are canonical from the moment a domain is cut over to backend APIs.
 
 ### Decision 4: Monetary values must be numeric decimals, not UI strings
 
@@ -107,15 +107,13 @@ InvestmentEntry(id, positionId, assetId, entryType, amountUsd, buyPrice, units, 
 MarketQuoteSnapshot(id, assetId, price, source, bid?, ask?, providerAsOf?, fetchedAt)
 InvestmentAssetRef(id, assetId, dailyRefPrice, dailyRefTimestamp, monthRefPrice, monthRefTimestamp, updatedAt)
 AppSettings(id, currency, language, notificationsEnabled, theme, profileName, profileEmail, avatarIcon, pinHash?, updatedAt)
-ImportBatch(id, source, status, startedAt, completedAt?, summaryJson?)
-LegacyIdMap(id, importBatchId?, entityType, legacyId, targetId, createdAt)
 ```
 
 ## Risks / Trade-offs
 
 - [Risk] Designing without auth may require adding ownership columns later. → Mitigation: keep a single-ledger assumption explicit and require a future auth OpenSpec migration.
 - [Risk] Storing `balance` on account can drift from transaction aggregates. → Mitigation: define whether balance is an opening/current manual value or derived; for phase one preserve current behavior and document reconciliation later.
-- [Risk] Category/subcategory IDs differ from current subcategory-name references. → Mitigation: migration must map names to durable subcategory rows and keep `legacyId`/mapping tables.
+- [Risk] Category/subcategory IDs differ from current subcategory-name references. → Mitigation: backend starts with empty category/subcategory rows at cutover; frontend data can be discarded instead of mapped.
 - [Risk] Prisma cannot express all PostgreSQL check constraints directly. → Mitigation: use Prisma schema plus SQL migrations for critical constraints when needed.
 - [Risk] Decimal precision mistakes can corrupt financial values. → Mitigation: specify precision per field and add repository tests for decimal round-trips.
 
@@ -125,8 +123,8 @@ LegacyIdMap(id, importBatchId?, entityType, legacyId, targetId, createdAt)
 2. Create a later implementation change to add Prisma dependencies, `schema.prisma`, `.env.example` DB vars, and local PostgreSQL orchestration.
 3. Implement DB connection and smoke tests without migrating frontend data.
 4. Implement core repositories in order: accounts, categories/subcategories, transactions.
-5. Add import/dry-run tooling for localStorage payloads.
-6. Replace frontend localStorage repositories with HTTP repositories one domain at a time.
+5. Replace frontend localStorage repositories with HTTP repositories one domain at a time.
+6. At each domain cutover, clear or ignore existing browser-local data for that domain and start from backend-owned empty state.
 
 Rollback for this design-only change is a documentation revert. Later DB implementation changes must include migration rollback notes.
 
