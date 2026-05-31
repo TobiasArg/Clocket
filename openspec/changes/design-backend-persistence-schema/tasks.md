@@ -12,6 +12,7 @@
 - [x] 2.3 Add PostgreSQL local development/test orchestration and `.env.example` DB variables.
 - [x] 2.4 Add Prisma client initialization under `backend/src/persistence`.
 - [x] 2.5 Add DB smoke tests for connection, Decimal round-trip, and migration state.
+- [x] 2.6 Add initial Prisma migration SQL for the clean-start persistence schema.
 
 ## 3. Deferred Core Domain Stage
 
