@@ -27,6 +27,11 @@
 - [x] 4.2 Implement goals persistence and category synchronization tests.
 - [x] 4.3 Implement installment plan persistence and generated transaction tests.
 - [ ] 4.4 Implement investment persistence, snapshots, and asset refs tests.
+- [ ] 4.4.1 Add a backend investments repository for normalized assets, positions, and entries.
+- [ ] 4.4.2 Persist market quote snapshots with efficient latest-by-asset lookup.
+- [ ] 4.4.3 Persist daily and monthly asset reference prices with transactional update behavior.
+- [ ] 4.4.4 Add repository tests for ticker normalization, stock/crypto assets, entry add/delete rebuilds, oversell rejection, transaction links, snapshots, and refs.
+- [ ] 4.4.5 Validate the completed investment stage with backend tests/build and strict OpenSpec validation.
 
 ## 5. Explicitly Out of Scope for This Change
 
