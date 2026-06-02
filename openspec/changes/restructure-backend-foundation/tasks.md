@@ -29,5 +29,5 @@
 ## 5. Deferred Follow-up Changes
 
 - [x] 5.1 Create a later OpenSpec change for Prisma/PostgreSQL schema design.
-- [ ] 5.2 Create a later OpenSpec change for account/category/transaction migration from frontend repositories.
-- [ ] 5.3 Create a later OpenSpec change for auth/user ownership when product requirements are ready.
+- [x] 5.2 Create a later OpenSpec change for account/category/transaction migration from frontend repositories.
+- [x] 5.3 Create a later OpenSpec change for auth/user ownership when product requirements are ready.
