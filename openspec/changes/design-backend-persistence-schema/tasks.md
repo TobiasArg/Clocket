@@ -18,7 +18,7 @@
 
 - [x] 3.1 Implement accounts repository and tests.
 - [x] 3.2 Implement categories/subcategories repository and tests.
-- [ ] 3.3 Implement transactions repository and tests.
+- [x] 3.3 Implement transactions repository and tests.
 - [ ] 3.4 Add clean-start cutover handling for core localStorage keys; no import or legacy ID mapping required.
 
 ## 4. Deferred Feature Domain Stage
