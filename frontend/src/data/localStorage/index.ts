@@ -15,6 +15,17 @@ export {
   categoriesRepository,
 } from "./categoriesRepository";
 export {
+  CORE_LOCAL_STORAGE_CLEAN_START_KEYS,
+  getCoreCleanStartStorageKeys,
+  isCoreLocalStorageCleanStartDomain,
+  resetCoreLocalStorageForBackendCleanStart,
+} from "./cleanStartCutover";
+export type {
+  CleanStartResetResult,
+  CoreLocalStorageCleanStartKey,
+  CoreLocalStorageDomain,
+} from "./cleanStartCutover";
+export {
   LocalStorageCuotasRepository,
   cuotasRepository,
 } from "./cuotasRepository";
