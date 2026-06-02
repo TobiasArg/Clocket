@@ -25,7 +25,7 @@
 
 - [x] 4.1 Implement budgets persistence and overlap validation tests.
 - [x] 4.2 Implement goals persistence and category synchronization tests.
-- [ ] 4.3 Implement installment plan persistence and generated transaction tests.
+- [x] 4.3 Implement installment plan persistence and generated transaction tests.
 - [ ] 4.4 Implement investment persistence, snapshots, and asset refs tests.
 
 ## 5. Explicitly Out of Scope for This Change
