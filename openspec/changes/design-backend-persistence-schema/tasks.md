@@ -23,7 +23,7 @@
 
 ## 4. Deferred Feature Domain Stage
 
-- [ ] 4.1 Implement budgets persistence and overlap validation tests.
+- [x] 4.1 Implement budgets persistence and overlap validation tests.
 - [ ] 4.2 Implement goals persistence and category synchronization tests.
 - [ ] 4.3 Implement installment plan persistence and generated transaction tests.
 - [ ] 4.4 Implement investment persistence, snapshots, and asset refs tests.
