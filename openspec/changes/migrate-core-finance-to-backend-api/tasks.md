@@ -13,11 +13,11 @@
 
 ## 3. Frontend HTTP Repositories
 
-- [ ] 3.1 Add frontend HTTP client helpers for backend JSON requests and controlled error handling.
-- [ ] 3.2 Implement an HTTP accounts repository that satisfies `AccountsRepository` and maps backend decimal balance strings to frontend numbers.
-- [ ] 3.3 Implement an HTTP categories repository that satisfies `CategoriesRepository` and maps backend subcategory records to frontend subcategory names/counts.
-- [ ] 3.4 Implement an HTTP transactions repository that satisfies `TransactionsRepository` and maps backend canonical records to existing transaction UI/domain fields.
-- [ ] 3.5 Add focused frontend tests for repository mapping, network failure handling, and transaction change notification behavior.
+- [x] 3.1 Add frontend HTTP client helpers for backend JSON requests and controlled error handling.
+- [x] 3.2 Implement an HTTP accounts repository that satisfies `AccountsRepository` and maps backend decimal balance strings to frontend numbers.
+- [x] 3.3 Implement an HTTP categories repository that satisfies `CategoriesRepository` and maps backend subcategory records to frontend subcategory names/counts.
+- [x] 3.4 Implement an HTTP transactions repository that satisfies `TransactionsRepository` and maps backend canonical records to existing transaction UI/domain fields.
+- [x] 3.5 Add focused frontend tests for repository mapping, network failure handling, and transaction change notification behavior.
 
 ## 4. Clean-Start Frontend Cutover
 
