@@ -1,15 +1,15 @@
 ## 1. OpenSpec Proposal
 
-- [ ] 1.1 Create `migrate-core-finance-to-backend-api` proposal, design, tasks, and specs.
-- [ ] 1.2 Validate with `openspec validate migrate-core-finance-to-backend-api --strict --no-interactive`.
+- [x] 1.1 Create `migrate-core-finance-to-backend-api` proposal, design, tasks, and specs.
+- [x] 1.2 Validate with `openspec validate migrate-core-finance-to-backend-api --strict --no-interactive`.
 
 ## 2. Backend API and Service Boundaries
 
-- [ ] 2.1 Add shared backend request parsing, response helpers, and controlled error mapping for core finance routes.
-- [ ] 2.2 Add account API contracts, services, Next.js API routes, and tests for list/get/create/update/delete.
-- [ ] 2.3 Add category/subcategory API contracts, services, Next.js API routes, and tests for list/get/create/update/replace-subcategories/delete.
-- [ ] 2.4 Add transaction API contracts, services, Next.js API routes, and tests for list filters, get/create/update/delete, date mapping, Decimal mapping, and repository validation errors.
-- [ ] 2.5 Ensure API handlers do not import Prisma directly and backend modules remain framework-independent.
+- [x] 2.1 Add shared backend request parsing, response helpers, and controlled error mapping for core finance routes.
+- [x] 2.2 Add account API contracts, services, Next.js API routes, and tests for list/get/create/update/delete.
+- [x] 2.3 Add category/subcategory API contracts, services, Next.js API routes, and tests for list/get/create/update/replace-subcategories/delete.
+- [x] 2.4 Add transaction API contracts, services, Next.js API routes, and tests for list filters, get/create/update/delete, date mapping, Decimal mapping, and repository validation errors.
+- [x] 2.5 Ensure API handlers do not import Prisma directly and backend modules remain framework-independent.
 
 ## 3. Frontend HTTP Repositories
 
@@ -28,15 +28,15 @@
 
 ## 5. Validation
 
-- [ ] 5.1 Run `npm --prefix backend test`.
-- [ ] 5.2 Run `npm --prefix backend run build`.
+- [x] 5.1 Run `npm --prefix backend test`.
+- [x] 5.2 Run `npm --prefix backend run build`.
 - [ ] 5.3 Run `npm --prefix frontend test`.
 - [ ] 5.4 Run `npm --prefix frontend run typecheck` if available.
 - [ ] 5.5 Run `npm --prefix frontend run build`.
-- [ ] 5.6 Re-run `openspec validate migrate-core-finance-to-backend-api --strict --no-interactive`.
+- [x] 5.6 Re-run `openspec validate migrate-core-finance-to-backend-api --strict --no-interactive`.
 
 ## 6. Explicitly Out of Scope
 
-- [ ] 6.1 Do not implement auth, user ownership, or authorization in this change.
-- [ ] 6.2 Do not import existing localStorage account/category/transaction records.
-- [ ] 6.3 Do not migrate budgets, goals, cuotas, investments, settings, or statistics repositories except for compatibility with transaction references.
+- [x] 6.1 Do not implement auth, user ownership, or authorization in this change.
+- [x] 6.2 Do not import existing localStorage account/category/transaction records.
+- [x] 6.3 Do not migrate budgets, goals, cuotas, investments, settings, or statistics repositories except for compatibility with transaction references.
