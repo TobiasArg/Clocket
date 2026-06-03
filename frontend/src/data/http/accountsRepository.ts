@@ -10,6 +10,7 @@ import {
   isNotFoundError,
   withCoreFinanceErrors,
 } from "./coreFinanceHttpClient";
+import { ensureCoreBackendCleanStartCutover } from "./coreFinanceCleanStart";
 
 interface AccountResponse {
   id: string;
@@ -50,6 +51,10 @@ const toAccountItem = (account: AccountResponse): AccountItem => ({
 });
 
 export class HttpAccountsRepository implements AccountsRepository {
+  public constructor() {
+    ensureCoreBackendCleanStartCutover();
+  }
+
   public async list(): Promise<AccountItem[]> {
     return withCoreFinanceErrors(async () => {
       const response = await coreFinanceHttpClient.get<AccountListResponse>("/api/accounts");

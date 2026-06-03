@@ -21,18 +21,18 @@
 
 ## 4. Clean-Start Frontend Cutover
 
-- [ ] 4.1 Switch core finance repository exports/bindings from localStorage implementations to HTTP-backed implementations.
-- [ ] 4.2 Use or update `resetCoreLocalStorageForBackendCleanStart` so `clocket.accounts`, `clocket.categories`, and `clocket.transactions` are deleted or explicitly ignored at cutover.
-- [ ] 4.3 Remove no-longer-used localStorage migration coupling from active core finance paths without deleting unrelated localStorage repositories.
-- [ ] 4.4 Confirm affected hooks/page models keep working with asynchronous HTTP-backed repositories and explicit failure states.
+- [x] 4.1 Switch core finance repository exports/bindings from localStorage implementations to HTTP-backed implementations.
+- [x] 4.2 Use or update `resetCoreLocalStorageForBackendCleanStart` so `clocket.accounts`, `clocket.categories`, and `clocket.transactions` are deleted or explicitly ignored at cutover.
+- [x] 4.3 Remove no-longer-used localStorage migration coupling from active core finance paths without deleting unrelated localStorage repositories.
+- [x] 4.4 Confirm affected hooks/page models keep working with asynchronous HTTP-backed repositories and explicit failure states.
 
 ## 5. Validation
 
 - [x] 5.1 Run `npm --prefix backend test`.
 - [x] 5.2 Run `npm --prefix backend run build`.
-- [ ] 5.3 Run `npm --prefix frontend test`.
-- [ ] 5.4 Run `npm --prefix frontend run typecheck` if available.
-- [ ] 5.5 Run `npm --prefix frontend run build`.
+- [x] 5.3 Run `npm --prefix frontend test`.
+- [x] 5.4 Run `npm --prefix frontend run typecheck` if available.
+- [x] 5.5 Run `npm --prefix frontend run build`.
 - [x] 5.6 Re-run `openspec validate migrate-core-finance-to-backend-api --strict --no-interactive`.
 
 ## 6. Explicitly Out of Scope

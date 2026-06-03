@@ -4,6 +4,7 @@ import type {
   CreateCategoryInput,
   UpdateCategoryPatch,
 } from "@/domain/categories/repository";
+import { ensureCoreBackendCleanStartCutover } from "./coreFinanceCleanStart";
 import { coreFinanceHttpClient, isNotFoundError, withCoreFinanceErrors } from "./coreFinanceHttpClient";
 
 export interface SubcategoryResponse {
@@ -48,6 +49,10 @@ const hasMetadataPatch = (patch: UpdateCategoryPatch): boolean => (
 );
 
 export class HttpCategoriesRepository implements CategoriesRepository {
+  public constructor() {
+    ensureCoreBackendCleanStartCutover();
+  }
+
   public async list(): Promise<CategoryItem[]> {
     return withCoreFinanceErrors(async () => {
       const response = await coreFinanceHttpClient.get<CategoryListResponse>("/api/categories");

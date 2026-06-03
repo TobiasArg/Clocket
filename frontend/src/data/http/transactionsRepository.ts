@@ -10,6 +10,7 @@ import type {
 } from "@/domain/transactions/repository";
 import { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
 import { toArsTransactionAmount } from "@/domain/currency/transactionCurrency";
+import { ensureCoreBackendCleanStartCutover } from "./coreFinanceCleanStart";
 import { coreFinanceHttpClient, isNotFoundError, withCoreFinanceErrors } from "./coreFinanceHttpClient";
 import type { CategoryResponse } from "./categoriesRepository";
 
@@ -111,6 +112,10 @@ const dispatchTransactionsChanged = (): void => {
 
 export class HttpTransactionsRepository implements TransactionsRepository {
   private categoryLookup: CategoryLookup | null = null;
+
+  public constructor() {
+    ensureCoreBackendCleanStartCutover();
+  }
 
   public async list(): Promise<TransactionItem[]> {
     return withCoreFinanceErrors(async () => {

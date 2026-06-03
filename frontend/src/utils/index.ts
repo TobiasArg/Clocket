@@ -56,18 +56,22 @@ export {
 export {
   fetchCryptoRate,
   fetchStockQuote,
+  httpAccountsRepository as accountsRepository,
+  httpCategoriesRepository as categoriesRepository,
+  httpTransactionsRepository as transactionsRepository,
+  HttpAccountsRepository,
+  HttpCategoriesRepository,
+  HttpTransactionsRepository,
   MarketQuoteApiError,
 } from "@/data/http";
 
 export {
   LocalStorageAccountsRepository,
-  accountsRepository,
   LocalStorageAppSettingsRepository,
   appSettingsRepository,
   LocalStorageBudgetsRepository,
   budgetsRepository,
   LocalStorageCategoriesRepository,
-  categoriesRepository,
   LocalStorageCuotasRepository,
   cuotasRepository,
   LocalStorageGoalsRepository,
@@ -77,7 +81,6 @@ export {
   LocalStorageInvestmentsRepository,
   investmentsRepository,
   LocalStorageTransactionsRepository,
-  transactionsRepository,
 } from "@/data/localStorage";
 
 export { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
