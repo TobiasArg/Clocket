@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { investmentsRepository } from "@/data/localStorage/investmentsRepository";
+import { investmentsRepository } from "@/utils";
 import type {
   AddInvestmentEntryInput,
   AddInvestmentEntryResult,

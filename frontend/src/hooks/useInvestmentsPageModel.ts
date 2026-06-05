@@ -4,13 +4,11 @@ import type { InvestmentEntryItem, InvestmentPositionItem } from "@/domain/inves
 import type { CategoryItem } from "@/domain/categories/repository";
 import type { AssetType, EntryType, HistoricalPoint } from "@/domain/investments/portfolioTypes";
 import { TRANSACTION_EXPENSE_TEXT_CLASS } from "@/constants";
-import { categoriesRepository } from "@/data/localStorage/categoriesRepository";
-import { transactionsRepository } from "@/data/localStorage/transactionsRepository";
 import {
   refreshPositions,
   type RefreshedPositionViewModel,
 } from "@/domain/investments/refreshPositions";
-import { toArsTransactionAmount } from "@/utils";
+import { categoriesRepository, toArsTransactionAmount, transactionsRepository } from "@/utils";
 import { useAccounts } from "./useAccounts";
 import { usePullToRefresh, type PullToRefreshState } from "./usePullToRefresh";
 import { useInvestments } from "./useInvestments";

@@ -9,7 +9,7 @@ import {
   fetchStockQuote,
   MarketQuoteApiError,
 } from "@/data/http/marketQuoteApiClient";
-import { investmentsRepository } from "@/data/localStorage/investmentsRepository";
+import { httpInvestmentsRepository as investmentsRepository } from "@/data/http/investmentsRepository";
 import {
   buildHistoricalSeries,
   computePositionMetrics,
