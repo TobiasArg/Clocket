@@ -95,6 +95,16 @@ export interface AddInvestmentEntryInput {
   transactionId?: string | null;
 }
 
+export interface UpsertInvestmentPositionInput {
+  assetType: InvestmentAssetRecordType;
+  ticker: string;
+  displayName?: string | null;
+  entryType?: InvestmentEntryRecordType;
+  usd_gastado: DecimalInput;
+  buy_price: DecimalInput;
+  createdAt?: string | Date;
+}
+
 export interface AddInvestmentEntryResult {
   position: InvestmentPositionRecord | null;
   entry: InvestmentEntryRecord;
@@ -115,6 +125,9 @@ export interface AddMarketQuoteSnapshotInput {
 export interface InvestmentsRepository {
   listPositions: () => Promise<InvestmentPositionRecord[]>;
   getPositionById: (id: string) => Promise<InvestmentPositionRecord | null>;
+  addPosition: (input: UpsertInvestmentPositionInput) => Promise<InvestmentPositionRecord>;
+  editPosition: (id: string, input: Partial<UpsertInvestmentPositionInput>) => Promise<InvestmentPositionRecord | null>;
+  deletePosition: (id: string) => Promise<boolean>;
   listEntriesByPosition: (positionId: string) => Promise<InvestmentEntryRecord[]>;
   listEntriesByAsset: (
     assetType: InvestmentAssetRecordType,
@@ -147,6 +160,8 @@ export interface InvestmentsRepository {
     currentPrice: DecimalInput,
     timestamp?: string | Date,
   ) => Promise<InvestmentAssetRefsRecord>;
+  getRefsMap: () => Promise<Record<string, InvestmentAssetRefsRecord>>;
+  clearAll: () => Promise<void>;
 }
 
 const EPSILON = new Prisma.Decimal("0.00000001");
@@ -490,6 +505,54 @@ const getOrInitRefsForAsset = async (
   });
 };
 
+const addInvestmentEntryInTransaction = async (
+  tx: InvestmentsTransactionClient,
+  input: AddInvestmentEntryInput,
+): Promise<AddInvestmentEntryResult> => {
+  const asset = await getOrCreateAsset(tx, input);
+  const position = await ensurePositionForAsset(tx, asset.id);
+  const entryType = normalizeEntryType(input.entryType);
+  const amountUsd = parsePositiveDecimal(input.usd_gastado, "INVALID_AMOUNT", "Investment amount");
+  const buyPrice = parsePositiveDecimal(input.buy_price, "INVALID_PRICE", "Investment buy price");
+  const units = amountUsd.div(buyPrice).toDecimalPlaces(10);
+  const transactionId = await assertTransactionLinkAvailable(tx, input.transactionId);
+
+  if (entryType === "egreso") {
+    const currentEntries = await tx.investmentEntry.findMany({
+      where: { assetId: asset.id },
+      include: entryWithAsset,
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    });
+    const summary = summarizeEntries(currentEntries);
+    if (summary.netUnits.lte(EPSILON) || units.gt(summary.netUnits.plus(EPSILON))) {
+      throw new InvestmentsRepositoryError(
+        "OVERSOLD_POSITION",
+        "Cannot create an investment expense greater than the available position amount.",
+      );
+    }
+  }
+
+  const entry = await tx.investmentEntry.create({
+    data: {
+      positionId: position.id,
+      assetId: asset.id,
+      entryType: ENTRY_TO_PRISMA[entryType],
+      amountUsd,
+      buyPrice,
+      units,
+      transactionId,
+      ...(input.createdAt !== undefined ? { createdAt: toDate(input.createdAt) } : {}),
+    },
+    include: entryWithAsset,
+  });
+  const rebuiltPosition = await rebuildPositionForAsset(tx, asset.id);
+
+  return {
+    position: rebuiltPosition ? toInvestmentPositionRecord(rebuiltPosition) : null,
+    entry: toInvestmentEntryRecord(entry),
+  };
+};
+
 export const createInvestmentsRepository = (prisma: PrismaClient): InvestmentsRepository => ({
   async listPositions() {
     const positions = await prisma.investmentPosition.findMany({
@@ -506,6 +569,59 @@ export const createInvestmentsRepository = (prisma: PrismaClient): InvestmentsRe
       include: positionWithAsset,
     });
     return position ? toInvestmentPositionRecord(position) : null;
+  },
+
+  async addPosition(input) {
+    const result = await this.addEntry({
+      assetType: input.assetType,
+      ticker: input.ticker,
+      displayName: input.displayName,
+      entryType: input.entryType ?? "ingreso",
+      usd_gastado: input.usd_gastado,
+      buy_price: input.buy_price,
+      createdAt: input.createdAt,
+    });
+    if (!result.position) {
+      throw new InvestmentsRepositoryError("INVALID_AMOUNT", "Investment position cannot be initialized at zero units.");
+    }
+    return result.position;
+  },
+
+  async editPosition(id, input) {
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.investmentPosition.findFirst({
+        where: { id, deletedAt: null },
+        include: positionWithAsset,
+      });
+      if (!existing) return null;
+
+      await tx.investmentEntry.deleteMany({ where: { positionId: id } });
+      await rebuildPositionForAsset(tx, existing.assetId);
+
+      const result = await addInvestmentEntryInTransaction(tx, {
+        assetType: input.assetType ?? ASSET_FROM_PRISMA[existing.asset.assetType],
+        ticker: input.ticker ?? existing.asset.ticker,
+        displayName: input.displayName ?? existing.asset.displayName,
+        entryType: input.entryType ?? "ingreso",
+        usd_gastado: input.usd_gastado ?? existing.totalInvested,
+        buy_price: input.buy_price ?? existing.averageBuyPrice,
+        createdAt: input.createdAt,
+      });
+      return result.position;
+    });
+  },
+
+  async deletePosition(id) {
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.investmentPosition.findFirst({
+        where: { id, deletedAt: null },
+        select: { id: true, assetId: true },
+      });
+      if (!existing) return false;
+      await tx.investmentEntry.deleteMany({ where: { positionId: id } });
+      await rebuildPositionForAsset(tx, existing.assetId);
+      return true;
+    });
   },
 
   async listEntriesByPosition(positionId) {
@@ -532,50 +648,7 @@ export const createInvestmentsRepository = (prisma: PrismaClient): InvestmentsRe
   },
 
   async addEntry(input) {
-    return prisma.$transaction(async (tx) => {
-      const asset = await getOrCreateAsset(tx, input);
-      const position = await ensurePositionForAsset(tx, asset.id);
-      const entryType = normalizeEntryType(input.entryType);
-      const amountUsd = parsePositiveDecimal(input.usd_gastado, "INVALID_AMOUNT", "Investment amount");
-      const buyPrice = parsePositiveDecimal(input.buy_price, "INVALID_PRICE", "Investment buy price");
-      const units = amountUsd.div(buyPrice).toDecimalPlaces(10);
-      const transactionId = await assertTransactionLinkAvailable(tx, input.transactionId);
-
-      if (entryType === "egreso") {
-        const currentEntries = await tx.investmentEntry.findMany({
-          where: { assetId: asset.id },
-          include: entryWithAsset,
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        });
-        const summary = summarizeEntries(currentEntries);
-        if (summary.netUnits.lte(EPSILON) || units.gt(summary.netUnits.plus(EPSILON))) {
-          throw new InvestmentsRepositoryError(
-            "OVERSOLD_POSITION",
-            "Cannot create an investment expense greater than the available position amount.",
-          );
-        }
-      }
-
-      const entry = await tx.investmentEntry.create({
-        data: {
-          positionId: position.id,
-          assetId: asset.id,
-          entryType: ENTRY_TO_PRISMA[entryType],
-          amountUsd,
-          buyPrice,
-          units,
-          transactionId,
-          ...(input.createdAt !== undefined ? { createdAt: toDate(input.createdAt) } : {}),
-        },
-        include: entryWithAsset,
-      });
-      const rebuiltPosition = await rebuildPositionForAsset(tx, asset.id);
-
-      return {
-        position: rebuiltPosition ? toInvestmentPositionRecord(rebuiltPosition) : null,
-        entry: toInvestmentEntryRecord(entry),
-      };
-    });
+    return prisma.$transaction((tx) => addInvestmentEntryInTransaction(tx, input));
   },
 
   async deleteEntry(entryId) {
@@ -689,6 +762,26 @@ export const createInvestmentsRepository = (prisma: PrismaClient): InvestmentsRe
         },
         include: refsWithAsset,
       }));
+    });
+  },
+
+  async getRefsMap() {
+    const refs = await prisma.investmentAssetRef.findMany({ include: refsWithAsset });
+    return Object.fromEntries(refs.map((item) => [
+      `${ASSET_FROM_PRISMA[item.asset.assetType]}:${item.asset.ticker}`,
+      toRefsRecord(item),
+    ]));
+  },
+
+  async clearAll() {
+    await prisma.$transaction(async (tx) => {
+      await tx.investmentEntry.deleteMany({});
+      await tx.marketQuoteSnapshot.deleteMany({});
+      await tx.investmentAssetRef.deleteMany({});
+      await tx.investmentPosition.updateMany({
+        where: { deletedAt: null },
+        data: { deletedAt: new Date(), totalInvested: new Prisma.Decimal(0), averageBuyPrice: new Prisma.Decimal(0), amount: new Prisma.Decimal(0) },
+      });
     });
   },
 });
