@@ -45,6 +45,7 @@ export interface CreateInstallmentPlanInput {
   paidInstallmentsCount?: number;
   categoryId?: string | null;
   subcategoryId?: string | null;
+  subcategoryName?: string | null;
   generatedTransactionAccountId?: string;
 }
 
@@ -56,6 +57,7 @@ export interface InstallmentPlansRepository {
   create: (input: CreateInstallmentPlanInput) => Promise<InstallmentPlanRecord>;
   update: (id: string, input: UpdateInstallmentPlanInput) => Promise<InstallmentPlanRecord | null>;
   softDelete: (id: string) => Promise<boolean>;
+  softDeleteAll: () => Promise<number>;
 }
 
 type InstallmentPlanModel = NonNullable<Awaited<ReturnType<PrismaClient["installmentPlan"]["findUnique"]>>>;
@@ -155,7 +157,23 @@ const resolveCategoryRefs = async (
   prisma: PrismaClient,
   categoryId: string | null,
   subcategoryId: string | null,
+  subcategoryName?: string | null,
 ): Promise<NormalizedRefs> => {
+  const normalizedSubcategoryName = trimNullable(subcategoryName) ?? null;
+  if (!subcategoryId && normalizedSubcategoryName && categoryId) {
+    const subcategory = await prisma.subcategory.findFirst({
+      where: { categoryId, name: normalizedSubcategoryName, category: { deletedAt: null } },
+      select: { id: true, categoryId: true },
+    });
+    if (!subcategory) {
+      throw new InstallmentPlansRepositoryError(
+        "MISSING_SUBCATEGORY",
+        `Active subcategory '${normalizedSubcategoryName}' was not found.`,
+      );
+    }
+    return { categoryId: subcategory.categoryId, subcategoryId: subcategory.id };
+  }
+
   if (!subcategoryId) {
     if (!categoryId) {
       return { categoryId: null, subcategoryId: null };
@@ -263,6 +281,7 @@ export const createInstallmentPlansRepository = (prisma: PrismaClient): Installm
       prisma,
       trimNullable(input.categoryId) ?? null,
       trimNullable(input.subcategoryId) ?? null,
+      trimNullable(input.subcategoryName) ?? null,
     );
     await assertActiveAccount(prisma, input.generatedTransactionAccountId);
 
@@ -324,6 +343,7 @@ export const createInstallmentPlansRepository = (prisma: PrismaClient): Installm
       prisma,
       input.categoryId !== undefined ? trimNullable(input.categoryId) ?? null : existing.categoryId,
       input.subcategoryId !== undefined ? trimNullable(input.subcategoryId) ?? null : existing.subcategoryId,
+      input.subcategoryName !== undefined ? trimNullable(input.subcategoryName) ?? null : undefined,
     );
     await assertActiveAccount(prisma, input.generatedTransactionAccountId);
 
@@ -381,5 +401,14 @@ export const createInstallmentPlansRepository = (prisma: PrismaClient): Installm
     });
 
     return true;
+  },
+
+  async softDeleteAll() {
+    const result = await prisma.installmentPlan.updateMany({
+      where: { deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+
+    return result.count;
   },
 });

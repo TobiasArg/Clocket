@@ -49,6 +49,7 @@ export interface BudgetScopeRuleInput {
   categoryId: string;
   mode: BudgetScopeMode;
   selectedSubcategoryIds?: string[];
+  selectedSubcategoryNames?: string[];
 }
 
 export interface CreateBudgetInput {
@@ -73,12 +74,14 @@ export interface BudgetsRepository {
   create: (input: CreateBudgetInput) => Promise<BudgetRecord>;
   update: (id: string, input: UpdateBudgetInput) => Promise<BudgetRecord | null>;
   softDelete: (id: string) => Promise<boolean>;
+  softDeleteAll: () => Promise<number>;
 }
 
 interface NormalizedBudgetScopeRule {
   categoryId: string;
   mode: BudgetScopeMode;
   selectedSubcategoryIds: string[];
+  selectedSubcategoryNames: string[];
 }
 
 const budgetWithScopeRules = {
@@ -137,6 +140,19 @@ const uniqueNormalizedIds = (values: string[] | undefined): string[] => {
   return Array.from(ids);
 };
 
+const uniqueNormalizedNames = (values: string[] | undefined): string[] => {
+  const names = new Map<string, string>();
+
+  for (const value of values ?? []) {
+    const normalized = value.trim();
+    if (normalized) {
+      names.set(normalized.toLocaleLowerCase("es-ES"), normalized);
+    }
+  }
+
+  return Array.from(names.values());
+};
+
 const toBudgetScopeRuleRecord = (
   scopeRule: BudgetScopeRuleWithSelections,
 ): BudgetScopeRuleRecord => ({
@@ -164,6 +180,7 @@ const extractScopeRules = (budget: BudgetWithScopeRules): NormalizedBudgetScopeR
     categoryId: scopeRule.categoryId,
     mode: MODE_FROM_PRISMA[scopeRule.mode],
     selectedSubcategoryIds: scopeRule.selectedSubcategories.map((selection) => selection.subcategoryId),
+    selectedSubcategoryNames: [],
   }))
 );
 
@@ -177,18 +194,23 @@ const normalizeScopeRules = (scopeRules: BudgetScopeRuleInput[]): NormalizedBudg
     }
 
     const selectedSubcategoryIds = uniqueNormalizedIds(scopeRule.selectedSubcategoryIds);
+    const selectedSubcategoryNames = uniqueNormalizedNames(scopeRule.selectedSubcategoryNames);
     const normalized: NormalizedBudgetScopeRule = scopeRule.mode === "selected_subcategories"
-      ? { categoryId, mode: "selected_subcategories", selectedSubcategoryIds }
-      : { categoryId, mode: "all_subcategories", selectedSubcategoryIds: [] };
+      ? { categoryId, mode: "selected_subcategories", selectedSubcategoryIds, selectedSubcategoryNames }
+      : { categoryId, mode: "all_subcategories", selectedSubcategoryIds: [], selectedSubcategoryNames: [] };
 
-    if (normalized.mode === "selected_subcategories" && normalized.selectedSubcategoryIds.length === 0) {
+    if (
+      normalized.mode === "selected_subcategories" &&
+      normalized.selectedSubcategoryIds.length === 0 &&
+      normalized.selectedSubcategoryNames.length === 0
+    ) {
       continue;
     }
 
     const existing = merged.get(categoryId);
     if (!existing || existing.mode === "all_subcategories" || normalized.mode === "all_subcategories") {
       merged.set(categoryId, normalized.mode === "all_subcategories"
-        ? { categoryId, mode: "all_subcategories", selectedSubcategoryIds: [] }
+        ? { categoryId, mode: "all_subcategories", selectedSubcategoryIds: [], selectedSubcategoryNames: [] }
         : normalized);
       continue;
     }
@@ -199,6 +221,10 @@ const normalizeScopeRules = (scopeRules: BudgetScopeRuleInput[]): NormalizedBudg
       selectedSubcategoryIds: uniqueNormalizedIds([
         ...existing.selectedSubcategoryIds,
         ...normalized.selectedSubcategoryIds,
+      ]),
+      selectedSubcategoryNames: uniqueNormalizedNames([
+        ...existing.selectedSubcategoryNames,
+        ...normalized.selectedSubcategoryNames,
       ]),
     });
   }
@@ -259,6 +285,39 @@ const assertSubcategoriesExist = async (
   }
 };
 
+const resolveSubcategoryNames = async (
+  prisma: PrismaClient,
+  categoryId: string,
+  subcategoryNames: string[],
+): Promise<string[]> => {
+  if (subcategoryNames.length === 0) {
+    return [];
+  }
+
+  const subcategories = await prisma.subcategory.findMany({
+    where: {
+      categoryId,
+      name: { in: subcategoryNames },
+      category: { deletedAt: null },
+    },
+    select: { id: true, name: true },
+  });
+  const idsByName = new Map(subcategories.map((subcategory) => [
+    subcategory.name.toLocaleLowerCase("es-ES"),
+    subcategory.id,
+  ]));
+  const missingName = subcategoryNames.find((name) => !idsByName.has(name.toLocaleLowerCase("es-ES")));
+
+  if (missingName) {
+    throw new BudgetsRepositoryError(
+      "MISSING_SUBCATEGORY",
+      `Active subcategory '${missingName}' was not found for category '${categoryId}'.`,
+    );
+  }
+
+  return subcategoryNames.map((name) => idsByName.get(name.toLocaleLowerCase("es-ES")) as string);
+};
+
 const validateScopeRules = async (
   prisma: PrismaClient,
   scopeRules: BudgetScopeRuleInput[],
@@ -268,6 +327,10 @@ const validateScopeRules = async (
   for (const scopeRule of normalizedScopeRules) {
     await assertCategoryExists(prisma, scopeRule.categoryId);
     if (scopeRule.mode === "selected_subcategories") {
+      scopeRule.selectedSubcategoryIds = uniqueNormalizedIds([
+        ...scopeRule.selectedSubcategoryIds,
+        ...await resolveSubcategoryNames(prisma, scopeRule.categoryId, scopeRule.selectedSubcategoryNames),
+      ]);
       await assertSubcategoriesExist(prisma, scopeRule.categoryId, scopeRule.selectedSubcategoryIds);
     }
   }
@@ -441,5 +504,14 @@ export const createBudgetsRepository = (prisma: PrismaClient): BudgetsRepository
     });
 
     return true;
+  },
+
+  async softDeleteAll() {
+    const result = await prisma.budget.updateMany({
+      where: { deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+
+    return result.count;
   },
 });

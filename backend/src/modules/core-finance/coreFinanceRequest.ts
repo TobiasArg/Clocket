@@ -148,3 +148,63 @@ export const readDateOnlyInput = (
 
   return { ok: true, value };
 };
+
+export const readYearMonthInput = (
+  body: Record<string, unknown>,
+  key: string,
+  required: boolean,
+): ApiResult<string | undefined, CoreFinanceApiErrorCode> => {
+  const value = body[key];
+  if (value === undefined && !required) {
+    return { ok: true, value: undefined };
+  }
+
+  if (typeof value !== "string" || !/^\d{4}-\d{2}$/.test(value)) {
+    return {
+      ok: false,
+      response: createCoreFinanceApiErrorResponse({
+        error: `Field '${key}' must be a month string in YYYY-MM format.`,
+        code: "INVALID_REQUEST",
+        status: 400,
+      }),
+    };
+  }
+
+  const parsed = new Date(`${value}-01T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 7) !== value) {
+    return {
+      ok: false,
+      response: createCoreFinanceApiErrorResponse({
+        error: `Field '${key}' must be a valid month string.`,
+        code: "INVALID_REQUEST",
+        status: 400,
+      }),
+    };
+  }
+
+  return { ok: true, value };
+};
+
+export const readIntegerInput = (
+  body: Record<string, unknown>,
+  key: string,
+  required: boolean,
+): ApiResult<number | undefined, CoreFinanceApiErrorCode> => {
+  const value = body[key];
+  if (value === undefined && !required) {
+    return { ok: true, value: undefined };
+  }
+
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    return {
+      ok: false,
+      response: createCoreFinanceApiErrorResponse({
+        error: `Field '${key}' must be an integer.`,
+        code: "INVALID_REQUEST",
+        status: 400,
+      }),
+    };
+  }
+
+  return { ok: true, value };
+};

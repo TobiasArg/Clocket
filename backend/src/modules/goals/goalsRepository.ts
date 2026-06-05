@@ -58,6 +58,7 @@ export interface GoalsRepository {
   create: (input: CreateGoalInput) => Promise<GoalRecord>;
   update: (id: string, input: UpdateGoalInput) => Promise<GoalRecord | null>;
   softDelete: (id: string) => Promise<boolean>;
+  softDeleteAll: () => Promise<number>;
 }
 
 type GoalModel = NonNullable<Awaited<ReturnType<PrismaClient["goal"]["findUnique"]>>>;
@@ -387,5 +388,14 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
     });
 
     return true;
+  },
+
+  async softDeleteAll() {
+    const result = await prisma.goal.updateMany({
+      where: { deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+
+    return result.count;
   },
 });

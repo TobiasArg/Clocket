@@ -13,6 +13,16 @@ export type CoreFinanceApiErrorCode =
   | "MISSING_GOAL"
   | "SAVING_REQUIRES_GOAL"
   | "MISSING_INSTALLMENT_PLAN"
+  | "EMPTY_SCOPE"
+  | "OVERLAPPING_BUDGET"
+  | "INVALID_ASSET_TYPE"
+  | "INVALID_TICKER"
+  | "INVALID_ENTRY_TYPE"
+  | "INVALID_AMOUNT"
+  | "INVALID_PRICE"
+  | "MISSING_TRANSACTION"
+  | "TRANSACTION_ALREADY_LINKED"
+  | "OVERSOLD_POSITION"
   | "INTERNAL_ERROR";
 
 export type CoreFinanceApiErrorResponse = ApiErrorResponse<CoreFinanceApiErrorCode>;
