@@ -16,14 +16,20 @@ export {
 } from "./categoriesRepository";
 export {
   CORE_LOCAL_STORAGE_CLEAN_START_KEYS,
+  FEATURE_LOCAL_STORAGE_CLEAN_START_KEYS,
   getCoreCleanStartStorageKeys,
+  getFeatureCleanStartStorageKeys,
   isCoreLocalStorageCleanStartDomain,
+  isFeatureLocalStorageCleanStartDomain,
   resetCoreLocalStorageForBackendCleanStart,
+  resetFeatureLocalStorageForBackendCleanStart,
 } from "./cleanStartCutover";
 export type {
   CleanStartResetResult,
   CoreLocalStorageCleanStartKey,
   CoreLocalStorageDomain,
+  FeatureLocalStorageCleanStartKey,
+  FeatureLocalStorageDomain,
 } from "./cleanStartCutover";
 export {
   LocalStorageCuotasRepository,
