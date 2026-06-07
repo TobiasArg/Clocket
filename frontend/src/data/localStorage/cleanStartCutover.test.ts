@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   CORE_LOCAL_STORAGE_CLEAN_START_KEYS,
+  FEATURE_LOCAL_STORAGE_CLEAN_START_KEYS,
   getCoreCleanStartStorageKeys,
+  getFeatureCleanStartStorageKeys,
   isCoreLocalStorageCleanStartDomain,
+  isFeatureLocalStorageCleanStartDomain,
   resetCoreLocalStorageForBackendCleanStart,
+  resetFeatureLocalStorageForBackendCleanStart,
 } from "./cleanStartCutover";
 
 class InMemoryStorage implements Pick<Storage, "getItem" | "removeItem" | "setItem"> {
@@ -96,5 +100,80 @@ describe("clean-start localStorage cutover", () => {
       reason: "storage-unavailable",
     });
     expect(removeItem).not.toHaveBeenCalled();
+  });
+
+  it("documents feature domain keys as delete-at-cutover with no migration or legacy mapping", () => {
+    expect(FEATURE_LOCAL_STORAGE_CLEAN_START_KEYS).toEqual([
+      { domain: "budgets", storageKey: "clocket.budgets", migrationRequired: false, legacyIdMappingRequired: false, cutoverAction: "delete-local-key-and-start-from-backend" },
+      { domain: "goals", storageKey: "clocket.goals", migrationRequired: false, legacyIdMappingRequired: false, cutoverAction: "delete-local-key-and-start-from-backend" },
+      { domain: "cuotas", storageKey: "clocket.cuotas", migrationRequired: false, legacyIdMappingRequired: false, cutoverAction: "delete-local-key-and-start-from-backend" },
+      { domain: "investments", storageKey: "investments.positions", migrationRequired: false, legacyIdMappingRequired: false, cutoverAction: "delete-local-key-and-start-from-backend" },
+      { domain: "investments", storageKey: "investments.entries", migrationRequired: false, legacyIdMappingRequired: false, cutoverAction: "delete-local-key-and-start-from-backend" },
+      { domain: "investments", storageKey: "investments.snapshots", migrationRequired: false, legacyIdMappingRequired: false, cutoverAction: "delete-local-key-and-start-from-backend" },
+      { domain: "investments", storageKey: "investments.refs", migrationRequired: false, legacyIdMappingRequired: false, cutoverAction: "delete-local-key-and-start-from-backend" },
+      { domain: "app-settings", storageKey: "clocket.settings", migrationRequired: false, legacyIdMappingRequired: false, cutoverAction: "delete-local-key-and-start-from-backend" },
+    ]);
+    expect(getFeatureCleanStartStorageKeys()).toEqual([
+      "clocket.budgets",
+      "clocket.goals",
+      "clocket.cuotas",
+      "investments.positions",
+      "investments.entries",
+      "investments.snapshots",
+      "investments.refs",
+      "clocket.settings",
+    ]);
+  });
+
+  it("identifies only migrated feature domains as feature clean-start cutover domains", () => {
+    expect(isFeatureLocalStorageCleanStartDomain("budgets")).toBe(true);
+    expect(isFeatureLocalStorageCleanStartDomain("goals")).toBe(true);
+    expect(isFeatureLocalStorageCleanStartDomain("cuotas")).toBe(true);
+    expect(isFeatureLocalStorageCleanStartDomain("investments")).toBe(true);
+    expect(isFeatureLocalStorageCleanStartDomain("app-settings")).toBe(true);
+    expect(isFeatureLocalStorageCleanStartDomain("accounts")).toBe(false);
+    expect(isFeatureLocalStorageCleanStartDomain("settings")).toBe(false);
+  });
+
+  it("removes feature localStorage keys and leaves core domain data intact", () => {
+    const storage = new InMemoryStorage();
+    storage.setItem("clocket.accounts", "accounts");
+    storage.setItem("clocket.categories", "categories");
+    storage.setItem("clocket.transactions", "transactions");
+    storage.setItem("clocket.budgets", "budgets");
+    storage.setItem("clocket.goals", "goals");
+    storage.setItem("clocket.cuotas", "cuotas");
+    storage.setItem("investments.positions", "positions");
+    storage.setItem("investments.entries", "entries");
+    storage.setItem("investments.snapshots", "snapshots");
+    storage.setItem("investments.refs", "refs");
+    storage.setItem("clocket.settings", "settings");
+
+    const result = resetFeatureLocalStorageForBackendCleanStart(storage);
+
+    expect(result).toEqual({
+      skipped: false,
+      removedKeys: [
+        "clocket.budgets",
+        "clocket.goals",
+        "clocket.cuotas",
+        "investments.positions",
+        "investments.entries",
+        "investments.snapshots",
+        "investments.refs",
+        "clocket.settings",
+      ],
+    });
+    expect(storage.getItem("clocket.accounts")).toBe("accounts");
+    expect(storage.getItem("clocket.categories")).toBe("categories");
+    expect(storage.getItem("clocket.transactions")).toBe("transactions");
+    expect(storage.getItem("clocket.budgets")).toBeNull();
+    expect(storage.getItem("clocket.goals")).toBeNull();
+    expect(storage.getItem("clocket.cuotas")).toBeNull();
+    expect(storage.getItem("investments.positions")).toBeNull();
+    expect(storage.getItem("investments.entries")).toBeNull();
+    expect(storage.getItem("investments.snapshots")).toBeNull();
+    expect(storage.getItem("investments.refs")).toBeNull();
+    expect(storage.getItem("clocket.settings")).toBeNull();
   });
 });
