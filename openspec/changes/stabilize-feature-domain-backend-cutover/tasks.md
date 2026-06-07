@@ -6,7 +6,7 @@
 - [ ] 1.4 Manually/API-test investments positions, entries, snapshots, refs, delete/clear behavior, invalid asset/ticker handling, and refresh persistence.
 - [ ] 1.5 Manually/API-test app settings get, update, reset, enum validation, profile/security payloads, and refresh persistence.
 - [ ] 1.6 Fix backend regressions found during API stabilization with minimal scoped changes.
-- [ ] 1.7 Add or update backend tests for any backend regression fixed in this change.
+- [x] 1.7 Add or update backend tests for any backend regression fixed in this change.
 
 ## 2. Frontend Data Flow Stabilization
 
@@ -15,8 +15,8 @@
 - [ ] 2.3 Verify cuotas UI list, create, edit, delete, paid-state behavior, empty/error states, and browser refresh behavior.
 - [ ] 2.4 Verify investments UI add/edit/delete position, add/delete entry, refresh market data, snapshots/refs, empty/error states, and browser refresh behavior.
 - [ ] 2.5 Verify settings UI load, update, reset, currency, theme, profile, security PIN behavior, and browser refresh behavior.
-- [ ] 2.6 Fix frontend repository mapping or hook/page-model regressions found during UI stabilization.
-- [ ] 2.7 Add or update frontend tests for any frontend regression fixed in this change.
+- [x] 2.6 Fix frontend repository mapping or hook/page-model regressions found during UI stabilization.
+- [x] 2.7 Add or update frontend tests for any frontend regression fixed in this change.
 
 ## 3. UI/UX Regression Pass
 
@@ -29,16 +29,16 @@
 
 ## 4. Clean Start and Persistence Verification
 
-- [ ] 4.1 Seed or simulate legacy feature-domain localStorage keys and verify the app ignores or clears them after cutover.
+- [x] 4.1 Seed or simulate legacy feature-domain localStorage keys and verify the app ignores or clears them after cutover.
 - [ ] 4.2 Confirm newly created migrated-domain records use backend-generated IDs only.
 - [ ] 4.3 Confirm backend data remains after browser refresh and does not rely on localStorage records.
 - [ ] 4.4 Confirm rollback guidance remains repository-binding revert only, not data merge.
 
 ## 5. Final Validation
 
-- [ ] 5.1 Run `npm --prefix backend test`.
-- [ ] 5.2 Run `npm --prefix backend run build`.
-- [ ] 5.3 Run `npm --prefix frontend test`.
-- [ ] 5.4 Run `npm --prefix frontend run build`.
-- [ ] 5.5 Run `openspec validate stabilize-feature-domain-backend-cutover --strict --no-interactive`.
-- [ ] 5.6 Document manual QA evidence, bugs fixed, known gaps, and rollback notes before archival.
+- [x] 5.1 Run `npm --prefix backend test`.
+- [x] 5.2 Run `npm --prefix backend run build`.
+- [x] 5.3 Run `npm --prefix frontend test`.
+- [x] 5.4 Run `npm --prefix frontend run build`.
+- [x] 5.5 Run `openspec validate stabilize-feature-domain-backend-cutover --strict --no-interactive`.
+- [x] 5.6 Document manual QA evidence, bugs fixed, known gaps, and rollback notes before archival.
