@@ -1,29 +1,58 @@
 import {
-  accountsRepository,
-  appSettingsRepository,
-  budgetsRepository,
-  categoriesRepository,
-  cuotasRepository,
-  goalsRepository,
-  investmentsRepository,
-  transactionsRepository,
-} from "@/data/localStorage";
-import type { TransactionItem } from "@/domain/transactions/repository";
+  httpAccountsRepository,
+  httpAppSettingsRepository,
+  httpBudgetsRepository,
+  httpCategoriesRepository,
+  httpCuotasRepository,
+  httpGoalsRepository,
+  httpInvestmentsRepository,
+  httpTransactionsRepository,
+} from "@/data/http";
+import type { AccountsRepository } from "@/domain/accounts/repository";
+import type { AppSettingsRepository } from "@/domain/app-settings/repository";
+import type { BudgetsRepository } from "@/domain/budgets/repository";
+import type { CategoriesRepository } from "@/domain/categories/repository";
+import type { CuotasRepository } from "@/domain/cuotas/repository";
+import type { GoalsRepository } from "@/domain/goals/repository";
+import type { InvestmentsRepository } from "@/domain/investments/repository";
+import type { TransactionItem, TransactionsRepository } from "@/domain/transactions/repository";
+
+export interface SettingsExportRepositories {
+  accountsRepository: AccountsRepository;
+  appSettingsRepository: AppSettingsRepository;
+  budgetsRepository: BudgetsRepository;
+  categoriesRepository: CategoriesRepository;
+  cuotasRepository: CuotasRepository;
+  goalsRepository: GoalsRepository;
+  investmentsRepository: InvestmentsRepository;
+  transactionsRepository: TransactionsRepository;
+}
+
+export const defaultSettingsExportRepositories: SettingsExportRepositories = {
+  accountsRepository: httpAccountsRepository,
+  appSettingsRepository: httpAppSettingsRepository,
+  budgetsRepository: httpBudgetsRepository,
+  categoriesRepository: httpCategoriesRepository,
+  cuotasRepository: httpCuotasRepository,
+  goalsRepository: httpGoalsRepository,
+  investmentsRepository: httpInvestmentsRepository,
+  transactionsRepository: httpTransactionsRepository,
+};
 
 export interface SettingsExportSnapshot {
   exportedAt: string;
   version: number;
   data: {
-    settings: Awaited<ReturnType<typeof appSettingsRepository.get>>;
-    accounts: Awaited<ReturnType<typeof accountsRepository.list>>;
-    categories: Awaited<ReturnType<typeof categoriesRepository.list>>;
-    budgets: Awaited<ReturnType<typeof budgetsRepository.list>>;
-    goals: Awaited<ReturnType<typeof goalsRepository.list>>;
-    cuotas: Awaited<ReturnType<typeof cuotasRepository.list>>;
-    transactions: Awaited<ReturnType<typeof transactionsRepository.list>>;
+    settings: Awaited<ReturnType<AppSettingsRepository["get"]>>;
+    accounts: Awaited<ReturnType<AccountsRepository["list"]>>;
+    categories: Awaited<ReturnType<CategoriesRepository["list"]>>;
+    budgets: Awaited<ReturnType<BudgetsRepository["list"]>>;
+    goals: Awaited<ReturnType<GoalsRepository["list"]>>;
+    cuotas: Awaited<ReturnType<CuotasRepository["list"]>>;
+    transactions: Awaited<ReturnType<TransactionsRepository["list"]>>;
     investments: {
-      positions: Awaited<ReturnType<typeof investmentsRepository.listPositions>>;
-      refs: Awaited<ReturnType<typeof investmentsRepository.getRefsMap>>;
+      positions: Awaited<ReturnType<InvestmentsRepository["listPositions"]>>;
+      refs: Awaited<ReturnType<InvestmentsRepository["getRefsMap"]>>;
     };
   };
 }
@@ -77,7 +106,20 @@ export const buildTransactionsCsv = (transactions: TransactionItem[]): string =>
   return [headers.join(","), ...rows].join("\n");
 };
 
-export const buildExportSnapshot = async (): Promise<SettingsExportSnapshot> => {
+export const buildExportSnapshot = async (
+  repositories: SettingsExportRepositories = defaultSettingsExportRepositories,
+): Promise<SettingsExportSnapshot> => {
+  const {
+    accountsRepository,
+    appSettingsRepository,
+    budgetsRepository,
+    categoriesRepository,
+    cuotasRepository,
+    goalsRepository,
+    investmentsRepository,
+    transactionsRepository,
+  } = repositories;
+
   const [
     settings,
     accounts,
@@ -119,8 +161,10 @@ export const buildExportSnapshot = async (): Promise<SettingsExportSnapshot> => 
   };
 };
 
-export const downloadJsonExport = async (): Promise<void> => {
-  const snapshot = await buildExportSnapshot();
+export const downloadJsonExport = async (
+  repositories: SettingsExportRepositories = defaultSettingsExportRepositories,
+): Promise<void> => {
+  const snapshot = await buildExportSnapshot(repositories);
   const payload = JSON.stringify(snapshot, null, 2);
   triggerBrowserDownload(
     new Blob([payload], { type: "application/json;charset=utf-8" }),
@@ -128,8 +172,10 @@ export const downloadJsonExport = async (): Promise<void> => {
   );
 };
 
-export const downloadTransactionsCsvExport = async (): Promise<void> => {
-  const transactions = await transactionsRepository.list();
+export const downloadTransactionsCsvExport = async (
+  repository: TransactionsRepository = httpTransactionsRepository,
+): Promise<void> => {
+  const transactions = await repository.list();
   const csv = buildTransactionsCsv(transactions);
   triggerBrowserDownload(
     new Blob([csv], { type: "text/csv;charset=utf-8" }),

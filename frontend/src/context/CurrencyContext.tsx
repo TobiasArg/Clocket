@@ -1,6 +1,7 @@
 import { useEffect, useMemo, type ReactNode } from "react";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import {
+  applyTheme,
   formatCurrency,
   resolveLocaleForCurrency,
   setGlobalCurrency,
@@ -16,10 +17,19 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
   const { settings, isLoading } = useAppSettings();
   const currency: SupportedCurrency = settings?.currency === "USD" ? "USD" : "ARS";
   const locale = resolveLocaleForCurrency(currency);
+  const theme = settings?.theme;
 
   useEffect(() => {
     setGlobalCurrency(currency);
   }, [currency]);
+
+  useEffect(() => {
+    if (!theme) {
+      return;
+    }
+
+    applyTheme(theme);
+  }, [theme]);
 
   const value = useMemo<CurrencyContextValue>(
     () => ({
