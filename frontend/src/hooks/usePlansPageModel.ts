@@ -77,6 +77,30 @@ const getPlanStatus = (paidInstallmentsCount: number, installmentsCount: number)
   return paidInstallmentsCount >= installmentsCount ? "finished" : "active";
 };
 
+export const getPlansNeedingPaidInstallmentsAutoSync = (
+  items: Array<{
+    id: string;
+    installmentsCount: number;
+    paidInstallmentsCount: number;
+    createdAt: string;
+  }>,
+): Array<{ id: string; nextPaidInstallmentsCount: number }> => items
+  .map((item) => {
+    const fulfilledByDate = Math.min(
+      item.installmentsCount,
+      getFulfilledInstallmentsByDate(item.createdAt),
+    );
+    const nextPaidInstallmentsCount = Math.max(item.paidInstallmentsCount, fulfilledByDate);
+
+    return {
+      id: item.id,
+      nextPaidInstallmentsCount,
+      shouldSync: nextPaidInstallmentsCount > item.paidInstallmentsCount,
+    };
+  })
+  .filter((plan) => plan.shouldSync)
+  .map(({ id, nextPaidInstallmentsCount }) => ({ id, nextPaidInstallmentsCount }));
+
 export const usePlansPageModel = (
   options: UsePlansPageModelOptions = {},
 ): UsePlansPageModelResult => {
@@ -133,22 +157,7 @@ export const usePlansPageModel = (
       return;
     }
 
-    const plansToSync = items
-      .map((item) => {
-        const fulfilledByDate = Math.min(
-          item.installmentsCount,
-          getFulfilledInstallmentsByDate(item.createdAt),
-        );
-        const hasCategoryMetadata = Boolean(item.categoryId) && Boolean(item.subcategoryName);
-        const nextPaidInstallmentsCount = Math.max(item.paidInstallmentsCount, fulfilledByDate);
-
-        return {
-          id: item.id,
-          nextPaidInstallmentsCount,
-          shouldSync: !hasCategoryMetadata || nextPaidInstallmentsCount > item.paidInstallmentsCount,
-        };
-      })
-      .filter((plan) => plan.shouldSync);
+    const plansToSync = getPlansNeedingPaidInstallmentsAutoSync(items);
 
     if (plansToSync.length === 0) {
       return;
