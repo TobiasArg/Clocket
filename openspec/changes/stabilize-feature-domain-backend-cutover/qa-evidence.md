@@ -2,6 +2,19 @@
 
 Date: 2026-06-07; continued 2026-06-08
 
+## Live Postgres / Backend Environment Unblocked
+
+- Docker/Postgres is now available for live QA:
+  - `docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'` — `clocket-postgres`, `postgres:16-alpine`, `Up ... (healthy)`, `0.0.0.0:5433->5432/tcp`
+  - `nc -z 127.0.0.1 5433` — `postgres-open`
+  - `nc -z 127.0.0.1 3001` — `backend-open`
+- Prisma migration state is current against the live local database:
+  - `DATABASE_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public" DIRECT_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public" npm exec prisma migrate status` from `backend/` — `Database schema is up to date!`
+- Backend health check endpoint responds:
+  - `curl --fail --silent --show-error "http://127.0.0.1:3001/api/hello"` — `{"message":"Hola desde Next.js API"}`
+- Database smoke tests now pass against live local Postgres:
+  - `DATABASE_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public" DIRECT_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public" npm --prefix backend run test:db` — passed, 2 files / 4 tests passed
+
 ## Automated Backend/API Stabilization
 
 - Added migrated feature-domain API handler smoke coverage for:
@@ -85,13 +98,8 @@ Date: 2026-06-07; continued 2026-06-08
 
 ## Known Gaps / Pending Manual QA
 
-- Live API smoke testing against Postgres was not completed because Docker daemon was unavailable:
-  - Attempted: `docker compose up -d postgres`
-  - Result: `Cannot connect to the Docker daemon at unix:///Users/argtobias/.docker/run/docker.sock. Is the docker daemon running?`
-- DB smoke testing with explicit local URLs was also blocked because no Postgres process was reachable on `127.0.0.1:5433`:
-  - Attempted: `DATABASE_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public" DIRECT_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public" npm --prefix backend run test:db`
-  - Result: `Can't reach database server at 127.0.0.1:5433`
-- Browser-based QA was completed against mocked HTTP APIs, but not against a live backend/Postgres stack because the database remained unavailable.
+- The live Postgres/backend environment blocker has been cleared, but domain-level live API and UI QA remains pending.
+- Browser-based QA was completed against mocked HTTP APIs; it still needs to be repeated against the live backend/Postgres stack.
 - Pending manual verification remains required for full archival:
   - budgets, goals, cuotas, investments, and settings end-to-end UI CRUD flows against live backend persistence
   - browser refresh persistence against a live backend database
