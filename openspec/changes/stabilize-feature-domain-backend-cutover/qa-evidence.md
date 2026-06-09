@@ -15,6 +15,38 @@ Date: 2026-06-07; continued 2026-06-08
 - Database smoke tests now pass against live local Postgres:
   - `DATABASE_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public" DIRECT_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public" npm --prefix backend run test:db` — passed, 2 files / 4 tests passed
 
+## Live Backend API QA
+
+- Ran live API QA against managed backend dev server and local Postgres using:
+  - `DATABASE_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public"`
+  - `DIRECT_URL="postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public"`
+  - `python3 /Users/argtobias/.agents/skills/webapp-testing/scripts/with_server.py --server "... npm --prefix backend run dev" --port 3001 --timeout 90 -- node ...`
+- Run ID: `qa-1781010622931`
+- Passed live API checks:
+  - budgets list, read-after-write, create, update, delete, clear, invalid payload validation, backend-generated ID verification
+  - goals list, read-after-write, create, update, delete, clear, category/subcategory sync behavior, invalid payload validation, backend-generated ID verification
+  - installments/cuotas list, read-after-write, create, update, delete, clear, paid count validation, backend-generated ID verification
+  - investments add/delete entry, add/read/update/delete position, snapshots list/create/latest, refs get/init/update daily/update monthly, clear, invalid asset validation, backend-generated ID verification
+  - settings get, update, read-after-write persistence, reset, invalid enum validation, profile/security payload update, restoration of original settings
+- Clear behavior executed because the active migrated-domain lists were empty at the start of each clear check.
+- No backend regressions were found during live API QA.
+
+## Live Browser UI QA Against Backend
+
+- Ran headless Chromium against Vite frontend proxied to the live backend/Postgres stack using:
+  - `python3 /Users/argtobias/.agents/skills/webapp-testing/scripts/with_server.py --server "... npm --prefix backend run dev" --port 3001 --server "npm --prefix frontend run dev:ui -- --host 127.0.0.1" --port 5173 --timeout 90 -- bash -lc 'NODE_PATH="/var/folders/nh/pdv3nwtx327dn_nb9d3v3xc80000gn/T/opencode/clocket-playwright/node_modules" node <<"NODE" ... NODE'`
+- Run ID: `uiqa-1781011167673`
+- Passed live browser checks:
+  - budgets page rendered, empty-to-filled create flow succeeded through HTTP backend, selected live category/subcategory, route reload preserved the created budget, backend ID verified
+  - goals page rendered, create flow succeeded through HTTP backend, route reload preserved the goal, backend ID and category sync verified, delete flow removed the active goal
+  - cuotas page rendered, create flow succeeded through HTTP backend, route reload preserved the plan, backend ID verified, delete flow removed the active plan, no autosync loop observed
+  - investments page rendered, add-entry flow succeeded through HTTP backend, route reload preserved `AAPL`, backend position ID verified
+  - settings page rendered and currency sheet displayed backend-loaded settings state
+- Cleanup completed after the browser run:
+  - settings restored
+  - temporary QA category/account removed
+  - temporary migrated feature records removed
+
 ## Automated Backend/API Stabilization
 
 - Added migrated feature-domain API handler smoke coverage for:
@@ -98,11 +130,14 @@ Date: 2026-06-07; continued 2026-06-08
 
 ## Known Gaps / Pending Manual QA
 
-- The live Postgres/backend environment blocker has been cleared, but domain-level live API and UI QA remains pending.
-- Browser-based QA was completed against mocked HTTP APIs; it still needs to be repeated against the live backend/Postgres stack.
+- Live backend API QA is complete for migrated feature-domain runtime flows.
+- Live browser QA covered create/list/refresh and available delete paths for key migrated flows, but a full manual exploratory pass remains pending for flows not fully exercised by the browser automation.
 - Pending manual verification remains required for full archival:
-  - budgets, goals, cuotas, investments, and settings end-to-end UI CRUD flows against live backend persistence
-  - browser refresh persistence against a live backend database
+  - budget edit flow and budget delete behavior if/when exposed in UI
+  - goal edit flow
+  - cuota paid-state behavior beyond create/delete and autosync-loop regression
+  - investment edit/delete position, delete entry, manual market refresh, and provider-specific quote behavior
+  - settings update/reset/profile/security PIN flows from UI
   - desktop/mobile visual pass
   - live provider behavior for market quote refresh, if API key is available
 

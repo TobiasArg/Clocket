@@ -1,11 +1,11 @@
 ## 1. Backend API Stabilization
 
-- [ ] 1.1 Manually/API-test budgets list, read, create, update, delete, clear, validation errors, and refresh persistence.
-- [ ] 1.2 Manually/API-test goals list, read, create, update, delete, clear, category sync behavior, validation errors, and refresh persistence.
-- [ ] 1.3 Manually/API-test installments/cuotas list, read, create, update, delete, clear, paid count validation, category/subcategory references, and refresh persistence.
-- [ ] 1.4 Manually/API-test investments positions, entries, snapshots, refs, delete/clear behavior, invalid asset/ticker handling, and refresh persistence.
-- [ ] 1.5 Manually/API-test app settings get, update, reset, enum validation, profile/security payloads, and refresh persistence.
-- [ ] 1.6 Fix backend regressions found during API stabilization with minimal scoped changes.
+- [x] 1.1 Manually/API-test budgets list, read, create, update, delete, clear, validation errors, and refresh persistence.
+- [x] 1.2 Manually/API-test goals list, read, create, update, delete, clear, category sync behavior, validation errors, and refresh persistence.
+- [x] 1.3 Manually/API-test installments/cuotas list, read, create, update, delete, clear, paid count validation, category/subcategory references, and refresh persistence.
+- [x] 1.4 Manually/API-test investments positions, entries, snapshots, refs, delete/clear behavior, invalid asset/ticker handling, and refresh persistence.
+- [x] 1.5 Manually/API-test app settings get, update, reset, enum validation, profile/security payloads, and refresh persistence.
+- [x] 1.6 Fix backend regressions found during API stabilization with minimal scoped changes.
 - [x] 1.7 Add or update backend tests for any backend regression fixed in this change.
 
 ## 2. Frontend Data Flow Stabilization
@@ -30,9 +30,9 @@
 ## 4. Clean Start and Persistence Verification
 
 - [x] 4.1 Seed or simulate legacy feature-domain localStorage keys and verify the app ignores or clears them after cutover.
-- [ ] 4.2 Confirm newly created migrated-domain records use backend-generated IDs only.
-- [ ] 4.3 Confirm backend data remains after browser refresh and does not rely on localStorage records.
-- [ ] 4.4 Confirm rollback guidance remains repository-binding revert only, not data merge.
+- [x] 4.2 Confirm newly created migrated-domain records use backend-generated IDs only.
+- [x] 4.3 Confirm backend data remains after browser refresh and does not rely on localStorage records.
+- [x] 4.4 Confirm rollback guidance remains repository-binding revert only, not data merge.
 
 ## 5. Final Validation
 
