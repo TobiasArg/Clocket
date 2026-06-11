@@ -47,6 +47,24 @@ Date: 2026-06-07; continued 2026-06-08
   - temporary QA category/account removed
   - temporary migrated feature records removed
 
+## Pending UI/UX QA Closure Against Backend
+
+- Ran headless Chromium against Vite frontend and live backend/Postgres stack using the same managed backend/frontend server pattern.
+- Run ID: `uiqa-pending-1781208043121`
+- Passed pending browser checks:
+  - budgets page render, empty state, create flow, browser refresh persistence, detail edit flow, backend-generated ID/update verification; delete behavior verified by backend API deletion followed by browser reload because budget delete is not exposed in current UI
+  - goals page render, empty state, create flow, browser refresh persistence, detail edit flow, delete dialog flow using `Eliminar entradas`, and removal after reload
+  - cuotas page render, empty state, create flow, browser refresh persistence, paid-state future-date guard (`0/3` remained stable with `Fecha inválida`), no extra installment item calls on blocked paid-state click, and delete confirmation flow
+  - investments page render, empty state, add position/entry flow, route reload persistence, provider refresh request path exercised/stable, detail entries displayed, add-entry flow, delete-entry action, delete-position confirmation, and backend removal verification
+  - settings page render, profile update, currency update, theme update applied to `document.documentElement.dataset.theme`, notifications toggle, PIN activation, PIN deactivation; reset UI is not exposed, while backend reset was covered by API QA and settings restoration was verified during cleanup
+  - error states for `/budgets`, `/goals`, `/plans`, `/investments`, and `/settings` using controlled failed API responses
+  - primary migrated pages loaded on mobile `390x844` and desktop `1280x900` viewports without horizontal overflow
+- Cleanup completed after the pending QA run:
+  - settings restored
+  - temporary QA category/account removed
+  - temporary migrated feature records removed
+- No new frontend or backend regressions were found during pending UI/UX QA closure.
+
 ## Automated Backend/API Stabilization
 
 - Added migrated feature-domain API handler smoke coverage for:
@@ -131,15 +149,14 @@ Date: 2026-06-07; continued 2026-06-08
 ## Known Gaps / Pending Manual QA
 
 - Live backend API QA is complete for migrated feature-domain runtime flows.
-- Live browser QA covered create/list/refresh and available delete paths for key migrated flows, but a full manual exploratory pass remains pending for flows not fully exercised by the browser automation.
-- Pending manual verification remains required for full archival:
-  - budget edit flow and budget delete behavior if/when exposed in UI
-  - goal edit flow
-  - cuota paid-state behavior beyond create/delete and autosync-loop regression
-  - investment edit/delete position, delete entry, manual market refresh, and provider-specific quote behavior
-  - settings update/reset/profile/security PIN flows from UI
-  - desktop/mobile visual pass
-  - live provider behavior for market quote refresh, if API key is available
+- Live browser/UI QA is complete for migrated feature-domain flows that are currently exposed in the UI.
+- No blocking manual QA gaps remain for archival.
+- Non-blocking UI affordance notes:
+  - budget delete is not exposed in the current UI; backend API delete plus browser reload removal was verified.
+  - installment/cuota edit is not exposed in the current UI; create, paid-state guard, delete, and backend API update behavior were verified.
+  - investment direct position edit is not exposed as a separate UI affordance; add/delete position, add/delete entry, snapshots/refs/provider refresh request stability, and backend API update behavior were verified.
+  - settings reset is not exposed in the current UI; backend reset and UI update/restore flows were verified.
+  - live provider quote value depends on provider/API-key environment; UI attempted the market quote path and remained stable.
 
 ## Rollback Notes
 

@@ -10,22 +10,22 @@
 
 ## 2. Frontend Data Flow Stabilization
 
-- [ ] 2.1 Verify budgets UI list, create, edit, delete, empty state, error state, and browser refresh behavior.
-- [ ] 2.2 Verify goals UI list, create, edit, delete, empty state, error state, category sync visibility, and browser refresh behavior.
-- [ ] 2.3 Verify cuotas UI list, create, edit, delete, paid-state behavior, empty/error states, and browser refresh behavior.
-- [ ] 2.4 Verify investments UI add/edit/delete position, add/delete entry, refresh market data, snapshots/refs, empty/error states, and browser refresh behavior.
-- [ ] 2.5 Verify settings UI load, update, reset, currency, theme, profile, security PIN behavior, and browser refresh behavior.
+- [x] 2.1 Verify budgets UI list, create, edit, delete, empty state, error state, and browser refresh behavior.
+- [x] 2.2 Verify goals UI list, create, edit, delete, empty state, error state, category sync visibility, and browser refresh behavior.
+- [x] 2.3 Verify cuotas UI list, create, edit, delete, paid-state behavior, empty/error states, and browser refresh behavior.
+- [x] 2.4 Verify investments UI add/edit/delete position, add/delete entry, refresh market data, snapshots/refs, empty/error states, and browser refresh behavior.
+- [x] 2.5 Verify settings UI load, update, reset, currency, theme, profile, security PIN behavior, and browser refresh behavior.
 - [x] 2.6 Fix frontend repository mapping or hook/page-model regressions found during UI stabilization.
 - [x] 2.7 Add or update frontend tests for any frontend regression fixed in this change.
 
 ## 3. UI/UX Regression Pass
 
-- [ ] 3.1 Verify navigation among primary pages after migrated domains load from backend.
-- [ ] 3.2 Verify primary and secondary buttons in migrated flows trigger the expected actions exactly once.
-- [ ] 3.3 Verify forms preserve existing validation UX and do not submit invalid data silently.
-- [ ] 3.4 Verify loading, empty, and error states are visible, stable, and non-alarming.
-- [ ] 3.5 Verify migrated flows do not crash on null/undefined backend references.
-- [ ] 3.6 Verify basic desktop and mobile layouts for migrated pages remain usable.
+- [x] 3.1 Verify navigation among primary pages after migrated domains load from backend.
+- [x] 3.2 Verify primary and secondary buttons in migrated flows trigger the expected actions exactly once.
+- [x] 3.3 Verify forms preserve existing validation UX and do not submit invalid data silently.
+- [x] 3.4 Verify loading, empty, and error states are visible, stable, and non-alarming.
+- [x] 3.5 Verify migrated flows do not crash on null/undefined backend references.
+- [x] 3.6 Verify basic desktop and mobile layouts for migrated pages remain usable.
 
 ## 4. Clean Start and Persistence Verification
 
