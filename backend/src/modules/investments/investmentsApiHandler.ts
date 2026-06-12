@@ -3,13 +3,15 @@ import { requireMethod, sendError, sendJson } from "../../api/http";
 import { getPrismaClient } from "../../persistence/prismaClient";
 import { mapCoreFinanceError, type CoreFinanceApiErrorResponse } from "../core-finance/coreFinanceApiErrors";
 import { parseIdParam } from "../core-finance/coreFinanceRequest";
-import type { AddInvestmentEntryResponse, ClearInvestmentsResponse, DeleteInvestmentResponse, InvestmentAssetRefsResponse, InvestmentEntryListResponse, InvestmentPositionListResponse, InvestmentPositionResponse, InvestmentRefsMapResponse, MarketQuoteSnapshotListResponse, MarketQuoteSnapshotResponse } from "./investmentsContracts";
+import type { AddInvestmentEntryResponse, ClearInvestmentsResponse, DeleteInvestmentResponse, InvestmentAssetRefsResponse, InvestmentEntryListResponse, InvestmentPositionListResponse, InvestmentPositionResponse, InvestmentRefsMapResponse, MarketQuoteSnapshotListResponse, MarketQuoteSnapshotResponse, RefreshInvestmentPositionsResponse } from "./investmentsContracts";
+import { createInvestmentMarketRefreshService, type InvestmentMarketRefreshService } from "./investmentMarketRefreshService";
 import { createInvestmentsRepository } from "./investmentsRepository";
 import { createInvestmentsService, type InvestmentsService } from "./investmentsService";
 
-type InvestmentsApiResponse = InvestmentPositionListResponse | InvestmentPositionResponse | InvestmentEntryListResponse | AddInvestmentEntryResponse | MarketQuoteSnapshotResponse | MarketQuoteSnapshotListResponse | InvestmentAssetRefsResponse | InvestmentRefsMapResponse | DeleteInvestmentResponse | ClearInvestmentsResponse | null | CoreFinanceApiErrorResponse;
+type InvestmentsApiResponse = InvestmentPositionListResponse | InvestmentPositionResponse | InvestmentEntryListResponse | AddInvestmentEntryResponse | MarketQuoteSnapshotResponse | MarketQuoteSnapshotListResponse | InvestmentAssetRefsResponse | InvestmentRefsMapResponse | RefreshInvestmentPositionsResponse | DeleteInvestmentResponse | ClearInvestmentsResponse | null | CoreFinanceApiErrorResponse;
 
 const createDefaultService = (): InvestmentsService => createInvestmentsService({ repository: createInvestmentsRepository(getPrismaClient()) });
+const createDefaultRefreshService = (): InvestmentMarketRefreshService => createInvestmentMarketRefreshService({ repository: createInvestmentsRepository(getPrismaClient()) });
 
 export const createInvestmentPositionsCollectionHandler = (dependencies: { service?: InvestmentsService } = {}) => async (req: NextApiRequest, res: NextApiResponse<InvestmentsApiResponse>) => {
   const service = dependencies.service ?? createDefaultService();
@@ -40,6 +42,14 @@ export const createInvestmentPositionEntriesHandler = (dependencies: { service?:
   try {
     if (req.method === "GET") return sendJson(res, 200, await service.listEntriesByPosition(parsedId.value));
     requireMethod(req, res as NextApiResponse<CoreFinanceApiErrorResponse>, "GET", "INVALID_REQUEST");
+  } catch (error) { sendError(res as NextApiResponse<CoreFinanceApiErrorResponse>, mapCoreFinanceError(error)); }
+};
+
+export const createInvestmentPositionsRefreshHandler = (dependencies: { service?: InvestmentMarketRefreshService } = {}) => async (req: NextApiRequest, res: NextApiResponse<InvestmentsApiResponse>) => {
+  const service = dependencies.service ?? createDefaultRefreshService();
+  try {
+    if (req.method === "POST") return sendJson(res, 200, await service.refreshPositions(req.body));
+    requireMethod(req, res as NextApiResponse<CoreFinanceApiErrorResponse>, "POST", "INVALID_REQUEST");
   } catch (error) { sendError(res as NextApiResponse<CoreFinanceApiErrorResponse>, mapCoreFinanceError(error)); }
 };
 
