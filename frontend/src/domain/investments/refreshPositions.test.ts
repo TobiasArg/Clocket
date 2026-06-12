@@ -1,21 +1,97 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LocalStorageInvestmentsPortfolioRepository } from "@/data/localStorage/investmentsPortfolioRepository";
-import {
-  fetchStockQuote,
-  MarketQuoteApiError,
-} from "@/data/http/marketQuoteApiClient";
 import { refreshPositions } from "./refreshPositions";
+import type {
+  InvestmentPositionItem,
+  InvestmentsRepository,
+  RefreshInvestmentPositionsResult,
+} from "./repository";
 
-vi.mock("@/data/http/marketQuoteApiClient", async () => {
-  const actual = await vi.importActual<typeof import("@/data/http/marketQuoteApiClient")>(
-    "@/data/http/marketQuoteApiClient",
-  );
+const position: InvestmentPositionItem = {
+  id: "position-1",
+  assetType: "stock",
+  ticker: "AAPL",
+  usd_gastado: 1000,
+  buy_price: 100,
+  amount: 10,
+  createdAt: "2026-06-01T00:00:00.000Z",
+};
 
-  return {
-    ...actual,
-    fetchStockQuote: vi.fn(),
-    fetchCryptoRate: vi.fn(),
-  };
+const cryptoPosition: InvestmentPositionItem = {
+  id: "position-2",
+  assetType: "crypto",
+  ticker: "BTC",
+  usd_gastado: 2000,
+  buy_price: 50000,
+  amount: 0.04,
+  createdAt: "2026-06-02T00:00:00.000Z",
+};
+
+const refreshedResponse: RefreshInvestmentPositionsResult = {
+  refreshedAt: "2026-06-12T10:00:00.000Z",
+  results: [{
+    positionId: position.id,
+    assetType: "stock",
+    ticker: "AAPL",
+    currentPrice: 230,
+    lastUpdatedTimestamp: "2026-06-12T10:00:00.000Z",
+    status: "refreshed",
+    staleWarning: null,
+    refreshError: null,
+    errorCode: null,
+    latestSnapshot: {
+      id: "snapshot-2",
+      assetType: "stock",
+      ticker: "AAPL",
+      price: 230,
+      source: "GLOBAL_QUOTE",
+      timestamp: "2026-06-12T10:00:00.000Z",
+    },
+    refs: {
+      dailyRefPrice: 210,
+      dailyRefTimestamp: "2026-06-12T00:00:00.000Z",
+      monthRefPrice: 200,
+      monthRefTimestamp: "2026-06-01T00:00:00.000Z",
+    },
+    snapshots: [
+      {
+        id: "snapshot-1",
+        assetType: "stock",
+        ticker: "AAPL",
+        price: 210,
+        source: "GLOBAL_QUOTE",
+        timestamp: "2026-06-11T10:00:00.000Z",
+      },
+      {
+        id: "snapshot-2",
+        assetType: "stock",
+        ticker: "AAPL",
+        price: 230,
+        source: "GLOBAL_QUOTE",
+        timestamp: "2026-06-12T10:00:00.000Z",
+      },
+    ],
+  }],
+};
+
+const createRepository = (response: RefreshInvestmentPositionsResult): InvestmentsRepository => ({
+  listPositions: vi.fn().mockResolvedValue([position]),
+  getPositionById: vi.fn().mockResolvedValue(position),
+  listEntriesByPosition: vi.fn().mockResolvedValue([]),
+  listEntriesByAsset: vi.fn().mockResolvedValue([]),
+  addEntry: vi.fn(),
+  deleteEntry: vi.fn(),
+  addPosition: vi.fn(),
+  editPosition: vi.fn(),
+  deletePosition: vi.fn(),
+  addSnapshot: vi.fn(),
+  listSnapshotsByAsset: vi.fn(),
+  getLatestSnapshotByAsset: vi.fn(),
+  getOrInitRefs: vi.fn(),
+  updateDailyRefIfNeeded: vi.fn(),
+  updateMonthRefIfNeeded: vi.fn(),
+  getRefsMap: vi.fn(),
+  refreshPositions: vi.fn().mockResolvedValue(response),
+  clearAll: vi.fn(),
 });
 
 describe("refreshPositions", () => {
@@ -23,145 +99,139 @@ describe("refreshPositions", () => {
     vi.clearAllMocks();
   });
 
-  it("uses cached snapshot when position is within refresh threshold", async () => {
-    const repository = new LocalStorageInvestmentsPortfolioRepository();
-    const created = await repository.addPosition({
-      assetType: "stock",
-      ticker: "AAPL",
-      usd_gastado: 1000,
-      buy_price: 100,
-    });
+  it("delegates investment refresh orchestration to the backend endpoint repository", async () => {
+    const repository = createRepository(refreshedResponse);
 
-    await repository.addSnapshot({
-      assetType: "stock",
-      ticker: "AAPL",
-      price: 110,
-      source: "GLOBAL_QUOTE",
-      timestamp: new Date(Date.now() - (5 * 60 * 1000)).toISOString(),
-    });
+    const rows = await refreshPositions([position], { repository, force: false });
 
-    const rows = await refreshPositions([created], {
-      repository,
+    expect(repository.refreshPositions).toHaveBeenCalledWith({
+      positionIds: [position.id],
       force: false,
     });
-
-    expect(fetchStockQuote).not.toHaveBeenCalled();
-    expect(rows[0].currentPrice).toBe(110);
-  });
-
-  it("refreshes stale snapshot, appends new snapshot and updates refs", async () => {
-    const repository = new LocalStorageInvestmentsPortfolioRepository();
-    const created = await repository.addPosition({
-      assetType: "stock",
-      ticker: "MSFT",
-      usd_gastado: 1000,
-      buy_price: 200,
-      createdAt: "2025-12-01T00:00:00.000Z",
-    });
-
-    await repository.addSnapshot({
-      assetType: "stock",
-      ticker: "MSFT",
-      price: 210,
-      source: "GLOBAL_QUOTE",
-      timestamp: "2025-12-31T23:59:59.000Z",
-    });
-
-    vi.mocked(fetchStockQuote).mockResolvedValue({
-      assetType: "stock",
-      ticker: "MSFT",
+    expect(repository.getLatestSnapshotByAsset).not.toHaveBeenCalled();
+    expect(repository.addSnapshot).not.toHaveBeenCalled();
+    expect(repository.updateDailyRefIfNeeded).not.toHaveBeenCalled();
+    expect(rows[0]).toMatchObject({
+      id: position.id,
+      ticker: "AAPL",
       currentPrice: 230,
-      source: "GLOBAL_QUOTE",
-      asOf: "2026-01-01T10:00:00.000Z",
-      bid: null,
-      ask: null,
-      dailyPctFromProvider: 1.2,
-      lastRefreshed: "2026-01-01",
-      timezone: null,
+      currentValueUSD: 2300,
+      pnlDailyUSD: 200,
+      pnlMonthUSD: 300,
+      lastUpdatedTimestamp: "2026-06-12T10:00:00.000Z",
     });
-
-    const rows = await refreshPositions([created], {
-      repository,
-      force: false,
-      now: new Date("2026-01-01T10:00:00.000Z"),
-    });
-
-    expect(fetchStockQuote).toHaveBeenCalledTimes(1);
-    expect(rows[0].currentPrice).toBe(230);
-
-    const snapshots = await repository.listSnapshotsByAsset("stock", "MSFT");
-    expect(snapshots).toHaveLength(2);
-
-    const refs = await repository.getOrInitRefs("stock", "MSFT");
-    expect(refs.dailyRefPrice).toBe(230);
-    expect(refs.monthRefPrice).toBe(230);
+    expect(rows[0].historicalPoints).toEqual([
+      expect.objectContaining({ timestamp: "2026-06-11T10:00:00.000Z", equity: 2100 }),
+      expect.objectContaining({ timestamp: "2026-06-12T10:00:00.000Z", equity: 2300 }),
+    ]);
   });
 
-  it("keeps last known price when provider request fails", async () => {
-    const repository = new LocalStorageInvestmentsPortfolioRepository();
-    const created = await repository.addPosition({
-      assetType: "stock",
-      ticker: "NVDA",
-      usd_gastado: 500,
-      buy_price: 125,
-    });
+  it("sends force true for manual refresh", async () => {
+    const repository = createRepository(refreshedResponse);
 
-    vi.mocked(fetchStockQuote).mockRejectedValue(new MarketQuoteApiError("Rate limited", {
-      code: "THROTTLED",
-      status: 429,
-      staleWarning: "Rate limit alcanzado. Manteniendo último precio guardado.",
-    }));
+    await refreshPositions([position], { repository, force: true });
 
-    const rows = await refreshPositions([created], {
-      repository,
+    expect(repository.refreshPositions).toHaveBeenCalledWith({
+      positionIds: [position.id],
       force: true,
     });
+  });
 
-    expect(rows[0].currentPrice).toBe(125);
-    expect(rows[0].refreshError).toBe("Rate limited");
+  it("maps stale fallback and cooldown responses without crashing", async () => {
+    const staleResponse: RefreshInvestmentPositionsResult = {
+      refreshedAt: "2026-06-12T10:00:00.000Z",
+      results: [{
+        ...refreshedResponse.results[0],
+        currentPrice: 210,
+        lastUpdatedTimestamp: "2026-06-11T10:00:00.000Z",
+        status: "cooldown",
+        staleWarning: "Rate limit alcanzado. Manteniendo último precio guardado.",
+        refreshError: "Reintento pausado para evitar exceso de requests.",
+        errorCode: "THROTTLED",
+        latestSnapshot: refreshedResponse.results[0].snapshots[0],
+        refs: refreshedResponse.results[0].refs,
+        snapshots: [refreshedResponse.results[0].snapshots[0]],
+      }],
+    };
+    const repository = createRepository(staleResponse);
+
+    const rows = await refreshPositions([position], { repository });
+
+    expect(rows[0].currentPrice).toBe(210);
     expect(rows[0].staleWarning).toContain("Rate limit");
+    expect(rows[0].refreshError).toContain("Reintento pausado");
   });
 
-  it("deduplicates refresh calls by asset key when multiple positions share ticker", async () => {
-    const repository = new LocalStorageInvestmentsPortfolioRepository();
-    await repository.addEntry({
-      assetType: "stock",
-      ticker: "AAPL",
-      entryType: "ingreso",
-      usd_gastado: 1000,
-      buy_price: 100,
-    });
-    await repository.addEntry({
-      assetType: "stock",
-      ticker: "aapl",
-      entryType: "ingreso",
-      usd_gastado: 500,
-      buy_price: 250,
-    });
+  it("falls back to buy price when backend has no snapshot", async () => {
+    const noSnapshotResponse: RefreshInvestmentPositionsResult = {
+      refreshedAt: "2026-06-12T10:00:00.000Z",
+      results: [{
+        positionId: position.id,
+        assetType: "stock",
+        ticker: "AAPL",
+        currentPrice: null,
+        lastUpdatedTimestamp: null,
+        status: "no_snapshot",
+        staleWarning: "No se pudo actualizar. Manteniendo último precio guardado.",
+        refreshError: "Provider unavailable.",
+        errorCode: "NETWORK_ERROR",
+        latestSnapshot: null,
+        refs: null,
+        snapshots: [],
+      }],
+    };
+    const repository = createRepository(noSnapshotResponse);
 
-    const [aggregated] = await repository.listPositions();
+    const rows = await refreshPositions([position], { repository });
 
-    vi.mocked(fetchStockQuote).mockResolvedValue({
-      assetType: "stock",
-      ticker: "AAPL",
-      currentPrice: 120,
-      source: "GLOBAL_QUOTE",
-      asOf: "2026-02-19T10:00:00.000Z",
-      bid: null,
-      ask: null,
-      dailyPctFromProvider: null,
-      lastRefreshed: "2026-02-19",
-      timezone: null,
+    expect(rows[0].currentPrice).toBe(position.buy_price);
+    expect(rows[0].historicalPoints).toEqual([]);
+    expect(rows[0].staleWarning).toContain("No se pudo actualizar");
+  });
+
+  it("batches multiple visible positions into one backend refresh request", async () => {
+    const response: RefreshInvestmentPositionsResult = {
+      refreshedAt: "2026-06-12T10:00:00.000Z",
+      results: [
+        refreshedResponse.results[0],
+        {
+          positionId: cryptoPosition.id,
+          assetType: "crypto",
+          ticker: "BTC",
+          currentPrice: 70000,
+          lastUpdatedTimestamp: "2026-06-12T10:00:00.000Z",
+          status: "refreshed",
+          staleWarning: null,
+          refreshError: null,
+          errorCode: null,
+          latestSnapshot: {
+            id: "btc-snapshot-1",
+            assetType: "crypto",
+            ticker: "BTC",
+            price: 70000,
+            source: "CURRENCY_EXCHANGE_RATE",
+            timestamp: "2026-06-12T10:00:00.000Z",
+          },
+          refs: {
+            dailyRefPrice: 69000,
+            dailyRefTimestamp: "2026-06-12T00:00:00.000Z",
+            monthRefPrice: 65000,
+            monthRefTimestamp: "2026-06-01T00:00:00.000Z",
+          },
+          snapshots: [],
+        },
+      ],
+    };
+    const repository = createRepository(response);
+
+    const rows = await refreshPositions([position, cryptoPosition], { repository });
+
+    expect(repository.refreshPositions).toHaveBeenCalledTimes(1);
+    expect(repository.refreshPositions).toHaveBeenCalledWith({
+      positionIds: [position.id, cryptoPosition.id],
+      force: false,
     });
-
-    const rows = await refreshPositions([aggregated], {
-      repository,
-      force: true,
-      now: new Date("2026-02-19T10:00:00.000Z"),
-    });
-
-    expect(fetchStockQuote).toHaveBeenCalledTimes(1);
-    expect(rows).toHaveLength(1);
-    expect(rows[0].currentPrice).toBe(120);
+    expect(rows).toHaveLength(2);
+    expect(rows[1].currentPrice).toBe(70000);
   });
 });

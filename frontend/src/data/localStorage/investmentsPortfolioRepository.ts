@@ -7,6 +7,8 @@ import type {
   InvestmentPositionItem,
   InvestmentSnapshotItem,
   InvestmentsRepository,
+  RefreshInvestmentPositionsRequest,
+  RefreshInvestmentPositionsResult,
   UpdateInvestmentPatch,
 } from "@/domain/investments/repository";
 import type {
@@ -641,6 +643,45 @@ export class LocalStorageInvestmentsPortfolioRepository implements InvestmentsRe
   public async getRefsMap(): Promise<Record<AssetKey, AssetRefs>> {
     this.ensureNormalizedState();
     return cloneRefsMap(this.readRefsMapRaw());
+  }
+
+  public async refreshPositions(input: RefreshInvestmentPositionsRequest): Promise<RefreshInvestmentPositionsResult> {
+    this.ensureNormalizedState();
+    const nowIso = new Date().toISOString();
+    const targets: Array<{ positionId: string | null; assetType: AssetType; ticker: string }> = [];
+
+    for (const positionId of input.positionIds ?? []) {
+      const position = await this.getPositionById(positionId);
+      if (position) {
+        targets.push({ positionId: position.id, assetType: position.assetType, ticker: position.ticker });
+      }
+    }
+
+    for (const asset of input.assets ?? []) {
+      targets.push({ positionId: null, assetType: normalizeAssetType(asset.assetType), ticker: normalizeTicker(asset.ticker) });
+    }
+
+    const results = await Promise.all(targets.map(async (target) => {
+      const latestSnapshot = await this.getLatestSnapshotByAsset(target.assetType, target.ticker);
+      const refs = await this.getOrInitRefs(target.assetType, target.ticker);
+      const snapshots = await this.listSnapshotsByAsset(target.assetType, target.ticker);
+      return {
+        positionId: target.positionId,
+        assetType: target.assetType,
+        ticker: target.ticker,
+        currentPrice: latestSnapshot?.price ?? null,
+        lastUpdatedTimestamp: latestSnapshot?.timestamp ?? null,
+        status: latestSnapshot ? "skipped_fresh" as const : "no_snapshot" as const,
+        staleWarning: null,
+        refreshError: null,
+        errorCode: null,
+        latestSnapshot,
+        refs,
+        snapshots,
+      };
+    }));
+
+    return { refreshedAt: nowIso, results };
   }
 
   public async clearAll(): Promise<void> {

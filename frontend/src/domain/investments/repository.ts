@@ -54,6 +54,39 @@ export interface AddSnapshotInput {
   ask?: number;
 }
 
+export interface RefreshInvestmentAssetInput {
+  assetType: AssetType;
+  ticker: string;
+}
+
+export interface RefreshInvestmentPositionsRequest {
+  positionIds?: string[];
+  assets?: RefreshInvestmentAssetInput[];
+  force?: boolean;
+}
+
+export type InvestmentRefreshStatus = "refreshed" | "skipped_fresh" | "stale_fallback" | "cooldown" | "no_snapshot";
+
+export interface RefreshInvestmentPositionResult {
+  positionId: string | null;
+  assetType: AssetType;
+  ticker: string;
+  currentPrice: number | null;
+  lastUpdatedTimestamp: string | null;
+  status: InvestmentRefreshStatus;
+  staleWarning: string | null;
+  refreshError: string | null;
+  errorCode: string | null;
+  latestSnapshot: InvestmentSnapshotItem | null;
+  refs: AssetRefs | null;
+  snapshots: InvestmentSnapshotItem[];
+}
+
+export interface RefreshInvestmentPositionsResult {
+  refreshedAt: string;
+  results: RefreshInvestmentPositionResult[];
+}
+
 export interface InvestmentsRepository {
   listPositions: () => Promise<InvestmentPositionItem[]>;
   getPositionById: (id: string) => Promise<InvestmentPositionItem | null>;
@@ -93,5 +126,6 @@ export interface InvestmentsRepository {
     timestamp?: string,
   ) => Promise<AssetRefs>;
   getRefsMap: () => Promise<Record<AssetKey, AssetRefs>>;
+  refreshPositions: (input: RefreshInvestmentPositionsRequest) => Promise<RefreshInvestmentPositionsResult>;
   clearAll: () => Promise<void>;
 }

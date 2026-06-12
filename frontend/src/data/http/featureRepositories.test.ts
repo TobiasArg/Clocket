@@ -90,4 +90,36 @@ describe("feature-domain HTTP repositories", () => {
     await expect(new HttpGoalsRepository().getById("missing")).resolves.toBeNull();
     await expect(new HttpInvestmentsRepository().deleteEntry("missing")).resolves.toBe(false);
   });
+
+  it("posts investment refresh requests and maps backend decimal payloads", async () => {
+    httpPostMock.mockResolvedValue({ data: {
+      refreshedAt: "2026-06-12T10:00:00.000Z",
+      results: [{
+        positionId: "pos-1",
+        assetType: "stock",
+        ticker: "AAPL",
+        currentPrice: "230.0000000000",
+        lastUpdatedTimestamp: "2026-06-12T10:00:00.000Z",
+        status: "refreshed",
+        staleWarning: null,
+        refreshError: null,
+        errorCode: null,
+        latestSnapshot: { id: "snap-1", assetType: "stock", ticker: "AAPL", timestamp: "2026-06-12T10:00:00.000Z", price: "230.0000000000", source: "GLOBAL_QUOTE", bid: null, ask: null },
+        refs: { dailyRefPrice: "210.0000000000", dailyRefTimestamp: "2026-06-12T00:00:00.000Z", monthRefPrice: "200.0000000000", monthRefTimestamp: "2026-06-01T00:00:00.000Z" },
+        snapshots: [{ id: "snap-1", assetType: "stock", ticker: "AAPL", timestamp: "2026-06-12T10:00:00.000Z", price: "230.0000000000", source: "GLOBAL_QUOTE", bid: "229.5000000000", ask: "230.5000000000" }],
+      }],
+    } });
+
+    await expect(new HttpInvestmentsRepository().refreshPositions({ positionIds: ["pos-1"], force: true })).resolves.toEqual({
+      refreshedAt: "2026-06-12T10:00:00.000Z",
+      results: [expect.objectContaining({
+        positionId: "pos-1",
+        currentPrice: 230,
+        latestSnapshot: expect.objectContaining({ price: 230 }),
+        refs: expect.objectContaining({ dailyRefPrice: 210, monthRefPrice: 200 }),
+        snapshots: [expect.objectContaining({ price: 230, bid: 229.5, ask: 230.5 })],
+      })],
+    });
+    expect(httpPostMock).toHaveBeenCalledWith("/api/investments/positions/refresh", { positionIds: ["pos-1"], force: true });
+  });
 });

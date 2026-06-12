@@ -82,6 +82,7 @@ const createExportRepositories = (): SettingsExportRepositories => ({
     updateDailyRefIfNeeded: vi.fn(),
     updateMonthRefIfNeeded: vi.fn(),
     getRefsMap: vi.fn().mockResolvedValue({ "stock:AAPL": { dailyRefPrice: 10, dailyRefTimestamp: "2026-06-01T00:00:00.000Z", monthRefPrice: 10, monthRefTimestamp: "2026-06-01T00:00:00.000Z" } }),
+    refreshPositions: vi.fn(),
     clearAll: vi.fn(),
   },
   transactionsRepository: {

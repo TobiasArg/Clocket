@@ -1,4 +1,4 @@
-import type { AddInvestmentEntryInput, AddInvestmentEntryResult, AddSnapshotInput, CreateInvestmentInput, InvestmentEntryItem, InvestmentPositionItem, InvestmentSnapshotItem, InvestmentsRepository, UpdateInvestmentPatch } from "@/domain/investments/repository";
+import type { AddInvestmentEntryInput, AddInvestmentEntryResult, AddSnapshotInput, CreateInvestmentInput, InvestmentEntryItem, InvestmentPositionItem, InvestmentSnapshotItem, InvestmentsRepository, RefreshInvestmentPositionsRequest, RefreshInvestmentPositionsResult, UpdateInvestmentPatch } from "@/domain/investments/repository";
 import type { AssetKey, AssetRefs, AssetType } from "@/domain/investments/portfolioTypes";
 import { coreFinanceHttpClient, isNotFoundError, withCoreFinanceErrors } from "./coreFinanceHttpClient";
 import { ensureFeatureBackendCleanStartCutover } from "./featureDomainCleanStart";
@@ -13,6 +13,21 @@ interface SnapshotsResponse { snapshots: SnapshotResponse[] }
 interface RefsMapResponse { refs: Record<AssetKey, RefsResponse> }
 interface EntryResultResponse { position: PositionResponse | null; entry: EntryResponse }
 interface DeleteResponse { deleted: true }
+interface RefreshPositionResultResponse {
+  positionId: string | null;
+  assetType: AssetType;
+  ticker: string;
+  currentPrice: string | null;
+  lastUpdatedTimestamp: string | null;
+  status: RefreshInvestmentPositionsResult["results"][number]["status"];
+  staleWarning: string | null;
+  refreshError: string | null;
+  errorCode: string | null;
+  latestSnapshot: SnapshotResponse | null;
+  refs: RefsResponse | null;
+  snapshots: SnapshotResponse[];
+}
+interface RefreshPositionsResponse { refreshedAt: string; results: RefreshPositionResultResponse[] }
 
 const toPosition = (position: PositionResponse): InvestmentPositionItem => ({
   id: position.id,
@@ -52,6 +67,21 @@ const toRefs = (refs: RefsResponse): AssetRefs => ({
   dailyRefTimestamp: refs.dailyRefTimestamp,
   monthRefPrice: Number(refs.monthRefPrice),
   monthRefTimestamp: refs.monthRefTimestamp,
+});
+
+const toRefreshResult = (result: RefreshPositionResultResponse): RefreshInvestmentPositionsResult["results"][number] => ({
+  positionId: result.positionId,
+  assetType: result.assetType,
+  ticker: result.ticker,
+  currentPrice: result.currentPrice === null ? null : Number(result.currentPrice),
+  lastUpdatedTimestamp: result.lastUpdatedTimestamp,
+  status: result.status,
+  staleWarning: result.staleWarning,
+  refreshError: result.refreshError,
+  errorCode: result.errorCode,
+  latestSnapshot: result.latestSnapshot ? toSnapshot(result.latestSnapshot) : null,
+  refs: result.refs ? toRefs(result.refs) : null,
+  snapshots: result.snapshots.map(toSnapshot),
 });
 
 export class HttpInvestmentsRepository implements InvestmentsRepository {
@@ -131,6 +161,16 @@ export class HttpInvestmentsRepository implements InvestmentsRepository {
     return withCoreFinanceErrors(async () => {
       const response = await coreFinanceHttpClient.get<RefsMapResponse>("/api/investments/refs");
       return Object.fromEntries(Object.entries(response.data.refs).map(([key, refs]) => [key, toRefs(refs)])) as Record<AssetKey, AssetRefs>;
+    });
+  }
+
+  public async refreshPositions(input: RefreshInvestmentPositionsRequest): Promise<RefreshInvestmentPositionsResult> {
+    return withCoreFinanceErrors(async () => {
+      const response = await coreFinanceHttpClient.post<RefreshPositionsResponse>("/api/investments/positions/refresh", input);
+      return {
+        refreshedAt: response.data.refreshedAt,
+        results: response.data.results.map(toRefreshResult),
+      };
     });
   }
 
