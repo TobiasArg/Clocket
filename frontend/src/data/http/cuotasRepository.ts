@@ -1,4 +1,5 @@
-import type { CreateCuotaInput, CuotaPlanItem, CuotasRepository, UpdateCuotaPatch } from "@/domain/cuotas/repository";
+import type { CreateCuotaInput, CuotaPlanItem, CuotasRepository, MarkCuotaPaidResult, ReconcileDueCuotasResult, ReconciledCuotaPlanResult, UpdateCuotaPatch } from "@/domain/cuotas/repository";
+import { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
 import type { CategoryResponse } from "./categoriesRepository";
 import { coreFinanceHttpClient, isNotFoundError, withCoreFinanceErrors } from "./coreFinanceHttpClient";
 import { ensureFeatureBackendCleanStartCutover } from "./featureDomainCleanStart";
@@ -19,6 +20,31 @@ interface InstallmentPlanResponse {
 }
 interface InstallmentPlanListResponse { installmentPlans: InstallmentPlanResponse[] }
 interface DeleteResponse { deleted: true }
+interface MarkInstallmentPaidResponse {
+  plan: InstallmentPlanResponse;
+  status: "paid" | "already_finished" | "blocked_future";
+  installmentIndex: number | null;
+  dueDate: string | null;
+  blockedReason?: "future_installment";
+  effects: Array<{ planId: string; installmentIndex: number; status: "created" | "already_exists" }>;
+}
+interface ReconciledInstallmentPlanResponse {
+  plan: InstallmentPlanResponse;
+  status: "reconciled" | "noop";
+  fromPaidInstallmentsCount: number;
+  toPaidInstallmentsCount: number;
+  effects: Array<{ planId: string; installmentIndex: number; status: "created" | "already_exists" }>;
+}
+interface ReconcileDueInstallmentsResponse {
+  updatedPlanCount: number;
+  createdTransactionCount: number;
+  results: ReconciledInstallmentPlanResponse[];
+}
+
+const dispatchTransactionsChanged = (): void => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(TRANSACTIONS_CHANGED_EVENT));
+};
 
 const currentYearMonth = (): string => {
   const now = new Date();
@@ -51,6 +77,7 @@ export class HttpCuotasRepository implements CuotasRepository {
   public constructor() { ensureFeatureBackendCleanStartCutover(); }
 
   private async mapPlan(plan: InstallmentPlanResponse): Promise<CuotaPlanItem> {
+    const subcategoryName = await resolveSubcategoryName(plan.categoryId, plan.subcategoryId);
     return {
       id: plan.id,
       title: plan.title,
@@ -61,9 +88,30 @@ export class HttpCuotasRepository implements CuotasRepository {
       startMonth: plan.startMonth,
       paidInstallmentsCount: plan.paidInstallmentsCount,
       ...(plan.categoryId ? { categoryId: plan.categoryId } : {}),
-      ...(await resolveSubcategoryName(plan.categoryId, plan.subcategoryId) ? { subcategoryName: await resolveSubcategoryName(plan.categoryId, plan.subcategoryId) } : {}),
+      ...(subcategoryName ? { subcategoryName } : {}),
       createdAt: plan.createdAt,
       updatedAt: plan.updatedAt,
+    };
+  }
+
+  private async mapMarkPaidResult(response: MarkInstallmentPaidResponse): Promise<MarkCuotaPaidResult> {
+    return {
+      plan: await this.mapPlan(response.plan),
+      status: response.status,
+      installmentIndex: response.installmentIndex,
+      dueDate: response.dueDate,
+      ...(response.blockedReason ? { blockedReason: response.blockedReason } : {}),
+      effects: response.effects,
+    };
+  }
+
+  private async mapReconciledResult(response: ReconciledInstallmentPlanResponse): Promise<ReconciledCuotaPlanResult> {
+    return {
+      plan: await this.mapPlan(response.plan),
+      status: response.status,
+      fromPaidInstallmentsCount: response.fromPaidInstallmentsCount,
+      toPaidInstallmentsCount: response.toPaidInstallmentsCount,
+      effects: response.effects,
     };
   }
 
@@ -88,6 +136,35 @@ export class HttpCuotasRepository implements CuotasRepository {
   public async update(id: string, patch: UpdateCuotaPatch): Promise<CuotaPlanItem | null> {
     try { return await withCoreFinanceErrors(async () => this.mapPlan((await coreFinanceHttpClient.patch<InstallmentPlanResponse>(`/api/installments/${id}`, toPayload(patch))).data)); }
     catch (error) { if (isNotFoundError(error)) return null; throw error; }
+  }
+
+  public async markPaid(id: string): Promise<MarkCuotaPaidResult | null> {
+    try {
+      return await withCoreFinanceErrors(async () => {
+        const result = await this.mapMarkPaidResult(
+          (await coreFinanceHttpClient.post<MarkInstallmentPaidResponse>(`/api/installments/${id}/mark-paid`, {})).data,
+        );
+        if (result.effects.some((effect) => effect.status === "created")) {
+          dispatchTransactionsChanged();
+        }
+        return result;
+      });
+    } catch (error) { if (isNotFoundError(error)) return null; throw error; }
+  }
+
+  public async reconcileDue(): Promise<ReconcileDueCuotasResult> {
+    return withCoreFinanceErrors(async () => {
+      const response = (await coreFinanceHttpClient.post<ReconcileDueInstallmentsResponse>("/api/installments/reconcile-due", {})).data;
+      const results = await Promise.all(response.results.map((result) => this.mapReconciledResult(result)));
+      if (response.createdTransactionCount > 0) {
+        dispatchTransactionsChanged();
+      }
+      return {
+        updatedPlanCount: response.updatedPlanCount,
+        createdTransactionCount: response.createdTransactionCount,
+        results,
+      };
+    });
   }
 
   public async remove(id: string): Promise<boolean> {

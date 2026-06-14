@@ -122,4 +122,56 @@ describe("feature-domain HTTP repositories", () => {
     });
     expect(httpPostMock).toHaveBeenCalledWith("/api/investments/positions/refresh", { positionIds: ["pos-1"], force: true });
   });
+
+  it("posts cuota mark-paid requests and maps blocked responses", async () => {
+    httpPostMock.mockResolvedValue({ data: {
+      plan: { id: "plan-1", title: "Laptop", description: null, totalAmount: "1200.00", installmentsCount: 12, installmentAmount: "100.00", startMonth: "2026-06", paidInstallmentsCount: 1, categoryId: null, subcategoryId: null, createdAt: "now", updatedAt: "now" },
+      status: "blocked_future",
+      installmentIndex: 2,
+      dueDate: "2026-07-01",
+      blockedReason: "future_installment",
+      effects: [],
+    } });
+
+    await expect(new HttpCuotasRepository().markPaid("plan-1")).resolves.toEqual({
+      plan: expect.objectContaining({ id: "plan-1", paidInstallmentsCount: 1 }),
+      status: "blocked_future",
+      installmentIndex: 2,
+      dueDate: "2026-07-01",
+      blockedReason: "future_installment",
+      effects: [],
+    });
+    expect(httpPostMock).toHaveBeenCalledWith("/api/installments/plan-1/mark-paid", {});
+  });
+
+  it("posts cuota reconcile-due requests and maps idempotent effects", async () => {
+    httpPostMock.mockResolvedValue({ data: {
+      updatedPlanCount: 1,
+      createdTransactionCount: 1,
+      results: [{
+        plan: { id: "plan-1", title: "Laptop", description: null, totalAmount: "1200.00", installmentsCount: 12, installmentAmount: "100.00", startMonth: "2026-06", paidInstallmentsCount: 2, categoryId: null, subcategoryId: null, createdAt: "now", updatedAt: "now" },
+        status: "reconciled",
+        fromPaidInstallmentsCount: 1,
+        toPaidInstallmentsCount: 2,
+        effects: [
+          { planId: "plan-1", installmentIndex: 1, status: "already_exists" },
+          { planId: "plan-1", installmentIndex: 2, status: "created" },
+        ],
+      }],
+    } });
+
+    await expect(new HttpCuotasRepository().reconcileDue()).resolves.toEqual({
+      updatedPlanCount: 1,
+      createdTransactionCount: 1,
+      results: [expect.objectContaining({
+        status: "reconciled",
+        toPaidInstallmentsCount: 2,
+        effects: [
+          { planId: "plan-1", installmentIndex: 1, status: "already_exists" },
+          { planId: "plan-1", installmentIndex: 2, status: "created" },
+        ],
+      })],
+    });
+    expect(httpPostMock).toHaveBeenCalledWith("/api/installments/reconcile-due", {});
+  });
 });

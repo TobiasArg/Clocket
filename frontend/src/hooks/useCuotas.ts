@@ -4,6 +4,8 @@ import {
   type CreateCuotaInput,
   type CuotaPlanItem,
   type CuotasRepository,
+  type MarkCuotaPaidResult,
+  type ReconcileDueCuotasResult,
   type UpdateCuotaPatch,
 } from "@/utils";
 
@@ -18,6 +20,8 @@ export interface UseCuotasResult {
   refresh: () => Promise<void>;
   create: (input: CreateCuotaInput) => Promise<CuotaPlanItem | null>;
   update: (id: string, patch: UpdateCuotaPatch) => Promise<CuotaPlanItem | null>;
+  markPaid: (id: string) => Promise<MarkCuotaPaidResult | null>;
+  reconcileDue: () => Promise<ReconcileDueCuotasResult | null>;
   remove: (id: string) => Promise<boolean>;
   clearAll: () => Promise<void>;
 }
@@ -146,6 +150,60 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
     [isSharedRepository, repository],
   );
 
+  const markPaid = useCallback(
+    async (id: string): Promise<MarkCuotaPaidResult | null> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await repository.markPaid(id);
+        if (!result) {
+          return null;
+        }
+
+        if (isSharedRepository && sharedCuotasCache !== null) {
+          sharedCuotasCache = sharedCuotasCache.map(
+            (item) => (item.id === result.plan.id ? result.plan : item),
+          );
+        }
+        setItems((current) =>
+          current.map((item) => (item.id === result.plan.id ? result.plan : item)),
+        );
+        return result;
+      } catch (markPaidError) {
+        setError(getErrorMessage(markPaidError));
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isSharedRepository, repository],
+  );
+
+  const reconcileDue = useCallback(
+    async (): Promise<ReconcileDueCuotasResult | null> => {
+      setError(null);
+
+      try {
+        const result = await repository.reconcileDue();
+        if (result.results.length > 0) {
+          const reconciledById = new Map(
+            result.results.map((item) => [item.plan.id, item.plan]),
+          );
+          if (isSharedRepository && sharedCuotasCache !== null) {
+            sharedCuotasCache = sharedCuotasCache.map((item) => reconciledById.get(item.id) ?? item);
+          }
+          setItems((current) => current.map((item) => reconciledById.get(item.id) ?? item));
+        }
+        return result;
+      } catch (reconcileError) {
+        setError(getErrorMessage(reconcileError));
+        return null;
+      }
+    },
+    [isSharedRepository, repository],
+  );
+
   const remove = useCallback(
     async (id: string): Promise<boolean> => {
       setIsLoading(true);
@@ -200,6 +258,8 @@ export const useCuotas = (options: UseCuotasOptions = {}): UseCuotasResult => {
     refresh,
     create,
     update,
+    markPaid,
+    reconcileDue,
     remove,
     clearAll,
   };

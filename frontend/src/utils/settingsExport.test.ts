@@ -54,6 +54,8 @@ const createExportRepositories = (): SettingsExportRepositories => ({
     getById: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    markPaid: vi.fn(),
+    reconcileDue: vi.fn(),
     remove: vi.fn(),
     clearAll: vi.fn(),
   },

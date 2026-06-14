@@ -2,6 +2,9 @@ import type {
   CreateCuotaInput,
   CuotaPlanItem,
   CuotasRepository,
+  MarkCuotaPaidResult,
+  ReconcileDueCuotasResult,
+  ReconciledCuotaPlanResult,
   UpdateCuotaPatch,
 } from "@/domain/cuotas/repository";
 import {
@@ -620,6 +623,88 @@ export class LocalStorageCuotasRepository implements CuotasRepository {
     }
 
     return cloneCuota(updated);
+  }
+
+  public async markPaid(id: string): Promise<MarkCuotaPaidResult | null> {
+    const current = await this.getById(id);
+    if (!current) {
+      return null;
+    }
+
+    if (current.paidInstallmentsCount >= current.installmentsCount) {
+      return {
+        plan: current,
+        status: "already_finished",
+        installmentIndex: null,
+        dueDate: null,
+        effects: [],
+      };
+    }
+
+    const installmentIndex = current.paidInstallmentsCount + 1;
+    const dueDateParts = getInstallmentDateParts(current.createdAt, installmentIndex);
+    if (!dueDateParts || isFutureDateParts(dueDateParts, getTodayDatePartsLocal())) {
+      return {
+        plan: current,
+        status: "blocked_future",
+        installmentIndex,
+        dueDate: getInstallmentDateString(current.createdAt, installmentIndex),
+        blockedReason: "future_installment",
+        effects: [],
+      };
+    }
+
+    const updated = await this.update(id, {
+      paidInstallmentsCount: Math.min(current.installmentsCount, installmentIndex),
+    });
+
+    return updated
+      ? {
+          plan: updated,
+          status: "paid",
+          installmentIndex,
+          dueDate: getInstallmentDateString(current.createdAt, installmentIndex),
+          effects: [{ planId: id, installmentIndex, status: "created" }],
+        }
+      : null;
+  }
+
+  public async reconcileDue(): Promise<ReconcileDueCuotasResult> {
+    const currentItems = await this.list();
+    const results: ReconciledCuotaPlanResult[] = [];
+    let createdTransactionCount = 0;
+
+    for (const item of currentItems) {
+      const targetPaidInstallmentsCount = Math.min(
+        item.installmentsCount,
+        Math.max(item.paidInstallmentsCount, getFulfilledInstallmentsByDate(item.createdAt)),
+      );
+      const updated = targetPaidInstallmentsCount > item.paidInstallmentsCount
+        ? await this.update(item.id, { paidInstallmentsCount: targetPaidInstallmentsCount })
+        : item;
+      const effects = Array.from(
+        { length: Math.max(0, targetPaidInstallmentsCount - item.paidInstallmentsCount) },
+        (_, index) => ({
+          planId: item.id,
+          installmentIndex: item.paidInstallmentsCount + index + 1,
+          status: "created" as const,
+        }),
+      );
+      createdTransactionCount += effects.length;
+      results.push({
+        plan: updated ?? item,
+        status: effects.length > 0 ? "reconciled" : "noop",
+        fromPaidInstallmentsCount: item.paidInstallmentsCount,
+        toPaidInstallmentsCount: updated?.paidInstallmentsCount ?? item.paidInstallmentsCount,
+        effects,
+      });
+    }
+
+    return {
+      updatedPlanCount: results.filter((result) => result.toPaidInstallmentsCount > result.fromPaidInstallmentsCount).length,
+      createdTransactionCount,
+      results,
+    };
   }
 
   public async remove(id: string): Promise<boolean> {

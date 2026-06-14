@@ -68,8 +68,12 @@ export {
 
 export type {
   CreateCuotaInput,
+  CuotaLedgerEffectItem,
   CuotaPlanItem,
   CuotasRepository,
+  MarkCuotaPaidResult,
+  ReconcileDueCuotasResult,
+  ReconciledCuotaPlanResult,
   UpdateCuotaPatch,
 } from "./cuotas/repository";
 

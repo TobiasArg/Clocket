@@ -147,8 +147,12 @@ export type { CategoryColorKey, CategoryColorOption } from "@/domain/categories/
 
 export type {
   CreateCuotaInput,
+  CuotaLedgerEffectItem,
   CuotaPlanItem,
   CuotasRepository,
+  MarkCuotaPaidResult,
+  ReconcileDueCuotasResult,
+  ReconciledCuotaPlanResult,
   UpdateCuotaPatch,
 } from "@/domain/cuotas/repository";
 

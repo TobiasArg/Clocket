@@ -3,9 +3,6 @@ import { useCurrency } from "./useCurrency";
 import { useCuotas } from "./useCuotas";
 import type { CuotaPlanStatus, CuotaPlanWithStatus } from "@/types";
 import {
-  compareDateParts,
-  getFulfilledInstallmentsByDate,
-  getInstallmentDateParts,
   getTodayDatePartsLocal,
   isFutureDateParts,
   parseDateParts,
@@ -77,36 +74,12 @@ const getPlanStatus = (paidInstallmentsCount: number, installmentsCount: number)
   return paidInstallmentsCount >= installmentsCount ? "finished" : "active";
 };
 
-export const getPlansNeedingPaidInstallmentsAutoSync = (
-  items: Array<{
-    id: string;
-    installmentsCount: number;
-    paidInstallmentsCount: number;
-    createdAt: string;
-  }>,
-): Array<{ id: string; nextPaidInstallmentsCount: number }> => items
-  .map((item) => {
-    const fulfilledByDate = Math.min(
-      item.installmentsCount,
-      getFulfilledInstallmentsByDate(item.createdAt),
-    );
-    const nextPaidInstallmentsCount = Math.max(item.paidInstallmentsCount, fulfilledByDate);
-
-    return {
-      id: item.id,
-      nextPaidInstallmentsCount,
-      shouldSync: nextPaidInstallmentsCount > item.paidInstallmentsCount,
-    };
-  })
-  .filter((plan) => plan.shouldSync)
-  .map(({ id, nextPaidInstallmentsCount }) => ({ id, nextPaidInstallmentsCount }));
-
 export const usePlansPageModel = (
   options: UsePlansPageModelOptions = {},
 ): UsePlansPageModelResult => {
   const { onAddClick } = options;
   const { currency: appCurrency } = useCurrency();
-  const { items, isLoading, error, create, update, remove } = useCuotas();
+  const { items, isLoading, error, create, markPaid, reconcileDue, remove } = useCuotas();
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [nameInput, setNameInput] = useState<string>("");
@@ -122,7 +95,7 @@ export const usePlansPageModel = (
   const [invalidDatePlanId, setInvalidDatePlanId] = useState<string | null>(null);
   const paidFeedbackTimeoutRef = useRef<number | null>(null);
   const invalidDateTimeoutRef = useRef<number | null>(null);
-  const paidInstallmentsAutoSyncRef = useRef<boolean>(false);
+  const reconcileDueRequestedRef = useRef<boolean>(false);
 
   useEffect(() => {
     return () => {
@@ -137,45 +110,22 @@ export const usePlansPageModel = (
 
   const plansWithStatus = useMemo<CuotaPlanWithStatus[]>(
     () => items.map((item) => {
-      const fulfilledByDate = getFulfilledInstallmentsByDate(item.createdAt);
-      const effectivePaidInstallments = Math.min(
-        item.installmentsCount,
-        Math.max(item.paidInstallmentsCount, fulfilledByDate),
-      );
-
       return {
         ...item,
-        paidInstallmentsCount: effectivePaidInstallments,
-        status: getPlanStatus(effectivePaidInstallments, item.installmentsCount),
+        status: getPlanStatus(item.paidInstallmentsCount, item.installmentsCount),
       };
     }),
     [items],
   );
 
   useEffect(() => {
-    if (paidInstallmentsAutoSyncRef.current || items.length === 0) {
+    if (reconcileDueRequestedRef.current || isLoading || items.length === 0) {
       return;
     }
 
-    const plansToSync = getPlansNeedingPaidInstallmentsAutoSync(items);
-
-    if (plansToSync.length === 0) {
-      return;
-    }
-
-    paidInstallmentsAutoSyncRef.current = true;
-    void (async () => {
-      try {
-        for (const plan of plansToSync) {
-          await update(plan.id, {
-            paidInstallmentsCount: plan.nextPaidInstallmentsCount,
-          });
-        }
-      } finally {
-        paidInstallmentsAutoSyncRef.current = false;
-      }
-    })();
-  }, [items, update]);
+    reconcileDueRequestedRef.current = true;
+    void reconcileDue();
+  }, [isLoading, items.length, reconcileDue]);
 
   const totalCount = plansWithStatus.length;
 
@@ -251,10 +201,7 @@ export const usePlansPageModel = (
       installmentsCount: installmentsCountValue,
       startMonth: normalizedCreationDate.slice(0, 7),
       createdAt: normalizedCreationDate,
-      paidInstallmentsCount: Math.min(
-        installmentsCountValue,
-        getFulfilledInstallmentsByDate(`${normalizedCreationDate}T12:00:00`),
-      ),
+      paidInstallmentsCount: 0,
     });
 
     if (!created) {
@@ -262,6 +209,7 @@ export const usePlansPageModel = (
     }
 
     resetEditor();
+    void reconcileDue();
   }, [
     isFormValid,
     nameInput,
@@ -270,6 +218,7 @@ export const usePlansPageModel = (
     installmentsCountValue,
     normalizedCreationDate,
     create,
+    reconcileDue,
     resetEditor,
   ]);
 
@@ -283,14 +232,18 @@ export const usePlansPageModel = (
       return;
     }
 
-    const nextInstallmentIndex = targetPlan.paidInstallmentsCount + 1;
-    const nextInstallmentDateParts = getInstallmentDateParts(
-      targetPlan.createdAt,
-      nextInstallmentIndex,
-    );
-    const isInvalidInstallmentDate = !nextInstallmentDateParts ||
-      compareDateParts(nextInstallmentDateParts, getTodayDatePartsLocal()) > 0;
-    if (isInvalidInstallmentDate) {
+    setPendingPaidPlanId(id);
+    setInvalidDatePlanId((current) => (current === id ? null : current));
+
+    const result = await markPaid(id);
+
+    setPendingPaidPlanId((current) => (current === id ? null : current));
+
+    if (!result) {
+      return;
+    }
+
+    if (result.status === "blocked_future") {
       setInvalidDatePlanId(id);
       if (invalidDateTimeoutRef.current !== null) {
         window.clearTimeout(invalidDateTimeoutRef.current);
@@ -302,19 +255,7 @@ export const usePlansPageModel = (
       return;
     }
 
-    setPendingPaidPlanId(id);
-    setInvalidDatePlanId((current) => (current === id ? null : current));
-
-    const updated = await update(id, {
-      paidInstallmentsCount: Math.min(
-        targetPlan.installmentsCount,
-        targetPlan.paidInstallmentsCount + 1,
-      ),
-    });
-
-    setPendingPaidPlanId((current) => (current === id ? null : current));
-
-    if (!updated) {
+    if (result.status !== "paid") {
       return;
     }
 
@@ -326,7 +267,7 @@ export const usePlansPageModel = (
       setPaidFeedbackPlanId((current) => (current === id ? null : current));
       paidFeedbackTimeoutRef.current = null;
     }, 850);
-  }, [plansWithStatus, pendingPaidPlanId, update]);
+  }, [markPaid, plansWithStatus, pendingPaidPlanId]);
 
   const handleDeletePlan = useCallback(async (id: string) => {
     if (!id || pendingPaidPlanId === id) {
