@@ -25,13 +25,23 @@ const basePlan = {
 };
 
 const createTransactionClientMock = () => ({
+  account: {
+    findFirst: vi.fn(),
+    create: vi.fn(),
+  },
   installmentPlan: {
     create: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
   },
   transaction: {
     deleteMany: vi.fn(),
     createMany: vi.fn(),
+    findFirst: vi.fn(),
+    create: vi.fn(),
+    updateMany: vi.fn(),
   },
 });
 
@@ -193,18 +203,116 @@ describe("createInstallmentPlansRepository", () => {
     });
   });
 
-  it("soft deletes active plans", async () => {
-    const { prisma } = createPrismaMock();
+  it("marks the next due installment paid and creates the generated ledger transaction transactionally", async () => {
+    const { prisma, tx } = createPrismaMock();
+    tx.installmentPlan.findFirst.mockResolvedValue({
+      ...basePlan,
+      paidInstallmentsCount: 1,
+    });
+    tx.account.findFirst.mockResolvedValue({ id: accountId });
+    tx.transaction.findFirst.mockResolvedValue(null);
+    tx.transaction.create.mockResolvedValue({ id: "transaction-1" });
+    tx.installmentPlan.update.mockResolvedValue({
+      ...basePlan,
+      paidInstallmentsCount: 2,
+      updatedAt: new Date("2026-07-15T12:00:00.000Z"),
+    });
+    const repository = createInstallmentPlansRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.markNextDuePaid(planId, new Date("2026-07-15T12:00:00.000Z"))).resolves.toMatchObject({
+      status: "paid",
+      installmentIndex: 2,
+      dueDate: "2026-07-01",
+      plan: { paidInstallmentsCount: 2 },
+      effects: [{ planId, installmentIndex: 2, status: "created" }],
+    });
+    expect(tx.installmentPlan.update).toHaveBeenCalledWith({
+      where: { id: planId },
+      data: { paidInstallmentsCount: 2 },
+    });
+    expect(tx.transaction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        amount: new Prisma.Decimal("-100.00"),
+        date: new Date("2026-07-01T00:00:00.000Z"),
+        cuotaInstallmentIndex: 2,
+      }),
+    });
+  });
+
+  it("returns a blocked future state without ledger writes", async () => {
+    const { prisma, tx } = createPrismaMock();
+    tx.installmentPlan.findFirst.mockResolvedValue({
+      ...basePlan,
+      startMonth: new Date("2026-08-01T00:00:00.000Z"),
+      paidInstallmentsCount: 0,
+    });
+    const repository = createInstallmentPlansRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.markNextDuePaid(planId, new Date("2026-07-15T12:00:00.000Z"))).resolves.toMatchObject({
+      status: "blocked_future",
+      installmentIndex: 1,
+      dueDate: "2026-08-01",
+      effects: [],
+    });
+    expect(tx.account.findFirst).not.toHaveBeenCalled();
+    expect(tx.transaction.create).not.toHaveBeenCalled();
+    expect(tx.installmentPlan.update).not.toHaveBeenCalled();
+  });
+
+  it("reconciles elapsed installments without duplicating existing generated transactions", async () => {
+    const { prisma, tx } = createPrismaMock();
+    tx.installmentPlan.findMany.mockResolvedValue([{
+      ...basePlan,
+      installmentsCount: 4,
+      paidInstallmentsCount: 1,
+      startMonth: new Date("2026-06-01T00:00:00.000Z"),
+    }]);
+    tx.account.findFirst.mockResolvedValue({ id: accountId });
+    tx.transaction.findFirst
+      .mockResolvedValueOnce({ id: "existing-installment-1" })
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    tx.transaction.create.mockResolvedValue({ id: "created-installment" });
+    tx.installmentPlan.update.mockResolvedValue({
+      ...basePlan,
+      installmentsCount: 4,
+      paidInstallmentsCount: 3,
+      startMonth: new Date("2026-06-01T00:00:00.000Z"),
+    });
+    const repository = createInstallmentPlansRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.reconcileDue(new Date("2026-08-20T12:00:00.000Z"))).resolves.toMatchObject([{
+      fromPaidInstallmentsCount: 1,
+      toPaidInstallmentsCount: 3,
+      effects: [
+        { installmentIndex: 1, status: "already_exists" },
+        { installmentIndex: 2, status: "created" },
+        { installmentIndex: 3, status: "created" },
+      ],
+    }]);
+    expect(tx.transaction.create).toHaveBeenCalledTimes(2);
+    expect(tx.installmentPlan.update).toHaveBeenCalledWith({
+      where: { id: planId },
+      data: { paidInstallmentsCount: 3 },
+    });
+  });
+
+  it("soft deletes generated transactions when deleting active plans", async () => {
+    const { prisma, tx } = createPrismaMock();
     prisma.installmentPlan.findFirst.mockResolvedValue({ id: planId });
-    prisma.installmentPlan.update.mockResolvedValue({
+    tx.installmentPlan.update.mockResolvedValue({
       ...basePlan,
       deletedAt: new Date("2026-06-02T12:00:00.000Z"),
     });
     const repository = createInstallmentPlansRepository(prisma as unknown as PrismaClient);
 
     await expect(repository.softDelete(planId)).resolves.toBe(true);
-    expect(prisma.installmentPlan.update).toHaveBeenCalledWith({
+    expect(tx.installmentPlan.update).toHaveBeenCalledWith({
       where: { id: planId },
+      data: { deletedAt: expect.any(Date) as Date },
+    });
+    expect(tx.transaction.updateMany).toHaveBeenCalledWith({
+      where: { installmentPlanId: planId, deletedAt: null },
       data: { deletedAt: expect.any(Date) as Date },
     });
   });

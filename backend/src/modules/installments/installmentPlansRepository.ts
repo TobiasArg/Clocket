@@ -56,11 +56,40 @@ export interface InstallmentPlansRepository {
   getById: (id: string) => Promise<InstallmentPlanRecord | null>;
   create: (input: CreateInstallmentPlanInput) => Promise<InstallmentPlanRecord>;
   update: (id: string, input: UpdateInstallmentPlanInput) => Promise<InstallmentPlanRecord | null>;
+  markNextDuePaid: (id: string, now: Date) => Promise<MarkNextDuePaidResult | null>;
+  reconcileDue: (now: Date) => Promise<ReconcileDueResult[]>;
   softDelete: (id: string) => Promise<boolean>;
   softDeleteAll: () => Promise<number>;
 }
 
+export type GeneratedInstallmentLedgerEffectStatus = "created" | "already_exists";
+
+export interface GeneratedInstallmentLedgerEffectRecord {
+  planId: string;
+  installmentIndex: number;
+  status: GeneratedInstallmentLedgerEffectStatus;
+}
+
+export type MarkNextDuePaidStatus = "paid" | "already_finished" | "blocked_future";
+
+export interface MarkNextDuePaidResult {
+  plan: InstallmentPlanRecord;
+  status: MarkNextDuePaidStatus;
+  installmentIndex: number | null;
+  dueDate: string | null;
+  effects: GeneratedInstallmentLedgerEffectRecord[];
+}
+
+export interface ReconcileDueResult {
+  plan: InstallmentPlanRecord;
+  fromPaidInstallmentsCount: number;
+  toPaidInstallmentsCount: number;
+  effects: GeneratedInstallmentLedgerEffectRecord[];
+}
+
 type InstallmentPlanModel = NonNullable<Awaited<ReturnType<PrismaClient["installmentPlan"]["findUnique"]>>>;
+
+type PrismaTransactionClient = Prisma.TransactionClient;
 
 interface NormalizedRefs {
   categoryId: string | null;
@@ -97,6 +126,34 @@ const toStartMonth = (value: string | Date): Date => {
 const addMonths = (value: Date, months: number): Date => (
   new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth() + months, 1))
 );
+
+const toDateOnly = (value: Date): string => value.toISOString().slice(0, 10);
+
+const toUtcDateOnly = (value: Date): Date => new Date(Date.UTC(
+  value.getUTCFullYear(),
+  value.getUTCMonth(),
+  value.getUTCDate(),
+));
+
+const getInstallmentDueDate = (startMonth: Date, installmentIndex: number): Date => (
+  addMonths(startMonth, installmentIndex - 1)
+);
+
+const getElapsedDueInstallmentsCount = (
+  plan: Pick<InstallmentPlanModel, "installmentsCount" | "startMonth">,
+  now: Date,
+): number => {
+  const today = toUtcDateOnly(now);
+  const start = toUtcDateOnly(plan.startMonth);
+
+  if (today.getTime() < start.getTime()) {
+    return 0;
+  }
+
+  const elapsedMonths = (today.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+    (today.getUTCMonth() - start.getUTCMonth());
+  return Math.min(plan.installmentsCount, Math.max(0, elapsedMonths + 1));
+};
 
 const trimNullable = (value: string | null | undefined): string | null | undefined => {
   if (value === undefined) {
@@ -251,6 +308,108 @@ const syncGeneratedTransactions = async (
   await tx.transaction.createMany({ data: transactions });
 };
 
+const CREDIT_CARD_ACCOUNT_NAME = "Tarjeta de Credito";
+const CREDIT_CARD_ACCOUNT_ICON = "credit-card";
+
+const ensureGeneratedTransactionAccount = async (
+  tx: Pick<PrismaTransactionClient, "account">,
+  currency: CurrencyCode,
+): Promise<string> => {
+  const existing = await tx.account.findFirst({
+    where: { name: CREDIT_CARD_ACCOUNT_NAME, deletedAt: null },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (existing) {
+    return existing.id;
+  }
+
+  const created = await tx.account.create({
+    data: {
+      name: CREDIT_CARD_ACCOUNT_NAME,
+      balance: new Prisma.Decimal(0),
+      currency,
+      icon: CREDIT_CARD_ACCOUNT_ICON,
+    },
+    select: { id: true },
+  });
+
+  return created.id;
+};
+
+const buildGeneratedTransactionForIndex = (
+  plan: InstallmentPlanModel,
+  accountId: string,
+  installmentIndex: number,
+): Prisma.TransactionCreateInput => ({
+  account: { connect: { id: accountId } },
+  ...(plan.categoryId ? { category: { connect: { id: plan.categoryId } } } : {}),
+  ...(plan.subcategoryId ? { subcategory: { connect: { id: plan.subcategoryId } } } : {}),
+  installmentPlan: { connect: { id: plan.id } },
+  transactionType: "REGULAR",
+  name: plan.title,
+  amount: plan.installmentAmount.negated(),
+  currency: plan.currency,
+  date: getInstallmentDueDate(plan.startMonth, installmentIndex),
+  uiIcon: "credit-card",
+  uiIconBg: "bg-[#18181B]",
+  cuotaInstallmentIndex: installmentIndex,
+  cuotaInstallmentsCount: plan.installmentsCount,
+});
+
+const ensureGeneratedTransactionForIndex = async (
+  tx: Pick<PrismaTransactionClient, "transaction">,
+  plan: InstallmentPlanModel,
+  accountId: string,
+  installmentIndex: number,
+): Promise<GeneratedInstallmentLedgerEffectRecord> => {
+  const existing = await tx.transaction.findFirst({
+    where: {
+      installmentPlanId: plan.id,
+      cuotaInstallmentIndex: installmentIndex,
+      deletedAt: null,
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return { planId: plan.id, installmentIndex, status: "already_exists" };
+  }
+
+  await tx.transaction.create({
+    data: buildGeneratedTransactionForIndex(plan, accountId, installmentIndex),
+  });
+
+  return { planId: plan.id, installmentIndex, status: "created" };
+};
+
+const reconcileGeneratedTransactions = async (
+  tx: Pick<PrismaTransactionClient, "account" | "transaction">,
+  plan: InstallmentPlanModel,
+  targetPaidInstallmentsCount: number,
+): Promise<GeneratedInstallmentLedgerEffectRecord[]> => {
+  const accountId = await ensureGeneratedTransactionAccount(tx, plan.currency);
+  const effects: GeneratedInstallmentLedgerEffectRecord[] = [];
+
+  for (let index = 1; index <= targetPaidInstallmentsCount; index += 1) {
+    effects.push(await ensureGeneratedTransactionForIndex(tx, plan, accountId, index));
+  }
+
+  return effects;
+};
+
+const softDeleteGeneratedTransactionsByPlanId = async (
+  tx: Pick<PrismaTransactionClient, "transaction">,
+  planId: string,
+  deletedAt: Date,
+): Promise<void> => {
+  await tx.transaction.updateMany({
+    where: { installmentPlanId: planId, deletedAt: null },
+    data: { deletedAt },
+  });
+};
+
 export const createInstallmentPlansRepository = (prisma: PrismaClient): InstallmentPlansRepository => ({
   async listActive() {
     const plans = await prisma.installmentPlan.findMany({
@@ -385,6 +544,113 @@ export const createInstallmentPlansRepository = (prisma: PrismaClient): Installm
     return toInstallmentPlanRecord(plan);
   },
 
+  async markNextDuePaid(id, now) {
+    const result = await prisma.$transaction(async (tx) => {
+      const plan = await tx.installmentPlan.findFirst({ where: { id, deletedAt: null } });
+
+      if (!plan) {
+        return null;
+      }
+
+      if (plan.paidInstallmentsCount >= plan.installmentsCount) {
+        return {
+          plan,
+          status: "already_finished" as const,
+          installmentIndex: null,
+          dueDate: null,
+          effects: [],
+        };
+      }
+
+      const installmentIndex = plan.paidInstallmentsCount + 1;
+      const dueDate = getInstallmentDueDate(plan.startMonth, installmentIndex);
+
+      if (toUtcDateOnly(dueDate).getTime() > toUtcDateOnly(now).getTime()) {
+        return {
+          plan,
+          status: "blocked_future" as const,
+          installmentIndex,
+          dueDate: toDateOnly(dueDate),
+          effects: [],
+        };
+      }
+
+      const effects = await reconcileGeneratedTransactions(tx, plan, installmentIndex);
+      const updatedPlan = await tx.installmentPlan.update({
+        where: { id: plan.id },
+        data: { paidInstallmentsCount: installmentIndex },
+      });
+
+      return {
+        plan: updatedPlan,
+        status: "paid" as const,
+        installmentIndex,
+        dueDate: toDateOnly(dueDate),
+        effects: effects.filter((effect) => effect.installmentIndex === installmentIndex),
+      };
+    });
+
+    return result
+      ? { ...result, plan: toInstallmentPlanRecord(result.plan) }
+      : null;
+  },
+
+  async reconcileDue(now) {
+    const results = await prisma.$transaction(async (tx) => {
+      const plans = await tx.installmentPlan.findMany({ where: { deletedAt: null } });
+      const reconciled: Array<{
+        plan: InstallmentPlanModel;
+        fromPaidInstallmentsCount: number;
+        toPaidInstallmentsCount: number;
+        effects: GeneratedInstallmentLedgerEffectRecord[];
+      }> = [];
+
+      for (const plan of plans) {
+        const elapsedDueInstallments = getElapsedDueInstallmentsCount(plan, now);
+        const targetPaidInstallmentsCount = Math.max(
+          plan.paidInstallmentsCount,
+          elapsedDueInstallments,
+        );
+
+        if (targetPaidInstallmentsCount <= 0) {
+          reconciled.push({
+            plan,
+            fromPaidInstallmentsCount: plan.paidInstallmentsCount,
+            toPaidInstallmentsCount: plan.paidInstallmentsCount,
+            effects: [],
+          });
+          continue;
+        }
+
+        const effects = await reconcileGeneratedTransactions(
+          tx,
+          plan,
+          targetPaidInstallmentsCount,
+        );
+        const updatedPlan = targetPaidInstallmentsCount > plan.paidInstallmentsCount
+          ? await tx.installmentPlan.update({
+              where: { id: plan.id },
+              data: { paidInstallmentsCount: targetPaidInstallmentsCount },
+            })
+          : plan;
+
+        reconciled.push({
+          plan: updatedPlan,
+          fromPaidInstallmentsCount: plan.paidInstallmentsCount,
+          toPaidInstallmentsCount: updatedPlan.paidInstallmentsCount,
+          effects,
+        });
+      }
+
+      return reconciled;
+    });
+
+    return results.map((result) => ({
+      ...result,
+      plan: toInstallmentPlanRecord(result.plan),
+    }));
+  },
+
   async softDelete(id) {
     const existing = await prisma.installmentPlan.findFirst({
       where: { id, deletedAt: null },
@@ -395,18 +661,35 @@ export const createInstallmentPlansRepository = (prisma: PrismaClient): Installm
       return false;
     }
 
-    await prisma.installmentPlan.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    await prisma.$transaction(async (tx) => {
+      const deletedAt = new Date();
+      await tx.installmentPlan.update({
+        where: { id },
+        data: { deletedAt },
+      });
+      await softDeleteGeneratedTransactionsByPlanId(tx, id, deletedAt);
     });
 
     return true;
   },
 
   async softDeleteAll() {
-    const result = await prisma.installmentPlan.updateMany({
-      where: { deletedAt: null },
-      data: { deletedAt: new Date() },
+    const result = await prisma.$transaction(async (tx) => {
+      const deletedAt = new Date();
+      const activePlans = await tx.installmentPlan.findMany({
+        where: { deletedAt: null },
+        select: { id: true },
+      });
+      const updateResult = await tx.installmentPlan.updateMany({
+        where: { deletedAt: null },
+        data: { deletedAt },
+      });
+
+      for (const plan of activePlans) {
+        await softDeleteGeneratedTransactionsByPlanId(tx, plan.id, deletedAt);
+      }
+
+      return updateResult;
     });
 
     return result.count;
