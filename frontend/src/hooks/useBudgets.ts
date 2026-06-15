@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   budgetsRepository,
   type BudgetPlanItem,
+  type BudgetUsageDetailResult,
+  type BudgetUsageListResult,
   type BudgetsRepository,
   type CreateBudgetInput,
   type UpdateBudgetPatch,
@@ -16,6 +18,8 @@ export interface UseBudgetsResult {
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  listUsage: (periodMonth: string) => Promise<BudgetUsageListResult | null>;
+  getUsageById: (id: string, periodMonth?: string) => Promise<BudgetUsageDetailResult | null>;
   create: (input: CreateBudgetInput) => Promise<BudgetPlanItem | null>;
   update: (id: string, patch: UpdateBudgetPatch) => Promise<BudgetPlanItem | null>;
   remove: (id: string) => Promise<boolean>;
@@ -94,6 +98,55 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
   const refresh = useCallback(async () => {
     await loadBudgets(true);
   }, [loadBudgets]);
+
+  const listUsage = useCallback(async (periodMonth: string): Promise<BudgetUsageListResult | null> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const usage = await repository.listUsage(periodMonth);
+      const usageBudgets = usage.budgets.map((item) => item.budget);
+      if (isSharedRepository) {
+        const existing = sharedBudgetsCache ?? [];
+        const existingById = new Map(existing.map((item) => [item.id, item]));
+        usageBudgets.forEach((budget) => existingById.set(budget.id, budget));
+        sharedBudgetsCache = Array.from(existingById.values());
+      }
+      setItems((current) => {
+        const byId = new Map(current.map((item) => [item.id, item]));
+        usageBudgets.forEach((budget) => byId.set(budget.id, budget));
+        return Array.from(byId.values());
+      });
+      return usage;
+    } catch (usageError) {
+      setError(getErrorMessage(usageError));
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isSharedRepository, repository]);
+
+  const getUsageById = useCallback(async (id: string, periodMonth?: string): Promise<BudgetUsageDetailResult | null> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const usage = await repository.getUsageById(id, periodMonth);
+      if (!usage) {
+        return null;
+      }
+      if (isSharedRepository && sharedBudgetsCache !== null) {
+        sharedBudgetsCache = sharedBudgetsCache.map((item) => item.id === usage.budget.id ? usage.budget : item);
+      }
+      setItems((current) => current.map((item) => item.id === usage.budget.id ? usage.budget : item));
+      return usage;
+    } catch (usageError) {
+      setError(getErrorMessage(usageError));
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isSharedRepository, repository]);
 
   const create = useCallback(
     async (input: CreateBudgetInput): Promise<BudgetPlanItem | null> => {
@@ -199,6 +252,8 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
     isLoading,
     error,
     refresh,
+    listUsage,
+    getUsageById,
     create,
     update,
     remove,

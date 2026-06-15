@@ -1,4 +1,5 @@
-import type { BudgetPlanItem, BudgetScopeRule, BudgetsRepository, CreateBudgetInput, UpdateBudgetPatch } from "@/domain/budgets/repository";
+import { BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN } from "@/domain/budgets/budgetScopeMatcher";
+import type { BudgetPlanItem, BudgetScopeRule, BudgetUsageDetailResult, BudgetUsageItem, BudgetUsageListResult, BudgetUsageSummaryItem, BudgetsRepository, CreateBudgetInput, UpdateBudgetPatch } from "@/domain/budgets/repository";
 import type { CategoryResponse } from "./categoriesRepository";
 import { coreFinanceHttpClient, isNotFoundError, withCoreFinanceErrors } from "./coreFinanceHttpClient";
 import { ensureFeatureBackendCleanStartCutover } from "./featureDomainCleanStart";
@@ -8,6 +9,7 @@ interface BudgetScopeRuleResponse {
   categoryId: string;
   mode: "all_subcategories" | "selected_subcategories";
   selectedSubcategoryIds: string[];
+  includeNoSubcategory: boolean;
 }
 
 interface BudgetResponse {
@@ -23,6 +25,40 @@ interface BudgetResponse {
 
 interface BudgetListResponse { budgets: BudgetResponse[] }
 interface DeleteResponse { deleted: true }
+interface BudgetUsageSummaryResponse {
+  totalLimitAmount: string;
+  totalSpentAmount: string;
+  rawProgress: number;
+  clampedProgress: number;
+  remainingAmount: string;
+  overspentAmount: string;
+}
+interface BudgetUsageItemResponse {
+  budget: BudgetResponse;
+  spentAmount: string;
+  rawProgress: number;
+  clampedProgress: number;
+  remainingAmount: string;
+  overspentAmount: string;
+}
+interface BudgetUsageListResponse {
+  periodMonth: string;
+  summary: BudgetUsageSummaryResponse;
+  budgets: BudgetUsageItemResponse[];
+}
+interface BudgetUsageDetailGroupResponse {
+  categoryId: string | null;
+  subcategoryId: string | null;
+  label: string;
+  amount: string;
+  percentageBasis: number;
+}
+interface BudgetUsageDetailResponse {
+  periodMonth: string;
+  budget: BudgetResponse;
+  usage: BudgetUsageItemResponse;
+  groups: BudgetUsageDetailGroupResponse[];
+}
 
 const toNumber = (value: string): number => Number(value);
 
@@ -56,8 +92,7 @@ export class HttpBudgetsRepository implements BudgetsRepository {
     ensureFeatureBackendCleanStartCutover();
   }
 
-  private async mapBudget(budget: BudgetResponse): Promise<BudgetPlanItem> {
-    const resolveNames = await buildSubcategoryNameResolver();
+  private mapBudgetWithResolver(budget: BudgetResponse, resolveNames: (categoryId: string, subcategoryIds: string[]) => string[]): BudgetPlanItem {
     return {
       id: budget.id,
       ...(budget.categoryId ? { categoryId: budget.categoryId } : {}),
@@ -70,22 +105,99 @@ export class HttpBudgetsRepository implements BudgetsRepository {
         categoryId: rule.categoryId,
         mode: rule.mode,
         ...(rule.mode === "selected_subcategories"
-          ? { subcategoryNames: resolveNames(rule.categoryId, rule.selectedSubcategoryIds) }
+          ? {
+              subcategoryNames: [
+                ...resolveNames(rule.categoryId, rule.selectedSubcategoryIds),
+                ...(rule.includeNoSubcategory ? [BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN] : []),
+              ],
+            }
           : {}),
       })),
     };
   }
 
+  private async mapBudget(budget: BudgetResponse): Promise<BudgetPlanItem> {
+    const resolveNames = await buildSubcategoryNameResolver();
+    return this.mapBudgetWithResolver(budget, resolveNames);
+  }
+
+  private mapUsageSummary(summary: BudgetUsageSummaryResponse): BudgetUsageSummaryItem {
+    return {
+      totalLimitAmount: toNumber(summary.totalLimitAmount),
+      totalSpentAmount: toNumber(summary.totalSpentAmount),
+      rawProgress: summary.rawProgress,
+      clampedProgress: summary.clampedProgress,
+      remainingAmount: toNumber(summary.remainingAmount),
+      overspentAmount: toNumber(summary.overspentAmount),
+    };
+  }
+
+  private mapUsageItem(item: BudgetUsageItemResponse, resolveNames: (categoryId: string, subcategoryIds: string[]) => string[]): BudgetUsageItem {
+    return {
+      budget: this.mapBudgetWithResolver(item.budget, resolveNames),
+      spentAmount: toNumber(item.spentAmount),
+      rawProgress: item.rawProgress,
+      clampedProgress: item.clampedProgress,
+      remainingAmount: toNumber(item.remainingAmount),
+      overspentAmount: toNumber(item.overspentAmount),
+    };
+  }
+
   public async list(): Promise<BudgetPlanItem[]> {
     return withCoreFinanceErrors(async () => {
-      const response = await coreFinanceHttpClient.get<BudgetListResponse>("/api/budgets");
-      return Promise.all(response.data.budgets.map((budget) => this.mapBudget(budget)));
+      const [response, resolveNames] = await Promise.all([
+        coreFinanceHttpClient.get<BudgetListResponse>("/api/budgets"),
+        buildSubcategoryNameResolver(),
+      ]);
+      return response.data.budgets.map((budget) => this.mapBudgetWithResolver(budget, resolveNames));
     });
   }
 
   public async getById(id: string): Promise<BudgetPlanItem | null> {
     try {
       return await withCoreFinanceErrors(async () => this.mapBudget((await coreFinanceHttpClient.get<BudgetResponse>(`/api/budgets/${id}`)).data));
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  public async listUsage(periodMonth: string): Promise<BudgetUsageListResult> {
+    return withCoreFinanceErrors(async () => {
+      const [response, resolveNames] = await Promise.all([
+        coreFinanceHttpClient.get<BudgetUsageListResponse>("/api/budgets/usage", { params: { periodMonth } }),
+        buildSubcategoryNameResolver(),
+      ]);
+      return {
+        periodMonth: response.data.periodMonth,
+        summary: this.mapUsageSummary(response.data.summary),
+        budgets: response.data.budgets.map((item) => this.mapUsageItem(item, resolveNames)),
+      };
+    });
+  }
+
+  public async getUsageById(id: string, periodMonth?: string): Promise<BudgetUsageDetailResult | null> {
+    try {
+      return await withCoreFinanceErrors(async () => {
+        const [response, resolveNames] = await Promise.all([
+          coreFinanceHttpClient.get<BudgetUsageDetailResponse>(`/api/budgets/${id}/usage`, {
+            params: periodMonth ? { periodMonth } : {},
+          }),
+          buildSubcategoryNameResolver(),
+        ]);
+        return {
+          periodMonth: response.data.periodMonth,
+          budget: this.mapBudgetWithResolver(response.data.budget, resolveNames),
+          usage: this.mapUsageItem(response.data.usage, resolveNames),
+          groups: response.data.groups.map((group) => ({
+            categoryId: group.categoryId,
+            subcategoryId: group.subcategoryId,
+            label: group.label,
+            amount: toNumber(group.amount),
+            percentageBasis: group.percentageBasis,
+          })),
+        };
+      });
     } catch (error) {
       if (isNotFoundError(error)) return null;
       throw error;

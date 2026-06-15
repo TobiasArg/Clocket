@@ -1,5 +1,7 @@
 import type {
   BudgetPlanItem,
+  BudgetUsageDetailResult,
+  BudgetUsageListResult,
   BudgetsRepository,
   CreateBudgetInput,
   UpdateBudgetPatch,
@@ -273,6 +275,51 @@ export class LocalStorageBudgetsRepository implements BudgetsRepository {
   public async getById(id: string): Promise<BudgetPlanItem | null> {
     const found = this.readState().items.find((item) => item.id === id);
     return found ? cloneBudget(found) : null;
+  }
+
+  public async listUsage(periodMonth: string): Promise<BudgetUsageListResult> {
+    const budgets = this.readState().items.filter((item) => item.month === periodMonth).map(cloneBudget);
+    const totalLimitAmount = budgets.reduce((sum, item) => sum + item.limitAmount, 0);
+    return {
+      periodMonth,
+      summary: {
+        totalLimitAmount,
+        totalSpentAmount: 0,
+        rawProgress: 0,
+        clampedProgress: 0,
+        remainingAmount: totalLimitAmount,
+        overspentAmount: 0,
+      },
+      budgets: budgets.map((budget) => ({
+        budget,
+        spentAmount: 0,
+        rawProgress: 0,
+        clampedProgress: 0,
+        remainingAmount: budget.limitAmount,
+        overspentAmount: 0,
+      })),
+    };
+  }
+
+  public async getUsageById(id: string, periodMonth?: string): Promise<BudgetUsageDetailResult | null> {
+    const budget = await this.getById(id);
+    if (!budget) {
+      return null;
+    }
+    const targetMonth = periodMonth ?? budget.month;
+    return {
+      periodMonth: targetMonth,
+      budget,
+      usage: {
+        budget,
+        spentAmount: 0,
+        rawProgress: 0,
+        clampedProgress: 0,
+        remainingAmount: budget.limitAmount,
+        overspentAmount: 0,
+      },
+      groups: [],
+    };
   }
 
   public async create(input: CreateBudgetInput): Promise<BudgetPlanItem> {

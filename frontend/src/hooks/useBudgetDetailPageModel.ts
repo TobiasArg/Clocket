@@ -1,8 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SubcategoryItem } from "@/types";
 import { useBudgets } from "./useBudgets";
 import { useCategories } from "./useCategories";
-import { useTransactions } from "./useTransactions";
 import { sanitizeScopeRulesForCategories } from "./useBudgetsPageModel";
 import {
   CATEGORY_COLOR_OPTIONS,
@@ -10,16 +9,14 @@ import {
   DEFAULT_CATEGORY_COLOR_KEY,
   DEFAULT_CATEGORY_ICON,
   doBudgetScopeRulesOverlap,
-  doesBudgetScopeMatchTransaction,
   formatCurrency,
   getCategoryColorOption,
   getCurrentMonthWindow,
   getPrimaryBudgetCategoryId,
-  getTransactionDateForMonthBalance,
   normalizeBudgetScopeRules,
   resolveBudgetScopeRulesFromBudget,
   type BudgetScopeRule,
-  type TransactionItem,
+  type BudgetUsageDetailResult,
 } from "@/utils";
 
 export interface UseBudgetDetailPageModelOptions {
@@ -105,36 +102,12 @@ export interface UseBudgetDetailPageModelResult {
   sortedCategories: BudgetDetailCategoryOption[];
 }
 
-const parseSignedAmount = (value: string): number => {
-  const normalized = value.replace(/[^0-9+.-]/g, "");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
 const clampPercent = (value: number): number => {
   if (!Number.isFinite(value)) {
     return 0;
   }
 
   return Math.max(0, Math.min(100, Math.round(value)));
-};
-
-const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
-
-const resolveMonthWindow = (
-  yearMonth: string | undefined,
-  fallback: { start: Date; end: Date },
-): { start: Date; end: Date } => {
-  if (!yearMonth || !YEAR_MONTH_PATTERN.test(yearMonth)) {
-    return fallback;
-  }
-
-  const [yearValue, monthValue] = yearMonth.split("-");
-  const year = Number(yearValue);
-  const monthIndex = Number(monthValue) - 1;
-  const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
-  const end = new Date(year, monthIndex + 1, 1, 0, 0, 0, 0);
-  return { start, end };
 };
 
 const toTextToneClass = (bgClass: string): string => {
@@ -163,84 +136,6 @@ const normalizeSubcategories = (subcategories: string[] | undefined): string[] =
   return Array.from(unique);
 };
 
-export const buildBudgetDetailSubcategoryItems = ({
-  categoryById,
-  monthWindow,
-  scopeRules,
-  transactions,
-  legacyCategoryId,
-}: {
-  categoryById: Map<string, BudgetDetailCategoryMeta>;
-  monthWindow: { start: Date; end: Date };
-  scopeRules: BudgetScopeRule[];
-  transactions: TransactionItem[];
-  legacyCategoryId?: string;
-}): SubcategoryItem[] => {
-  const grouped = new Map<string, { amount: number; color: string }>();
-
-  transactions.forEach((transaction) => {
-    const transactionDate = getTransactionDateForMonthBalance(transaction);
-    if (!transactionDate) {
-      return;
-    }
-
-    if (transactionDate < monthWindow.start || transactionDate >= monthWindow.end) {
-      return;
-    }
-
-    if (!doesBudgetScopeMatchTransaction(scopeRules, transaction, legacyCategoryId)) {
-      return;
-    }
-
-    const amount = parseSignedAmount(transaction.amount);
-    if (amount >= 0) {
-      return;
-    }
-
-    const categoryId = transaction.categoryId?.trim() ?? "";
-    const categoryMeta = categoryId ? categoryById.get(categoryId) : null;
-    const categoryName = categoryMeta?.name ?? transaction.category ?? "Categoría";
-    const subcategoryName = transaction.subcategoryName?.trim().length
-      ? transaction.subcategoryName.trim()
-      : "Sin subcategoría";
-    const key = `${categoryName} · ${subcategoryName}`;
-
-    const current = grouped.get(key);
-    if (!current) {
-      grouped.set(key, {
-        amount: Math.abs(amount),
-        color: categoryMeta?.iconBg ?? "bg-[#71717A]",
-      });
-      return;
-    }
-
-    current.amount += Math.abs(amount);
-    grouped.set(key, current);
-  });
-
-  const sorted = Array.from(grouped.entries()).sort(
-    (left, right) => right[1].amount - left[1].amount,
-  );
-
-  const total = sorted.reduce((sum, entry) => sum + entry[1].amount, 0);
-  if (total <= 0) {
-    return [];
-  }
-
-  return sorted.map(([name, detail]) => {
-    const percent = clampPercent((detail.amount / total) * 100);
-
-    return {
-      dotColor: detail.color,
-      name,
-      amount: formatCurrency(detail.amount),
-      percent: `${percent}%`,
-      barColor: detail.color,
-      barWidthPercent: percent,
-    };
-  });
-};
-
 export const useBudgetDetailPageModel = (
   options: UseBudgetDetailPageModelOptions = {},
 ): UseBudgetDetailPageModelResult => {
@@ -259,14 +154,13 @@ export const useBudgetDetailPageModel = (
     subcategories,
   } = options;
 
-  const { items: budgets, isLoading: isBudgetsLoading, update } = useBudgets();
+  const { items: budgets, isLoading: isBudgetsLoading, update, getUsageById } = useBudgets();
   const {
     items: categories,
     isLoading: isCategoriesLoading,
     error: categoriesError,
     create: createCategory,
   } = useCategories();
-  const { items: transactions } = useTransactions();
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [isEditorSubmitting, setIsEditorSubmitting] = useState<boolean>(false);
@@ -274,6 +168,7 @@ export const useBudgetDetailPageModel = (
   const [budgetNameInput, setBudgetNameInput] = useState<string>("");
   const [limitAmountInput, setLimitAmountInput] = useState<string>("");
   const [showValidation, setShowValidation] = useState<boolean>(false);
+  const [usageDetail, setUsageDetail] = useState<BudgetUsageDetailResult | null>(null);
 
   const currentMonthWindow = useMemo(() => getCurrentMonthWindow(), []);
   const currentMonth = useMemo(() => {
@@ -283,12 +178,34 @@ export const useBudgetDetailPageModel = (
   }, [currentMonthWindow]);
 
   const resolvedBudget = useMemo(() => {
+    if (usageDetail) {
+      return usageDetail.budget;
+    }
+
     if (budgetId) {
       return budgets.find((budget) => budget.id === budgetId) ?? null;
     }
 
     return budgets.find((budget) => budget.month === currentMonth) ?? null;
-  }, [budgetId, budgets, currentMonth]);
+  }, [budgetId, budgets, currentMonth, usageDetail]);
+
+  useEffect(() => {
+    const targetBudgetId = budgetId ?? resolvedBudget?.id;
+    if (!targetBudgetId) {
+      return;
+    }
+
+    let isActive = true;
+    void (async () => {
+      const result = await getUsageById(targetBudgetId, resolvedBudget?.month);
+      if (isActive) {
+        setUsageDetail(result);
+      }
+    })();
+    return () => {
+      isActive = false;
+    };
+  }, [budgetId, getUsageById, resolvedBudget?.id, resolvedBudget?.month]);
 
   const sortedCategories = useMemo<BudgetDetailCategoryOption[]>(() => {
     return categories
@@ -311,50 +228,12 @@ export const useBudgetDetailPageModel = (
     return map;
   }, [sortedCategories]);
 
-  const selectedMonthWindow = useMemo(
-    () => resolveMonthWindow(resolvedBudget?.month, currentMonthWindow),
-    [currentMonthWindow, resolvedBudget?.month],
-  );
-
   const resolvedScopeRules = useMemo(
     () => (resolvedBudget ? resolveBudgetScopeRulesFromBudget(resolvedBudget) : []),
     [resolvedBudget],
   );
 
-  const spentAmount = useMemo(() => {
-    if (!resolvedBudget) {
-      return 0;
-    }
-
-    return transactions.reduce((sum, transaction) => {
-      const transactionDate = getTransactionDateForMonthBalance(transaction);
-      if (!transactionDate) {
-        return sum;
-      }
-
-      if (
-        transactionDate < selectedMonthWindow.start ||
-        transactionDate >= selectedMonthWindow.end
-      ) {
-        return sum;
-      }
-
-      if (
-        !doesBudgetScopeMatchTransaction(resolvedScopeRules, transaction, resolvedBudget.categoryId)
-      ) {
-        return sum;
-      }
-
-      const amount = parseSignedAmount(transaction.amount);
-      return amount < 0 ? sum + Math.abs(amount) : sum;
-    }, 0);
-  }, [
-    resolvedBudget,
-    resolvedScopeRules,
-    selectedMonthWindow.end,
-    selectedMonthWindow.start,
-    transactions,
-  ]);
+  const spentAmount = usageDetail?.usage.spentAmount ?? 0;
 
   const primaryCategoryId = useMemo(
     () =>
@@ -377,25 +256,23 @@ export const useBudgetDetailPageModel = (
       return subcategories;
     }
 
-    if (!resolvedBudget) {
+    if (!usageDetail) {
       return [];
     }
 
-    return buildBudgetDetailSubcategoryItems({
-      categoryById,
-      monthWindow: selectedMonthWindow,
-      scopeRules: resolvedScopeRules,
-      transactions,
-      legacyCategoryId: resolvedBudget.categoryId,
+    return usageDetail.groups.map((group) => {
+      const categoryMeta = group.categoryId ? categoryById.get(group.categoryId) : undefined;
+      const percent = clampPercent(group.percentageBasis);
+      return {
+        dotColor: categoryMeta?.iconBg ?? "bg-[#71717A]",
+        name: group.label,
+        amount: formatCurrency(group.amount),
+        percent: `${percent}%`,
+        barColor: categoryMeta?.iconBg ?? "bg-[#71717A]",
+        barWidthPercent: percent,
+      };
     });
-  }, [
-    categoryById,
-    resolvedBudget,
-    resolvedScopeRules,
-    selectedMonthWindow,
-    subcategories,
-    transactions,
-  ]);
+  }, [categoryById, subcategories, usageDetail]);
 
   const normalizedSelectedScopeRules = useMemo(
     () => normalizeBudgetScopeRules(selectedScopeRulesState),
@@ -543,6 +420,8 @@ export const useBudgetDetailPageModel = (
         return;
       }
 
+      setUsageDetail(await getUsageById(updated.id, updated.month));
+
       handleCloseEditor();
     } finally {
       setIsEditorSubmitting(false);
@@ -556,6 +435,7 @@ export const useBudgetDetailPageModel = (
     resolvedBudget,
     selectedScopeRules,
     sortedCategories,
+    getUsageById,
     update,
   ]);
 
@@ -564,8 +444,8 @@ export const useBudgetDetailPageModel = (
 
   const budgetLimit = resolvedBudget?.limitAmount ?? 0;
   const resolvedProgressPercent =
-    progressPercent ?? (budgetLimit > 0 ? clampPercent((spentAmount / budgetLimit) * 100) : 0);
-  const remaining = Math.max(0, budgetLimit - spentAmount);
+    progressPercent ?? usageDetail?.usage.clampedProgress ?? (budgetLimit > 0 ? clampPercent((spentAmount / budgetLimit) * 100) : 0);
+  const remaining = usageDetail?.usage.remainingAmount ?? Math.max(0, budgetLimit - spentAmount);
 
   const resolvedBudgetName = budgetName ?? resolvedBudget?.name ?? "";
   const resolvedBudgetIcon = budgetIcon ?? primaryCategoryMeta?.icon ?? "tag";

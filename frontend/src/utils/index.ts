@@ -123,6 +123,11 @@ export type {
 export type {
   BudgetScopeRule,
   BudgetPlanItem,
+  BudgetUsageDetailGroupItem,
+  BudgetUsageDetailResult,
+  BudgetUsageItem,
+  BudgetUsageListResult,
+  BudgetUsageSummaryItem,
   BudgetsRepository,
   CreateBudgetInput,
   UpdateBudgetPatch,

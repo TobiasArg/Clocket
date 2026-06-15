@@ -1,7 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useBudgets } from "./useBudgets";
 import { useCategories } from "./useCategories";
-import { useTransactions } from "./useTransactions";
 import {
   BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN,
   CATEGORY_COLOR_OPTIONS,
@@ -9,15 +8,13 @@ import {
   DEFAULT_CATEGORY_COLOR_KEY,
   DEFAULT_CATEGORY_ICON,
   doBudgetScopeRulesOverlap,
-  doesBudgetScopeMatchTransaction,
   getCategoryColorOption,
   getPrimaryBudgetCategoryId,
-  getTransactionDateForMonthBalance,
   normalizeBudgetScopeRules,
   resolveBudgetScopeRulesFromBudget,
   type BudgetPlanItem,
   type BudgetScopeRule,
-  type TransactionItem,
+  type BudgetUsageListResult,
 } from "@/utils";
 
 export interface BudgetCategoryMeta {
@@ -94,20 +91,6 @@ export interface UseBudgetsPageModelResult {
   summary: BudgetsSummary;
   visibleBudgets: BudgetPlanItem[];
 }
-
-const parseSignedAmount = (value: string): number => {
-  const normalized = value.replace(/[^0-9+.-]/g, "");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const clampPercent = (value: number): number => {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(100, Math.round(value)));
-};
 
 const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
 
@@ -225,56 +208,12 @@ export const sanitizeScopeRulesForCategories = (
   return normalizeBudgetScopeRules(nextRules);
 };
 
-export const buildBudgetExpensesById = (
-  budgets: BudgetPlanItem[],
-  transactions: TransactionItem[],
-  monthWindow: { start: Date; end: Date },
-): Map<string, number> => {
-  const map = new Map<string, number>();
-  budgets.forEach((budget) => {
-    map.set(budget.id, 0);
-  });
-
-  if (budgets.length === 0 || transactions.length === 0) {
-    return map;
-  }
-
-  const visibleTransactions = transactions.filter((transaction) => {
-    const transactionDate = getTransactionDateForMonthBalance(transaction);
-    if (!transactionDate) {
-      return false;
-    }
-
-    if (transactionDate < monthWindow.start || transactionDate >= monthWindow.end) {
-      return false;
-    }
-
-    return parseSignedAmount(transaction.amount) < 0;
-  });
-
-  if (visibleTransactions.length === 0) {
-    return map;
-  }
-
-  budgets.forEach((budget) => {
-    const scopeRules = resolveBudgetScopeRulesFromBudget(budget);
-    if (scopeRules.length === 0) {
-      return;
-    }
-
-    let spentAmount = 0;
-    visibleTransactions.forEach((transaction) => {
-      if (!doesBudgetScopeMatchTransaction(scopeRules, transaction)) {
-        return;
-      }
-
-      spentAmount += Math.abs(parseSignedAmount(transaction.amount));
-    });
-
-    map.set(budget.id, spentAmount);
-  });
-
-  return map;
+const emptySummary: BudgetsSummary = {
+  overspentAmount: 0,
+  progress: 0,
+  rawProgress: 0,
+  totalBudget: 0,
+  totalSpent: 0,
 };
 
 export const useBudgetsPageModel = (
@@ -287,6 +226,7 @@ export const useBudgetsPageModel = (
     isLoading: isBudgetsLoading,
     error: budgetsError,
     create,
+    listUsage,
   } = useBudgets();
   const {
     items: categories,
@@ -294,7 +234,6 @@ export const useBudgetsPageModel = (
     error: categoriesError,
     create: createCategory,
   } = useCategories();
-  const { items: transactions } = useTransactions();
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [selectedScopeRulesState, setSelectedScopeRulesState] = useState<BudgetScopeRule[]>([]);
@@ -304,15 +243,25 @@ export const useBudgetsPageModel = (
   const [selectedMonth, setSelectedMonth] = useState<string>(() =>
     buildYearMonth(new Date()),
   );
+  const [budgetUsage, setBudgetUsage] = useState<BudgetUsageListResult | null>(null);
 
-  const selectedMonthWindow = useMemo(
-    () => parseYearMonthWindow(selectedMonth),
-    [selectedMonth],
-  );
   const selectedMonthLabel = useMemo(
     () => formatYearMonthLabel(selectedMonth),
     [selectedMonth],
   );
+
+  useEffect(() => {
+    let isActive = true;
+    void (async () => {
+      const usage = await listUsage(selectedMonth);
+      if (isActive) {
+        setBudgetUsage(usage);
+      }
+    })();
+    return () => {
+      isActive = false;
+    };
+  }, [listUsage, selectedMonth]);
 
   const sortedCategories = useMemo<BudgetCategoryOption[]>(
     () => categories
@@ -346,33 +295,28 @@ export const useBudgetsPageModel = (
   );
 
   const visibleBudgets = useMemo(
-    () => budgets.filter((budget) => budget.month === selectedMonth),
-    [budgets, selectedMonth],
+    () => budgetUsage?.budgets.map((item) => item.budget) ?? budgets.filter((budget) => budget.month === selectedMonth),
+    [budgetUsage, budgets, selectedMonth],
   );
 
   const expensesByBudgetId = useMemo(
-    () => buildBudgetExpensesById(visibleBudgets, transactions, selectedMonthWindow),
-    [selectedMonthWindow, transactions, visibleBudgets],
+    () => new Map(
+      (budgetUsage?.budgets ?? visibleBudgets.map((budget) => ({ budget, spentAmount: 0 })))
+        .map((item) => [item.budget.id, item.spentAmount] as const),
+    ),
+    [budgetUsage, visibleBudgets],
   );
 
-  const summary = useMemo<BudgetsSummary>(() => {
-    const totalBudget = visibleBudgets.reduce((sum, item) => sum + item.limitAmount, 0);
-    const totalSpent = visibleBudgets.reduce(
-      (sum, item) => sum + (expensesByBudgetId.get(item.id) ?? 0),
-      0,
-    );
-    const rawProgress = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
-    const progress = clampPercent(rawProgress);
-    const overspentAmount = Math.max(0, totalSpent - totalBudget);
-
-    return {
-      overspentAmount,
-      totalBudget,
-      totalSpent,
-      progress,
-      rawProgress,
-    };
-  }, [expensesByBudgetId, visibleBudgets]);
+  const summary = useMemo<BudgetsSummary>(() => budgetUsage
+    ? {
+        overspentAmount: budgetUsage.summary.overspentAmount,
+        totalBudget: budgetUsage.summary.totalLimitAmount,
+        totalSpent: budgetUsage.summary.totalSpentAmount,
+        progress: budgetUsage.summary.clampedProgress,
+        rawProgress: budgetUsage.summary.rawProgress,
+      }
+    : emptySummary,
+  [budgetUsage]);
 
   const categoryColorOptions = useMemo<BudgetCategoryColorOption[]>(
     () => CATEGORY_COLOR_OPTIONS.map((option) => ({
@@ -508,6 +452,7 @@ export const useBudgetsPageModel = (
 
     setIsEditorOpen(false);
     resetEditor();
+    setBudgetUsage(await listUsage(selectedMonth));
   }, [
     isFormValid,
     selectedScopeRules,
@@ -516,6 +461,7 @@ export const useBudgetsPageModel = (
     limitAmountValue,
     selectedMonth,
     create,
+    listUsage,
     resetEditor,
   ]);
 

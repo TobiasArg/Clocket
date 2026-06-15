@@ -36,6 +36,8 @@ const createExportRepositories = (): SettingsExportRepositories => ({
   budgetsRepository: {
     list: vi.fn().mockResolvedValue([{ id: "budget-1", name: "Food", limitAmount: 120, month: "2026-06", scopeRules: [] }]),
     getById: vi.fn(),
+    listUsage: vi.fn(),
+    getUsageById: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     remove: vi.fn(),

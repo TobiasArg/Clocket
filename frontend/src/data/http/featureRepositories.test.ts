@@ -67,6 +67,55 @@ describe("feature-domain HTTP repositories", () => {
     })]);
   });
 
+  it("maps backend budget usage list and detail read models", async () => {
+    httpGetMock.mockImplementation((url: string) => {
+      if (url === "/api/budgets/usage") return Promise.resolve({ data: {
+        periodMonth: "2026-06",
+        summary: { totalLimitAmount: "500.00", totalSpentAmount: "620.00", rawProgress: 124, clampedProgress: 100, remainingAmount: "0.00", overspentAmount: "120.00" },
+        budgets: [{
+          budget: { id: "budget-1", categoryId: "cat-1", name: "Food", limitAmount: "500.00", periodMonth: "2026-06", createdAt: "now", updatedAt: "now", scopeRules: [{ id: "scope-1", categoryId: "cat-1", mode: "selected_subcategories", selectedSubcategoryIds: ["sub-1"], includeNoSubcategory: true }] },
+          spentAmount: "620.00",
+          rawProgress: 124,
+          clampedProgress: 100,
+          remainingAmount: "0.00",
+          overspentAmount: "120.00",
+        }],
+      } });
+      if (url === "/api/budgets/budget-1/usage") return Promise.resolve({ data: {
+        periodMonth: "2026-06",
+        budget: { id: "budget-1", categoryId: "cat-1", name: "Food", limitAmount: "500.00", periodMonth: "2026-06", createdAt: "now", updatedAt: "now", scopeRules: [{ id: "scope-1", categoryId: "cat-1", mode: "selected_subcategories", selectedSubcategoryIds: ["sub-1"], includeNoSubcategory: false }] },
+        usage: { budget: { id: "budget-1", categoryId: "cat-1", name: "Food", limitAmount: "500.00", periodMonth: "2026-06", createdAt: "now", updatedAt: "now", scopeRules: [{ id: "scope-1", categoryId: "cat-1", mode: "selected_subcategories", selectedSubcategoryIds: ["sub-1"], includeNoSubcategory: false }] }, spentAmount: "250.00", rawProgress: 50, clampedProgress: 50, remainingAmount: "250.00", overspentAmount: "0.00" },
+        groups: [{ categoryId: "cat-1", subcategoryId: "sub-1", label: "Food · Groceries", amount: "250.00", percentageBasis: 100 }],
+      } });
+      return Promise.resolve({ data: { categories: [{
+        id: "cat-1",
+        name: "Food",
+        icon: "utensils",
+        iconBg: "bg",
+        subcategoryCount: 1,
+        createdAt: "now",
+        updatedAt: "now",
+        subcategories: [{ id: "sub-1", categoryId: "cat-1", name: "Groceries", sortOrder: 0, createdAt: "", updatedAt: "" }],
+      }] } });
+    });
+
+    await expect(new HttpBudgetsRepository().listUsage("2026-06")).resolves.toEqual({
+      periodMonth: "2026-06",
+      summary: expect.objectContaining({ totalSpentAmount: 620, rawProgress: 124, overspentAmount: 120 }),
+      budgets: [expect.objectContaining({
+        spentAmount: 620,
+        clampedProgress: 100,
+        budget: expect.objectContaining({ scopeRules: [expect.objectContaining({ subcategoryNames: ["Groceries", "__none__"] })] }),
+      })],
+    });
+    await expect(new HttpBudgetsRepository().getUsageById("budget-1", "2026-06")).resolves.toEqual(expect.objectContaining({
+      usage: expect.objectContaining({ spentAmount: 250, remainingAmount: 250 }),
+      groups: [{ categoryId: "cat-1", subcategoryId: "sub-1", label: "Food · Groceries", amount: 250, percentageBasis: 100 }],
+    }));
+    expect(httpGetMock).toHaveBeenCalledWith("/api/budgets/usage", { params: { periodMonth: "2026-06" } });
+    expect(httpGetMock).toHaveBeenCalledWith("/api/budgets/budget-1/usage", { params: { periodMonth: "2026-06" } });
+  });
+
   it("maps goal, cuota, investment, and settings payloads", async () => {
     httpGetMock.mockImplementation((url: string) => {
       if (url === "/api/goals") return Promise.resolve({ data: { goals: [{ id: "goal-1", title: "Trip", description: "Save", targetAmount: "500.00", deadlineDate: "2026-12-01", icon: "plane", colorKey: "sky", categoryId: "cat-goal", createdAt: "now", updatedAt: "now" }] } });
