@@ -30,6 +30,7 @@ export interface BudgetScopeRuleRecord {
   categoryId: string;
   mode: BudgetScopeMode;
   selectedSubcategoryIds: string[];
+  includeNoSubcategory: boolean;
 }
 
 export interface BudgetRecord {
@@ -82,7 +83,10 @@ interface NormalizedBudgetScopeRule {
   mode: BudgetScopeMode;
   selectedSubcategoryIds: string[];
   selectedSubcategoryNames: string[];
+  includeNoSubcategory: boolean;
 }
+
+const BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN = "__none__";
 
 const budgetWithScopeRules = {
   scopeRules: {
@@ -153,6 +157,21 @@ const uniqueNormalizedNames = (values: string[] | undefined): string[] => {
   return Array.from(names.values());
 };
 
+const splitNoSubcategoryToken = (values: string[]): { names: string[]; includeNoSubcategory: boolean } => {
+  const names: string[] = [];
+  let includeNoSubcategory = false;
+
+  for (const value of values) {
+    if (value === BUDGET_SCOPE_NONE_SUBCATEGORY_TOKEN) {
+      includeNoSubcategory = true;
+    } else {
+      names.push(value);
+    }
+  }
+
+  return { names, includeNoSubcategory };
+};
+
 const toBudgetScopeRuleRecord = (
   scopeRule: BudgetScopeRuleWithSelections,
 ): BudgetScopeRuleRecord => ({
@@ -160,6 +179,7 @@ const toBudgetScopeRuleRecord = (
   categoryId: scopeRule.categoryId,
   mode: MODE_FROM_PRISMA[scopeRule.mode],
   selectedSubcategoryIds: scopeRule.selectedSubcategories.map((selection) => selection.subcategoryId),
+  includeNoSubcategory: scopeRule.includeNoSubcategory,
 });
 
 const toBudgetRecord = (budget: BudgetWithScopeRules): BudgetRecord => ({
@@ -181,6 +201,7 @@ const extractScopeRules = (budget: BudgetWithScopeRules): NormalizedBudgetScopeR
     mode: MODE_FROM_PRISMA[scopeRule.mode],
     selectedSubcategoryIds: scopeRule.selectedSubcategories.map((selection) => selection.subcategoryId),
     selectedSubcategoryNames: [],
+    includeNoSubcategory: scopeRule.includeNoSubcategory,
   }))
 );
 
@@ -194,15 +215,28 @@ const normalizeScopeRules = (scopeRules: BudgetScopeRuleInput[]): NormalizedBudg
     }
 
     const selectedSubcategoryIds = uniqueNormalizedIds(scopeRule.selectedSubcategoryIds);
-    const selectedSubcategoryNames = uniqueNormalizedNames(scopeRule.selectedSubcategoryNames);
+    const selectedNames = splitNoSubcategoryToken(uniqueNormalizedNames(scopeRule.selectedSubcategoryNames));
     const normalized: NormalizedBudgetScopeRule = scopeRule.mode === "selected_subcategories"
-      ? { categoryId, mode: "selected_subcategories", selectedSubcategoryIds, selectedSubcategoryNames }
-      : { categoryId, mode: "all_subcategories", selectedSubcategoryIds: [], selectedSubcategoryNames: [] };
+      ? {
+          categoryId,
+          mode: "selected_subcategories",
+          selectedSubcategoryIds,
+          selectedSubcategoryNames: selectedNames.names,
+          includeNoSubcategory: selectedNames.includeNoSubcategory,
+        }
+      : {
+          categoryId,
+          mode: "all_subcategories",
+          selectedSubcategoryIds: [],
+          selectedSubcategoryNames: [],
+          includeNoSubcategory: false,
+        };
 
     if (
       normalized.mode === "selected_subcategories" &&
       normalized.selectedSubcategoryIds.length === 0 &&
-      normalized.selectedSubcategoryNames.length === 0
+      normalized.selectedSubcategoryNames.length === 0 &&
+      !normalized.includeNoSubcategory
     ) {
       continue;
     }
@@ -210,7 +244,13 @@ const normalizeScopeRules = (scopeRules: BudgetScopeRuleInput[]): NormalizedBudg
     const existing = merged.get(categoryId);
     if (!existing || existing.mode === "all_subcategories" || normalized.mode === "all_subcategories") {
       merged.set(categoryId, normalized.mode === "all_subcategories"
-        ? { categoryId, mode: "all_subcategories", selectedSubcategoryIds: [], selectedSubcategoryNames: [] }
+        ? {
+            categoryId,
+            mode: "all_subcategories",
+            selectedSubcategoryIds: [],
+            selectedSubcategoryNames: [],
+            includeNoSubcategory: false,
+          }
         : normalized);
       continue;
     }
@@ -226,6 +266,7 @@ const normalizeScopeRules = (scopeRules: BudgetScopeRuleInput[]): NormalizedBudg
         ...existing.selectedSubcategoryNames,
         ...normalized.selectedSubcategoryNames,
       ]),
+      includeNoSubcategory: existing.includeNoSubcategory || normalized.includeNoSubcategory,
     });
   }
 
@@ -351,7 +392,8 @@ const doScopeRulesOverlap = (
   }
 
   const rightSubcategoryIds = new Set(right.selectedSubcategoryIds);
-  return left.selectedSubcategoryIds.some((subcategoryId) => rightSubcategoryIds.has(subcategoryId));
+  return (left.includeNoSubcategory && right.includeNoSubcategory) ||
+    left.selectedSubcategoryIds.some((subcategoryId) => rightSubcategoryIds.has(subcategoryId));
 };
 
 const assertNoOverlappingBudget = async (
@@ -387,6 +429,7 @@ const assertNoOverlappingBudget = async (
 const toScopeRuleCreateInput = (scopeRule: NormalizedBudgetScopeRule) => ({
   categoryId: scopeRule.categoryId,
   mode: MODE_TO_PRISMA[scopeRule.mode],
+  includeNoSubcategory: scopeRule.mode === "selected_subcategories" && scopeRule.includeNoSubcategory,
   ...(scopeRule.mode === "selected_subcategories"
     ? {
         selectedSubcategories: {

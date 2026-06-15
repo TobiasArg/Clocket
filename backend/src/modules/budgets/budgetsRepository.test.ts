@@ -14,6 +14,7 @@ const baseScopeRule = {
   budgetId,
   categoryId,
   mode: "SELECTED_SUBCATEGORIES" as const,
+  includeNoSubcategory: false,
   selectedSubcategories: [{
     id: "00000000-0000-4000-8000-000000000801",
     budgetScopeRuleId: scopeRuleId,
@@ -91,6 +92,7 @@ describe("createBudgetsRepository", () => {
         categoryId,
         mode: "selected_subcategories",
         selectedSubcategoryIds: [subcategoryId],
+        includeNoSubcategory: false,
       }],
     }]);
     expect(prisma.budget.findMany).toHaveBeenCalledWith({
@@ -147,6 +149,7 @@ describe("createBudgetsRepository", () => {
           create: [{
             categoryId,
             mode: "ALL_SUBCATEGORIES",
+            includeNoSubcategory: false,
           }],
         },
       },
@@ -216,9 +219,55 @@ describe("createBudgetsRepository", () => {
           create: [{
             categoryId,
             mode: "SELECTED_SUBCATEGORIES",
+            includeNoSubcategory: false,
             selectedSubcategories: {
               create: [{ subcategoryId }, { subcategoryId: otherSubcategoryId }],
             },
+          }],
+        },
+      }),
+    }));
+  });
+
+  it("creates selected-subcategory budgets that include no-subcategory transactions", async () => {
+    const { prisma } = createPrismaMock();
+    prisma.category.findFirst.mockResolvedValue({ id: categoryId });
+    prisma.subcategory.findMany.mockResolvedValue([]);
+    prisma.budget.findMany.mockResolvedValue([]);
+    prisma.budget.create.mockResolvedValue({
+      ...baseBudget,
+      scopeRules: [{
+        ...baseScopeRule,
+        includeNoSubcategory: true,
+        selectedSubcategories: [],
+      }],
+    });
+    const repository = createBudgetsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.create({
+      name: "Food budget",
+      limitAmount: 500,
+      periodMonth: "2026-06",
+      scopeRules: [{
+        categoryId,
+        mode: "selected_subcategories",
+        selectedSubcategoryNames: ["__none__"],
+      }],
+    })).resolves.toMatchObject({
+      scopeRules: [{
+        mode: "selected_subcategories",
+        selectedSubcategoryIds: [],
+        includeNoSubcategory: true,
+      }],
+    });
+    expect(prisma.budget.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        scopeRules: {
+          create: [{
+            categoryId,
+            mode: "SELECTED_SUBCATEGORIES",
+            includeNoSubcategory: true,
+            selectedSubcategories: { create: [] },
           }],
         },
       }),
@@ -333,6 +382,7 @@ describe("createBudgetsRepository", () => {
           create: [{
             categoryId: otherCategoryId,
             mode: "ALL_SUBCATEGORIES",
+            includeNoSubcategory: false,
           }],
         },
       },

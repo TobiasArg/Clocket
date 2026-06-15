@@ -157,12 +157,13 @@ model Budget {
 }
 
 model BudgetScopeRule {
-  id                    String                    @id @default(uuid()) @db.Uuid
-  budgetId              String                    @db.Uuid
-  categoryId            String                    @db.Uuid
-  mode                  BudgetScopeMode
-  budget                Budget                    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  category              Category                  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  id                   String                    @id @default(uuid()) @db.Uuid
+  budgetId             String                    @db.Uuid
+  categoryId           String                    @db.Uuid
+  mode                 BudgetScopeMode
+  includeNoSubcategory Boolean                   @default(false) @map("include_no_subcategory")
+  budget               Budget                    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category             Category                  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   selectedSubcategories BudgetScopeSubcategory[]
 
   @@unique([budgetId, categoryId])
