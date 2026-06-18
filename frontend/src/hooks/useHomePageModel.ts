@@ -9,6 +9,7 @@ import { useCategories } from "./useCategories";
 import { useCuotas } from "./useCuotas";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
+import { httpAnalyticsRepository, type HomeAnalyticsModel } from "@/data/http/analyticsRepository";
 import {
   formatCurrency,
   getCurrentMonthWindow,
@@ -122,6 +123,35 @@ export const useHomePageModel = (
     isLoading: isCuotasLoading,
     error: cuotasError,
   } = useCuotas();
+  const [analyticsModel, setAnalyticsModel] = useState<HomeAnalyticsModel | null>(null);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<unknown>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsAnalyticsLoading(true);
+    setAnalyticsError(null);
+    void httpAnalyticsRepository.getHome()
+      .then((model) => {
+        if (!cancelled) {
+          setAnalyticsModel(model);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setAnalyticsError(error);
+          setAnalyticsModel(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsAnalyticsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accounts.length, categories.length, cuotaItems.length, goalItems.length, transactionItems.length]);
 
   const categoryInfoById = useMemo(() => {
     const map = new Map<string, { name: string; color: string; icon: string }>();
@@ -342,16 +372,20 @@ export const useHomePageModel = (
       }));
   }, [cuotaItems, cuotas]);
 
-  const displayedTotalBalance = totalBalance ?? formatCurrency(overallTransactionFlow.net);
-  const displayedIncomeValue = incomeValue ?? formatCurrency(overallTransactionFlow.income);
-  const displayedExpenseValue = expenseValue ?? formatCurrency(overallTransactionFlow.expense);
-  const displayedSpendingTotal = spendingTotal ?? formatCurrency(monthlyBalance.expense);
-  const displayedSpendingCategories = spendingCategories ?? computedSpendingCategories;
-  const pendingInstallmentsLabel = isCuotasLoading && !cuotas && cuotaItems.length === 0
+  const displayedTotalBalance = totalBalance ?? analyticsModel?.displayedTotalBalance ?? formatCurrency(overallTransactionFlow.net);
+  const displayedIncomeValue = incomeValue ?? analyticsModel?.displayedIncomeValue ?? formatCurrency(overallTransactionFlow.income);
+  const displayedExpenseValue = expenseValue ?? analyticsModel?.displayedExpenseValue ?? formatCurrency(overallTransactionFlow.expense);
+  const displayedSpendingTotal = spendingTotal ?? analyticsModel?.displayedSpendingTotal ?? formatCurrency(monthlyBalance.expense);
+  const displayedSpendingCategories = spendingCategories ?? analyticsModel?.displayedSpendingCategories ?? computedSpendingCategories;
+  const pendingInstallmentsLabel = analyticsModel?.pendingInstallmentsLabel ?? (isCuotasLoading && !cuotas && cuotaItems.length === 0
     ? loadingLabel
-    : formatCurrency(monthlyPendingInstallments);
+    : formatCurrency(monthlyPendingInstallments));
 
   const balanceSlides = useMemo<HomeBalanceSlide[]>(() => {
+    if (analyticsModel?.balanceSlides) {
+      return analyticsModel.balanceSlides;
+    }
+
     const slides: HomeBalanceSlide[] = [
       {
         id: "total-balance",
@@ -376,6 +410,7 @@ export const useHomePageModel = (
     return slides;
   }, [
     accounts,
+    analyticsModel,
     displayedExpenseValue,
     displayedIncomeValue,
     displayedTotalBalance,
@@ -412,19 +447,19 @@ export const useHomePageModel = (
   return {
     activeBalanceSlide,
     balanceSlides,
-    dashboardGoals,
+    dashboardGoals: analyticsModel?.dashboardGoals ?? dashboardGoals,
     displayedExpenseValue,
     displayedIncomeValue,
     displayedSpendingCategories,
     displayedSpendingTotal,
     displayedTotalBalance,
-    hasCuotasError: Boolean(cuotasError),
-    hasTransactionsError: Boolean(transactionsError),
-    isCuotasLoading,
-    isTransactionsLoading,
+    hasCuotasError: Boolean(cuotasError || analyticsError),
+    hasTransactionsError: Boolean(transactionsError || analyticsError),
+    isCuotasLoading: isCuotasLoading || isAnalyticsLoading,
+    isTransactionsLoading: isTransactionsLoading || isAnalyticsLoading,
     pendingInstallmentsLabel,
-    recentTransactions,
+    recentTransactions: analyticsModel?.recentTransactions ?? recentTransactions,
     setActiveBalanceSlide,
-    visibleCuotas,
+    visibleCuotas: cuotas ?? analyticsModel?.visibleCuotas ?? visibleCuotas,
   };
 };

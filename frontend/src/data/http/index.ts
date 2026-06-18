@@ -45,5 +45,9 @@ export {
   httpAppSettingsRepository,
 } from "./appSettingsRepository";
 export {
+  HttpAnalyticsRepository,
+  httpAnalyticsRepository,
+} from "./analyticsRepository";
+export {
   ensureFeatureBackendCleanStartCutover,
 } from "./featureDomainCleanStart";

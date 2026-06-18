@@ -5,6 +5,7 @@ import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
 import { formatCurrency, getMonthlyBalance, getTransactionDateForMonthBalance } from "@/utils";
 import type { TransactionItem } from "@/domain/transactions/repository";
+import { httpAnalyticsRepository, type StatisticsAnalyticsModel } from "@/data/http/analyticsRepository";
 import { getGoalColorOption } from "@/domain/goals/goalAppearance";
 import {
   DEFAULT_CATEGORY_FLOW_COLOR,
@@ -512,6 +513,9 @@ export const useStatisticsPageModel = (
   const { items: transactions, isLoading, error } = useTransactions();
   const { items: categoriesData } = useCategories();
   const { items: goals } = useGoals();
+  const [analyticsModel, setAnalyticsModel] = useState<StatisticsAnalyticsModel | null>(null);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<unknown>(null);
   const [scope, setScopeState] = useState<StatisticsScope>(() => {
     if (typeof window === "undefined") {
       return DEFAULT_SCOPE;
@@ -528,6 +532,32 @@ export const useStatisticsPageModel = (
   const setScope = useCallback((nextScope: StatisticsScope) => {
     setScopeState(nextScope);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsAnalyticsLoading(true);
+    setAnalyticsError(null);
+    void httpAnalyticsRepository.getStatistics(scope)
+      .then((model) => {
+        if (!cancelled) {
+          setAnalyticsModel(model);
+        }
+      })
+      .catch((fetchError) => {
+        if (!cancelled) {
+          setAnalyticsError(fetchError);
+          setAnalyticsModel(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsAnalyticsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categoriesData.length, goals.length, scope, transactions.length]);
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -673,9 +703,13 @@ export const useStatisticsPageModel = (
       });
   }, [categoryInfoById, categoryNameById, scopedTransactions]);
 
-  const categoryRows = categories ?? computedCategoryRows;
+  const categoryRows = categories ?? analyticsModel?.categoryRows ?? computedCategoryRows;
 
   const donutSegments = useMemo<DonutSegment[]>(() => {
+    if (!categories && analyticsModel?.donutSegments) {
+      return analyticsModel.donutSegments;
+    }
+
     return categoryRows.map((category, index) => {
       const percentage = parsePercentFromLabel(category.value);
       return {
@@ -688,7 +722,7 @@ export const useStatisticsPageModel = (
         percentage,
       };
     });
-  }, [categoryRows]);
+  }, [analyticsModel, categories, categoryRows]);
 
   const totalGoalsTarget = useMemo(
     () => goals.reduce((sum, goal) => sum + Math.max(0, goal.targetAmount), 0),
@@ -740,32 +774,38 @@ export const useStatisticsPageModel = (
       week: buildFlowRows(scopedTransactions, categoryInfoById, buildWeekFlowBuckets(now)),
     };
   }, [categoryInfoById, scopedTransactions]);
-  const dailyFlow = flowByView.day;
-  const trendPoints = trendPointsByView.day;
+  const resolvedFlowByView = analyticsModel?.flowByView ?? flowByView;
+  const resolvedTrendPointsByView = analyticsModel?.trendPointsByView ?? trendPointsByView;
+  const dailyFlow = resolvedFlowByView.day;
+  const trendPoints = resolvedTrendPointsByView.day;
 
   const monthlyGoal = Math.max(0, totalGoalsTarget);
   const savingsPercent = monthlyGoal > 0 ? clampPercent((totalGoalsSaved / monthlyGoal) * 100) : 0;
 
+  const resolvedMonthlyBalance = analyticsModel?.monthlyBalance ?? monthlyBalance;
+  const resolvedMonthlyGoal = analyticsModel?.monthlyGoal ?? monthlyGoal;
+  const resolvedMonthlyTransactionsCount = analyticsModel?.monthlyTransactionsCount ?? scopedTransactions.length;
+
   return {
     categoryRows,
     dailyFlow,
-    flowByView,
+    flowByView: resolvedFlowByView,
     donutSegments,
-    isLoading,
-    hasError: Boolean(error),
-    monthlyBalance,
-    monthlyGoal,
-    monthlyTransactionsCount: scopedTransactions.length,
+    isLoading: isLoading || isAnalyticsLoading,
+    hasError: Boolean(error || analyticsError),
+    monthlyBalance: resolvedMonthlyBalance,
+    monthlyGoal: resolvedMonthlyGoal,
+    monthlyTransactionsCount: resolvedMonthlyTransactionsCount,
     scope,
     scopeLabel: SCOPE_LABELS[scope],
     setScope,
-    resolvedCategoryTotal: categoryTotal ?? formatCurrency(monthlyBalance.expense),
-    resolvedSavingsBadge: savingsBadge ?? `${savingsPercent}%`,
-    resolvedSavingsGoalValue: savingsGoalValue ?? formatCurrency(monthlyGoal),
-    resolvedSavingsValue: savingsValue ?? formatCurrency(totalGoalsSaved),
-    resolvedTotalExpenseValue: totalExpenseValue ?? formatCurrency(monthlyBalance.expense),
-    resolvedTotalIncomeValue: totalIncomeValue ?? formatCurrency(monthlyBalance.income),
+    resolvedCategoryTotal: categoryTotal ?? analyticsModel?.resolvedCategoryTotal ?? formatCurrency(monthlyBalance.expense),
+    resolvedSavingsBadge: savingsBadge ?? analyticsModel?.resolvedSavingsBadge ?? `${savingsPercent}%`,
+    resolvedSavingsGoalValue: savingsGoalValue ?? analyticsModel?.resolvedSavingsGoalValue ?? formatCurrency(monthlyGoal),
+    resolvedSavingsValue: savingsValue ?? analyticsModel?.resolvedSavingsValue ?? formatCurrency(totalGoalsSaved),
+    resolvedTotalExpenseValue: totalExpenseValue ?? analyticsModel?.resolvedTotalExpenseValue ?? formatCurrency(monthlyBalance.expense),
+    resolvedTotalIncomeValue: totalIncomeValue ?? analyticsModel?.resolvedTotalIncomeValue ?? formatCurrency(monthlyBalance.income),
     trendPoints,
-    trendPointsByView,
+    trendPointsByView: resolvedTrendPointsByView,
   };
 };
