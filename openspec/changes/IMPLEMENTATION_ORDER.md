@@ -17,6 +17,7 @@ Auth, sessions, authorization, `userId`, and shared-ledger behavior remain out o
 
 4. `backend-owned-financial-analytics-read-models`
    - Move home/statistics financial analytics read models to backend.
+   - Status: implemented and validated on 2026-06-19; ready for archive when the change is finalized.
 5. `backend-owned-goal-progress-and-entry-resolution`
    - Move goal progress, edit propagation, and linked-entry delete/redirect resolution to backend.
 6. `backend-owned-transaction-classification-and-category-constraints`
