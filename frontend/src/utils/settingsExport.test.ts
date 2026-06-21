@@ -66,6 +66,7 @@ const createExportRepositories = (): SettingsExportRepositories => ({
     getById: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    resolveDeletion: vi.fn(),
     remove: vi.fn(),
     clearAll: vi.fn(),
   },

@@ -1,5 +1,8 @@
 import type {
   CreateGoalInput,
+  GoalDeleteResolutionInput,
+  GoalDeleteResolutionResult,
+  GoalDetailItem,
   GoalPlanItem,
   GoalsRepository,
   UpdateGoalPatch,
@@ -43,6 +46,13 @@ const buildInitialState = (): GoalsStorageV2 => ({
 });
 
 const cloneGoal = (item: GoalPlanItem): GoalPlanItem => ({ ...item });
+const cloneGoalDetail = (item: GoalPlanItem): GoalDetailItem => ({
+  ...cloneGoal(item),
+  savedAmount: item.savedAmount ?? 0,
+  progressPercent: item.progressPercent ?? 0,
+  entryCount: item.entryCount ?? 0,
+  entries: [],
+});
 const cloneGoals = (items: GoalPlanItem[]): GoalPlanItem[] => items.map(cloneGoal);
 
 const normalizeTitle = (value: string): string => {
@@ -278,10 +288,10 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
     return cloneGoals(state.items);
   }
 
-  public async getById(id: string): Promise<GoalPlanItem | null> {
+  public async getById(id: string): Promise<GoalDetailItem | null> {
     const state = this.readState();
     const found = state.items.find((item) => item.id === id);
-    return found ? cloneGoal(found) : null;
+    return found ? cloneGoalDetail(found) : null;
   }
 
   public async create(input: CreateGoalInput): Promise<GoalPlanItem> {
@@ -354,6 +364,11 @@ export class LocalStorageGoalsRepository implements GoalsRepository {
     await this.removeGoalSubcategoryIfUnused(target.categoryId, target.title, state.items);
 
     return true;
+  }
+
+  public async resolveDeletion(id: string, input: GoalDeleteResolutionInput): Promise<GoalDeleteResolutionResult | null> {
+    const removed = await this.remove(id);
+    return removed ? { deleted: true, mode: input.mode, resolvedEntriesCount: 0 } : null;
   }
 
   public async clearAll(): Promise<void> {

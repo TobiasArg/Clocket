@@ -118,17 +118,67 @@ describe("feature-domain HTTP repositories", () => {
 
   it("maps goal, cuota, investment, and settings payloads", async () => {
     httpGetMock.mockImplementation((url: string) => {
-      if (url === "/api/goals") return Promise.resolve({ data: { goals: [{ id: "goal-1", title: "Trip", description: "Save", targetAmount: "500.00", deadlineDate: "2026-12-01", icon: "plane", colorKey: "sky", categoryId: "cat-goal", createdAt: "now", updatedAt: "now" }] } });
+      if (url === "/api/goals") return Promise.resolve({ data: { goals: [{ id: "goal-1", title: "Trip", description: "Save", targetAmount: "500.00", deadlineDate: "2026-12-01", icon: "plane", colorKey: "sky", categoryId: "cat-goal", savedAmount: "125.00", progressPercent: 25, entryCount: 2, createdAt: "now", updatedAt: "now" }] } });
       if (url === "/api/installments") return Promise.resolve({ data: { installmentPlans: [{ id: "plan-1", title: "Laptop", description: null, totalAmount: "1200.00", installmentsCount: 12, installmentAmount: "100.00", startMonth: "2026-06", paidInstallmentsCount: 2, categoryId: null, subcategoryId: null, createdAt: "now", updatedAt: "now" }] } });
       if (url === "/api/investments/positions") return Promise.resolve({ data: { positions: [{ id: "pos-1", assetType: "stock", ticker: "AAPL", usd_gastado: "100.00", buy_price: "10.0000000000", amount: "10.0000000000", createdAt: "now" }] } });
       if (url === "/api/settings") return Promise.resolve({ data: { currency: "USD", language: "es", notificationsEnabled: true, theme: "light", profile: { name: "Usuario", email: "usuario@email.com", avatarIcon: "user" }, security: { pinHash: null }, updatedAt: "now" } });
       return Promise.resolve({ data: { categories: [] } });
     });
 
-    await expect(new HttpGoalsRepository().list()).resolves.toEqual([expect.objectContaining({ targetAmount: 500 })]);
+    await expect(new HttpGoalsRepository().list()).resolves.toEqual([expect.objectContaining({ targetAmount: 500, savedAmount: 125, progressPercent: 25, entryCount: 2 })]);
     await expect(new HttpCuotasRepository().list()).resolves.toEqual([expect.objectContaining({ totalAmount: 1200, installmentAmount: 100 })]);
     await expect(new HttpInvestmentsRepository().listPositions()).resolves.toEqual([expect.objectContaining({ usd_gastado: 100, buy_price: 10, amount: 10 })]);
     await expect(new HttpAppSettingsRepository().get()).resolves.toMatchObject({ currency: "USD", profile: { name: "Usuario" } });
+  });
+
+  it("maps backend goal detail read models and deletion resolution commands", async () => {
+    httpGetMock.mockResolvedValue({ data: {
+      id: "goal-1",
+      title: "Trip",
+      description: "Save",
+      targetAmount: "500.00",
+      deadlineDate: "2026-12-01",
+      icon: "plane",
+      colorKey: "sky",
+      categoryId: "cat-goal",
+      savedAmount: "125.00",
+      progressPercent: 25,
+      entryCount: 1,
+      entries: [{
+        id: "tx-1",
+        accountId: "account-1",
+        categoryId: "cat-goal",
+        subcategoryId: "sub-goal",
+        goalId: "goal-1",
+        transactionType: "saving",
+        name: "Trip deposit",
+        amount: "-125.00",
+        currency: "USD",
+        date: "2026-06-12",
+        notes: "First deposit",
+        uiIcon: "plane",
+        uiIconBg: "bg-[#0EA5E9]",
+        createdAt: "now",
+        updatedAt: "now",
+      }],
+      createdAt: "now",
+      updatedAt: "now",
+    } });
+    httpPostMock.mockResolvedValue({ data: { deleted: true, mode: "redirect_account", resolvedEntriesCount: 1 } });
+    const repository = new HttpGoalsRepository();
+
+    await expect(repository.getById("goal-1")).resolves.toEqual(expect.objectContaining({
+      savedAmount: 125,
+      progressPercent: 25,
+      entries: [expect.objectContaining({ id: "tx-1", amount: -125 })],
+    }));
+    await expect(repository.resolveDeletion("goal-1", { mode: "redirect_account", targetAccountId: "account-1" })).resolves.toEqual({
+      deleted: true,
+      mode: "redirect_account",
+      resolvedEntriesCount: 1,
+    });
+    expect(httpGetMock).toHaveBeenCalledWith("/api/goals/goal-1");
+    expect(httpPostMock).toHaveBeenCalledWith("/api/goals/goal-1/resolve-deletion", { mode: "redirect_account", targetAccountId: "account-1" });
   });
 
   it("returns null or false for feature-domain not-found responses", async () => {

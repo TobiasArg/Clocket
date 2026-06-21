@@ -118,6 +118,9 @@ export interface GoalPlan {
   icon: string;
   colorKey: GoalColorKey;
   categoryId: string;
+  savedAmount?: number;
+  progressPercent?: number;
+  entryCount?: number;
   createdAt: string;
   updatedAt: string;
 }
