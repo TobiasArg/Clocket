@@ -1,11 +1,11 @@
 import { CoreFinanceApiError } from "../core-finance/coreFinanceApiErrors";
 import { isValidCurrency, parseJsonObjectBody, readDateOnlyInput, readDecimalInput, readOptionalNullableString, readRequiredString } from "../core-finance/coreFinanceRequest";
-import { toGoalResponse, type ClearGoalsResponse, type DeleteGoalResponse, type GoalListResponse, type GoalResponse } from "./goalsContracts";
+import { toGoalDetailResponse, toGoalProgressResponse, toGoalResponse, type ClearGoalsResponse, type DeleteGoalResponse, type GoalDetailResponse, type GoalListResponse, type GoalResponse } from "./goalsContracts";
 import { GoalsRepositoryError, type CreateGoalInput, type GoalColorKey, type GoalsRepository, type UpdateGoalInput } from "./goalsRepository";
 
 export interface GoalsService {
   listGoals: () => Promise<GoalListResponse>;
-  getGoal: (id: string) => Promise<GoalResponse>;
+  getGoal: (id: string) => Promise<GoalDetailResponse>;
   createGoal: (body: unknown) => Promise<GoalResponse>;
   updateGoal: (id: string, body: unknown) => Promise<GoalResponse>;
   deleteGoal: (id: string) => Promise<DeleteGoalResponse>;
@@ -117,10 +117,14 @@ export const createGoalsService = ({ repository }: { repository: GoalsRepository
 
   return {
     async listGoals() {
-      return { goals: (await repository.listActive()).map(toGoalResponse) };
+      const result = await repository.listActiveWithProgress();
+      return {
+        goals: result.goals.map(toGoalProgressResponse),
+        summary: result.summary,
+      };
     },
     async getGoal(id) {
-      return toGoalResponse(requireFound(await repository.getById(id), id));
+      return toGoalDetailResponse(requireFound(await repository.getByIdWithProgress(id), id));
     },
     async createGoal(body) {
       return toGoalResponse(await run(() => repository.create(parseCreate(body))));

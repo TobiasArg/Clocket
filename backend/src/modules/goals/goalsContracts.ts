@@ -1,9 +1,16 @@
-import type { GoalRecord } from "./goalsRepository";
+import type { GoalDetailRecord, GoalEntryRecord, GoalProgressRecord, GoalsProgressSummaryRecord, GoalRecord } from "./goalsRepository";
 
 export type GoalResponse = Omit<GoalRecord, "deletedAt">;
 
+export type GoalEntryResponse = GoalEntryRecord;
+
+export type GoalProgressResponse = Omit<GoalProgressRecord, "deletedAt">;
+
+export type GoalDetailResponse = Omit<GoalDetailRecord, "deletedAt">;
+
 export interface GoalListResponse {
-  goals: GoalResponse[];
+  goals: GoalProgressResponse[];
+  summary: GoalsProgressSummaryRecord;
 }
 
 export interface DeleteGoalResponse {
@@ -27,4 +34,16 @@ export const toGoalResponse = (goal: GoalRecord): GoalResponse => ({
   subcategoryId: goal.subcategoryId,
   createdAt: goal.createdAt,
   updatedAt: goal.updatedAt,
+});
+
+export const toGoalProgressResponse = (goal: GoalProgressRecord): GoalProgressResponse => ({
+  ...toGoalResponse(goal),
+  savedAmount: goal.savedAmount,
+  progressPercent: goal.progressPercent,
+  entryCount: goal.entryCount,
+});
+
+export const toGoalDetailResponse = (goal: GoalDetailRecord): GoalDetailResponse => ({
+  ...toGoalProgressResponse(goal),
+  entries: goal.entries,
 });

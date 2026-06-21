@@ -5,9 +5,9 @@ import { mapCoreFinanceError, type CoreFinanceApiErrorResponse } from "../core-f
 import { parseIdParam } from "../core-finance/coreFinanceRequest";
 import { createGoalsRepository } from "./goalsRepository";
 import { createGoalsService, type GoalsService } from "./goalsService";
-import type { ClearGoalsResponse, DeleteGoalResponse, GoalListResponse, GoalResponse } from "./goalsContracts";
+import type { ClearGoalsResponse, DeleteGoalResponse, GoalDetailResponse, GoalListResponse, GoalResponse } from "./goalsContracts";
 
-type GoalsApiResponse = GoalListResponse | GoalResponse | DeleteGoalResponse | ClearGoalsResponse | CoreFinanceApiErrorResponse;
+type GoalsApiResponse = GoalListResponse | GoalDetailResponse | GoalResponse | DeleteGoalResponse | ClearGoalsResponse | CoreFinanceApiErrorResponse;
 const createDefaultService = (): GoalsService => createGoalsService({ repository: createGoalsRepository(getPrismaClient()) });
 
 export const createGoalsCollectionHandler = (dependencies: { service?: GoalsService } = {}) => {

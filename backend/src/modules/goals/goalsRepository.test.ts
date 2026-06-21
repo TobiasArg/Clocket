@@ -56,6 +56,9 @@ const createPrismaMock = () => {
         create: vi.fn(),
         update: vi.fn(),
       },
+      transaction: {
+        findMany: vi.fn(),
+      },
       $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
     },
   };
@@ -85,6 +88,117 @@ describe("createGoalsRepository", () => {
     expect(prisma.goal.findMany).toHaveBeenCalledWith({
       where: { deletedAt: null },
       orderBy: [{ deadlineDate: "asc" }, { createdAt: "asc" }],
+    });
+  });
+
+  it("lists active goals with backend-owned saved amount and progress", async () => {
+    const { prisma } = createPrismaMock();
+    prisma.goal.findMany.mockResolvedValue([baseGoal, {
+      ...baseGoal,
+      id: "00000000-0000-4000-8000-000000000902",
+      title: "House",
+      targetAmount: new Prisma.Decimal("800.00"),
+    }]);
+    prisma.transaction.findMany.mockResolvedValue([
+      {
+        id: "00000000-0000-4000-8000-000000000301",
+        accountId: "00000000-0000-4000-8000-000000000401",
+        categoryId,
+        subcategoryId,
+        goalId,
+        installmentPlanId: null,
+        transactionType: "SAVING" as const,
+        name: "Trip deposit",
+        amount: new Prisma.Decimal("-300.00"),
+        currency: "USD" as const,
+        date: new Date("2026-06-12T00:00:00.000Z"),
+        notes: "First deposit",
+        uiIcon: "airplane-tilt",
+        uiIconBg: "bg-sky-500",
+        cuotaInstallmentIndex: null,
+        cuotaInstallmentsCount: null,
+        createdAt: new Date("2026-06-12T10:00:00.000Z"),
+        updatedAt: new Date("2026-06-12T10:00:00.000Z"),
+        deletedAt: null,
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000302",
+        accountId: "00000000-0000-4000-8000-000000000401",
+        categoryId,
+        subcategoryId,
+        goalId,
+        installmentPlanId: null,
+        transactionType: "SAVING" as const,
+        name: "Refund",
+        amount: new Prisma.Decimal("50.00"),
+        currency: "USD" as const,
+        date: new Date("2026-06-13T00:00:00.000Z"),
+        notes: null,
+        uiIcon: null,
+        uiIconBg: null,
+        cuotaInstallmentIndex: null,
+        cuotaInstallmentsCount: null,
+        createdAt: new Date("2026-06-13T10:00:00.000Z"),
+        updatedAt: new Date("2026-06-13T10:00:00.000Z"),
+        deletedAt: null,
+      },
+    ]);
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.listActiveWithProgress()).resolves.toMatchObject({
+      goals: [
+        { id: goalId, savedAmount: "300.00", progressPercent: 25, entryCount: 2 },
+        { id: "00000000-0000-4000-8000-000000000902", savedAmount: "0.00", progressPercent: 0, entryCount: 0 },
+      ],
+      summary: { totalSaved: "300.00", totalTarget: "2000.00", progressPercent: 15 },
+    });
+    expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+      where: {
+        goalId: { in: [goalId, "00000000-0000-4000-8000-000000000902"] },
+        deletedAt: null,
+      },
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    });
+  });
+
+  it("returns goal detail progress with ordered linked entry presentation data", async () => {
+    const { prisma } = createPrismaMock();
+    prisma.goal.findFirst.mockResolvedValue(baseGoal);
+    prisma.transaction.findMany.mockResolvedValue([{
+      id: "00000000-0000-4000-8000-000000000301",
+      accountId: "00000000-0000-4000-8000-000000000401",
+      categoryId,
+      subcategoryId,
+      goalId,
+      installmentPlanId: null,
+      transactionType: "SAVING" as const,
+      name: "Trip deposit",
+      amount: new Prisma.Decimal("-1200.00"),
+      currency: "USD" as const,
+      date: new Date("2026-06-12T00:00:00.000Z"),
+      notes: "Complete",
+      uiIcon: "airplane-tilt",
+      uiIconBg: "bg-sky-500",
+      cuotaInstallmentIndex: null,
+      cuotaInstallmentsCount: null,
+      createdAt: new Date("2026-06-12T10:00:00.000Z"),
+      updatedAt: new Date("2026-06-12T10:00:00.000Z"),
+      deletedAt: null,
+    }]);
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.getByIdWithProgress(goalId)).resolves.toMatchObject({
+      id: goalId,
+      savedAmount: "1200.00",
+      progressPercent: 100,
+      entryCount: 1,
+      entries: [{
+        id: "00000000-0000-4000-8000-000000000301",
+        amount: "-1200.00",
+        date: "2026-06-12",
+        notes: "Complete",
+        transactionType: "saving",
+      }],
     });
   });
 

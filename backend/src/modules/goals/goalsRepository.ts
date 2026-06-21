@@ -37,6 +37,45 @@ export interface GoalRecord {
   deletedAt: string | null;
 }
 
+export interface GoalEntryRecord {
+  id: string;
+  accountId: string;
+  categoryId: string | null;
+  subcategoryId: string | null;
+  goalId: string | null;
+  transactionType: "regular" | "saving";
+  name: string;
+  amount: string;
+  currency: CurrencyCode;
+  date: string;
+  notes: string | null;
+  uiIcon: string | null;
+  uiIconBg: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoalProgressRecord extends GoalRecord {
+  savedAmount: string;
+  progressPercent: number;
+  entryCount: number;
+}
+
+export interface GoalDetailRecord extends GoalProgressRecord {
+  entries: GoalEntryRecord[];
+}
+
+export interface GoalsProgressSummaryRecord {
+  totalSaved: string;
+  totalTarget: string;
+  progressPercent: number;
+}
+
+export interface GoalListWithProgressRecord {
+  goals: GoalProgressRecord[];
+  summary: GoalsProgressSummaryRecord;
+}
+
 export interface CreateGoalInput {
   title: string;
   description: string;
@@ -54,7 +93,9 @@ export type UpdateGoalInput = Partial<CreateGoalInput>;
 
 export interface GoalsRepository {
   listActive: () => Promise<GoalRecord[]>;
+  listActiveWithProgress: () => Promise<GoalListWithProgressRecord>;
   getById: (id: string) => Promise<GoalRecord | null>;
+  getByIdWithProgress: (id: string) => Promise<GoalDetailRecord | null>;
   create: (input: CreateGoalInput) => Promise<GoalRecord>;
   update: (id: string, input: UpdateGoalInput) => Promise<GoalRecord | null>;
   softDelete: (id: string) => Promise<boolean>;
@@ -62,6 +103,8 @@ export interface GoalsRepository {
 }
 
 type GoalModel = NonNullable<Awaited<ReturnType<PrismaClient["goal"]["findUnique"]>>>;
+
+type TransactionModel = NonNullable<Awaited<ReturnType<PrismaClient["transaction"]["findUnique"]>>>;
 
 type GoalCategorySyncClient = Pick<PrismaClient, "category" | "subcategory" | "goal">;
 
@@ -135,6 +178,67 @@ const toGoalRecord = (goal: GoalModel): GoalRecord => ({
   updatedAt: toIso(goal.updatedAt),
   deletedAt: goal.deletedAt ? toIso(goal.deletedAt) : null,
 });
+
+const TRANSACTION_TYPE_FROM_PRISMA = {
+  REGULAR: "regular",
+  SAVING: "saving",
+} as const;
+
+const toTransactionEntryRecord = (transaction: TransactionModel): GoalEntryRecord => ({
+  id: transaction.id,
+  accountId: transaction.accountId,
+  categoryId: transaction.categoryId,
+  subcategoryId: transaction.subcategoryId,
+  goalId: transaction.goalId,
+  transactionType: TRANSACTION_TYPE_FROM_PRISMA[transaction.transactionType],
+  name: transaction.name,
+  amount: transaction.amount.toFixed(2),
+  currency: transaction.currency,
+  date: toDateOnly(transaction.date),
+  notes: transaction.notes,
+  uiIcon: transaction.uiIcon,
+  uiIconBg: transaction.uiIconBg,
+  createdAt: toIso(transaction.createdAt),
+  updatedAt: toIso(transaction.updatedAt),
+});
+
+const toNumber = (value: string): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const toCurrencyString = (value: number): string => (Number.isFinite(value) ? value : 0).toFixed(2);
+
+const clampPercent = (value: number): number => {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, Math.round(value)));
+};
+
+const buildProgress = (goal: GoalRecord, entries: GoalEntryRecord[]): GoalProgressRecord => {
+  const savedAmount = entries.reduce((sum, entry) => {
+    const amount = toNumber(entry.amount);
+    return amount < 0 ? sum + Math.abs(amount) : sum;
+  }, 0);
+  const targetAmount = Math.max(0, toNumber(goal.targetAmount));
+
+  return {
+    ...goal,
+    savedAmount: toCurrencyString(savedAmount),
+    progressPercent: targetAmount > 0 ? clampPercent((savedAmount / targetAmount) * 100) : 0,
+    entryCount: entries.length,
+  };
+};
+
+const buildSummary = (goals: GoalProgressRecord[]): GoalsProgressSummaryRecord => {
+  const totalSaved = goals.reduce((sum, goal) => sum + toNumber(goal.savedAmount), 0);
+  const totalTarget = goals.reduce((sum, goal) => sum + Math.max(0, toNumber(goal.targetAmount)), 0);
+
+  return {
+    totalSaved: toCurrencyString(totalSaved),
+    totalTarget: toCurrencyString(totalTarget),
+    progressPercent: totalTarget > 0 ? clampPercent((totalSaved / totalTarget) * 100) : 0,
+  };
+};
 
 const assertActiveCategory = async (
   prisma: PrismaClient,
@@ -247,6 +351,37 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
     return goals.map(toGoalRecord);
   },
 
+  async listActiveWithProgress() {
+    const goals = await prisma.goal.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ deadlineDate: "asc" }, { createdAt: "asc" }],
+    });
+    const goalRecords = goals.map(toGoalRecord);
+    const goalIds = goalRecords.map((goal) => goal.id);
+    const entries = goalIds.length > 0
+      ? await prisma.transaction.findMany({
+          where: {
+            goalId: { in: goalIds },
+            deletedAt: null,
+          },
+          orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+        })
+      : [];
+    const entriesByGoalId = new Map<string, GoalEntryRecord[]>();
+    entries.map(toTransactionEntryRecord).forEach((entry) => {
+      if (!entry.goalId) return;
+      const current = entriesByGoalId.get(entry.goalId) ?? [];
+      current.push(entry);
+      entriesByGoalId.set(entry.goalId, current);
+    });
+    const goalsWithProgress = goalRecords.map((goal) => buildProgress(goal, entriesByGoalId.get(goal.id) ?? []));
+
+    return {
+      goals: goalsWithProgress,
+      summary: buildSummary(goalsWithProgress),
+    };
+  },
+
   async getById(id) {
     const goal = await prisma.goal.findFirst({
       where: {
@@ -256,6 +391,34 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
     });
 
     return goal ? toGoalRecord(goal) : null;
+  },
+
+  async getByIdWithProgress(id) {
+    const goal = await prisma.goal.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+    });
+
+    if (!goal) {
+      return null;
+    }
+
+    const goalRecord = toGoalRecord(goal);
+    const entries = await prisma.transaction.findMany({
+      where: {
+        goalId: id,
+        deletedAt: null,
+      },
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    });
+    const entryRecords = entries.map(toTransactionEntryRecord);
+
+    return {
+      ...buildProgress(goalRecord, entryRecords),
+      entries: entryRecords,
+    };
   },
 
   async create(input) {
