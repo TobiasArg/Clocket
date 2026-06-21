@@ -5,9 +5,9 @@ import { mapCoreFinanceError, type CoreFinanceApiErrorResponse } from "../core-f
 import { parseIdParam } from "../core-finance/coreFinanceRequest";
 import { createGoalsRepository } from "./goalsRepository";
 import { createGoalsService, type GoalsService } from "./goalsService";
-import type { ClearGoalsResponse, DeleteGoalResponse, GoalDetailResponse, GoalListResponse, GoalResponse } from "./goalsContracts";
+import type { ClearGoalsResponse, DeleteGoalResponse, GoalDetailResponse, GoalListResponse, GoalResponse, ResolveGoalDeletionResponse } from "./goalsContracts";
 
-type GoalsApiResponse = GoalListResponse | GoalDetailResponse | GoalResponse | DeleteGoalResponse | ClearGoalsResponse | CoreFinanceApiErrorResponse;
+type GoalsApiResponse = GoalListResponse | GoalDetailResponse | GoalResponse | DeleteGoalResponse | ClearGoalsResponse | ResolveGoalDeletionResponse | CoreFinanceApiErrorResponse;
 const createDefaultService = (): GoalsService => createGoalsService({ repository: createGoalsRepository(getPrismaClient()) });
 
 export const createGoalsCollectionHandler = (dependencies: { service?: GoalsService } = {}) => {
@@ -34,6 +34,20 @@ export const createGoalItemHandler = (dependencies: { service?: GoalsService } =
       if (req.method === "PATCH") return sendJson(res, 200, await service.updateGoal(parsedId.value, req.body));
       if (req.method === "DELETE") return sendJson(res, 200, await service.deleteGoal(parsedId.value));
       requireMethod(req, res as NextApiResponse<CoreFinanceApiErrorResponse>, ["GET", "PATCH", "DELETE"], "INVALID_REQUEST");
+    } catch (error) {
+      sendError(res as NextApiResponse<CoreFinanceApiErrorResponse>, mapCoreFinanceError(error));
+    }
+  };
+};
+
+export const createGoalDeletionResolutionHandler = (dependencies: { service?: GoalsService } = {}) => {
+  return async function handler(req: NextApiRequest, res: NextApiResponse<GoalsApiResponse>): Promise<void> {
+    const parsedId = parseIdParam(req.query);
+    if (!parsedId.ok) return sendError(res as NextApiResponse<CoreFinanceApiErrorResponse>, parsedId.response);
+    const service = dependencies.service ?? createDefaultService();
+    try {
+      if (req.method === "POST") return sendJson(res, 200, await service.resolveGoalDeletion(parsedId.value, req.body));
+      requireMethod(req, res as NextApiResponse<CoreFinanceApiErrorResponse>, ["POST"], "INVALID_REQUEST");
     } catch (error) {
       sendError(res as NextApiResponse<CoreFinanceApiErrorResponse>, mapCoreFinanceError(error));
     }

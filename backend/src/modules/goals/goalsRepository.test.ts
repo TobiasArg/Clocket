@@ -23,6 +23,9 @@ const baseGoal = {
 };
 
 const createTransactionClientMock = () => ({
+  account: {
+    findFirst: vi.fn(),
+  },
   category: {
     findFirst: vi.fn(),
     create: vi.fn(),
@@ -32,8 +35,12 @@ const createTransactionClientMock = () => ({
     create: vi.fn(),
   },
   goal: {
+    findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+  },
+  transaction: {
+    updateMany: vi.fn(),
   },
 });
 
@@ -306,6 +313,7 @@ describe("createGoalsRepository", () => {
       targetAmount: new Prisma.Decimal("5000.00"),
       updatedAt: new Date("2026-06-02T11:00:00.000Z"),
     });
+    tx.transaction.updateMany.mockResolvedValue({ count: 2 });
     const repository = createGoalsRepository(prisma as unknown as PrismaClient);
 
     await expect(repository.update(goalId, {
@@ -333,6 +341,119 @@ describe("createGoalsRepository", () => {
         targetAmount: new Prisma.Decimal("5000.00"),
       },
     });
+    expect(tx.transaction.updateMany).toHaveBeenCalledWith({
+      where: { goalId, deletedAt: null },
+      data: {
+        categoryId,
+        subcategoryId: "00000000-0000-4000-8000-000000000202",
+        transactionType: "SAVING",
+        uiIcon: "airplane-tilt",
+        uiIconBg: "bg-[#0EA5E9]",
+      },
+    });
+  });
+
+  it("resolves goal deletion by soft-deleting linked entries and source goal", async () => {
+    const { prisma, tx } = createPrismaMock();
+    prisma.goal.findFirst.mockResolvedValue({ id: goalId });
+    tx.goal.findFirst.mockResolvedValue({ id: goalId });
+    tx.transaction.updateMany.mockResolvedValue({ count: 3 });
+    tx.goal.update.mockResolvedValue({ ...baseGoal, deletedAt: new Date("2026-06-02T12:00:00.000Z") });
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.resolveDeletion(goalId, { mode: "delete_entries" })).resolves.toEqual({
+      deleted: true,
+      mode: "delete_entries",
+      resolvedEntriesCount: 3,
+    });
+    expect(tx.transaction.updateMany).toHaveBeenCalledWith({
+      where: { goalId, deletedAt: null },
+      data: { deletedAt: expect.any(Date) as Date },
+    });
+    expect(tx.goal.update).toHaveBeenCalledWith({
+      where: { id: goalId },
+      data: { deletedAt: expect.any(Date) as Date },
+    });
+  });
+
+  it("resolves goal deletion by redirecting linked entries to another goal", async () => {
+    const { prisma, tx } = createPrismaMock();
+    const targetGoalId = "00000000-0000-4000-8000-000000000902";
+    prisma.goal.findFirst.mockResolvedValue({ id: goalId });
+    tx.goal.findFirst
+      .mockResolvedValueOnce({ id: goalId })
+      .mockResolvedValueOnce({ ...baseGoal, id: targetGoalId, colorKey: "ROSE" as const });
+    tx.transaction.updateMany.mockResolvedValueOnce({ count: 2 }).mockResolvedValueOnce({ count: 2 });
+    tx.goal.update.mockResolvedValue({ ...baseGoal, deletedAt: new Date("2026-06-02T12:00:00.000Z") });
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.resolveDeletion(goalId, { mode: "redirect_goal", targetGoalId })).resolves.toEqual({
+      deleted: true,
+      mode: "redirect_goal",
+      resolvedEntriesCount: 2,
+    });
+    expect(tx.transaction.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { goalId, deletedAt: null },
+      data: {
+        categoryId,
+        subcategoryId,
+        transactionType: "SAVING",
+        uiIcon: "airplane-tilt",
+        uiIconBg: "bg-[#E11D48]",
+      },
+    });
+    expect(tx.transaction.updateMany).toHaveBeenNthCalledWith(2, {
+      where: { goalId, deletedAt: null },
+      data: { goalId: targetGoalId },
+    });
+  });
+
+  it("resolves goal deletion by redirecting linked entries to an account with fallback category", async () => {
+    const { prisma, tx } = createPrismaMock();
+    const accountId = "00000000-0000-4000-8000-000000000401";
+    const fallbackCategoryId = "00000000-0000-4000-8000-000000000777";
+    prisma.goal.findFirst.mockResolvedValue({ id: goalId });
+    tx.goal.findFirst.mockResolvedValue({ id: goalId });
+    tx.account.findFirst.mockResolvedValue({ id: accountId });
+    tx.category.findFirst.mockResolvedValue(null);
+    tx.category.create.mockResolvedValue({ id: fallbackCategoryId });
+    tx.transaction.updateMany.mockResolvedValue({ count: 2 });
+    tx.goal.update.mockResolvedValue({ ...baseGoal, deletedAt: new Date("2026-06-02T12:00:00.000Z") });
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.resolveDeletion(goalId, { mode: "redirect_account", targetAccountId: accountId })).resolves.toEqual({
+      deleted: true,
+      mode: "redirect_account",
+      resolvedEntriesCount: 2,
+    });
+    expect(tx.category.create).toHaveBeenCalledWith({
+      data: { name: "Sin categoría", icon: "tag", iconBg: "bg-[#71717A]" },
+      select: { id: true },
+    });
+    expect(tx.transaction.updateMany).toHaveBeenCalledWith({
+      where: { goalId, deletedAt: null },
+      data: {
+        accountId,
+        categoryId: fallbackCategoryId,
+        subcategoryId: null,
+        goalId: null,
+        transactionType: "REGULAR",
+        uiIcon: "tag",
+        uiIconBg: "bg-[#71717A]",
+      },
+    });
+  });
+
+  it("rejects invalid redirect targets", async () => {
+    const { prisma, tx } = createPrismaMock();
+    prisma.goal.findFirst.mockResolvedValue({ id: goalId });
+    tx.goal.findFirst.mockResolvedValueOnce({ id: goalId }).mockResolvedValueOnce(null);
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.resolveDeletion(goalId, {
+      mode: "redirect_goal",
+      targetGoalId: "00000000-0000-4000-8000-000000000999",
+    })).rejects.toMatchObject({ code: "MISSING_GOAL" });
   });
 
   it("returns null when updating a missing or soft-deleted goal", async () => {

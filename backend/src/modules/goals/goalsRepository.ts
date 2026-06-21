@@ -9,7 +9,12 @@ type DecimalInput = string | number | Prisma.Decimal;
 
 export type GoalColorKey = "emerald" | "sky" | "indigo" | "violet" | "rose" | "amber" | "cyan" | "lime";
 
-export type GoalsRepositoryErrorCode = "MISSING_CATEGORY" | "MISSING_SUBCATEGORY";
+export type GoalsRepositoryErrorCode =
+  | "MISSING_ACCOUNT"
+  | "MISSING_CATEGORY"
+  | "MISSING_GOAL"
+  | "MISSING_SUBCATEGORY"
+  | "INVALID_REQUEST";
 
 export class GoalsRepositoryError extends Error {
   public readonly code: GoalsRepositoryErrorCode;
@@ -76,6 +81,19 @@ export interface GoalListWithProgressRecord {
   summary: GoalsProgressSummaryRecord;
 }
 
+export type GoalDeleteResolutionMode = "delete_entries" | "redirect_goal" | "redirect_account";
+
+export type ResolveGoalDeletionInput =
+  | { mode: "delete_entries" }
+  | { mode: "redirect_goal"; targetGoalId: string }
+  | { mode: "redirect_account"; targetAccountId: string };
+
+export interface ResolveGoalDeletionRecord {
+  deleted: true;
+  mode: GoalDeleteResolutionMode;
+  resolvedEntriesCount: number;
+}
+
 export interface CreateGoalInput {
   title: string;
   description: string;
@@ -98,6 +116,7 @@ export interface GoalsRepository {
   getByIdWithProgress: (id: string) => Promise<GoalDetailRecord | null>;
   create: (input: CreateGoalInput) => Promise<GoalRecord>;
   update: (id: string, input: UpdateGoalInput) => Promise<GoalRecord | null>;
+  resolveDeletion: (id: string, input: ResolveGoalDeletionInput) => Promise<ResolveGoalDeletionRecord | null>;
   softDelete: (id: string) => Promise<boolean>;
   softDeleteAll: () => Promise<number>;
 }
@@ -106,7 +125,7 @@ type GoalModel = NonNullable<Awaited<ReturnType<PrismaClient["goal"]["findUnique
 
 type TransactionModel = NonNullable<Awaited<ReturnType<PrismaClient["transaction"]["findUnique"]>>>;
 
-type GoalCategorySyncClient = Pick<PrismaClient, "category" | "subcategory" | "goal">;
+type GoalCategorySyncClient = Pick<PrismaClient, "account" | "category" | "subcategory" | "goal" | "transaction">;
 
 const GOALS_PARENT_CATEGORY_NAME = "Goals";
 const GOALS_PARENT_CATEGORY_ICON = "target";
@@ -133,6 +152,22 @@ const COLOR_FROM_PRISMA: Record<PrismaGoalColorKey, GoalColorKey> = {
   CYAN: "cyan",
   LIME: "lime",
 };
+
+const GOAL_COLOR_ICON_BG: Record<GoalColorKey, string> = {
+  emerald: "bg-[#10B981]",
+  sky: "bg-[#0EA5E9]",
+  indigo: "bg-[#4F46E5]",
+  violet: "bg-[#7C3AED]",
+  rose: "bg-[#E11D48]",
+  amber: "bg-[#F59E0B]",
+  cyan: "bg-[#06B6D4]",
+  lime: "bg-[#65A30D]",
+};
+
+const FALLBACK_CATEGORY_NAME = "Sin categoría";
+const FALLBACK_CATEGORY_ASCII_NAME = "Sin categoria";
+const FALLBACK_CATEGORY_ICON = "tag";
+const FALLBACK_CATEGORY_ICON_BG = "bg-[#71717A]";
 
 const toDecimal = (value: DecimalInput): Prisma.Decimal => new Prisma.Decimal(value);
 
@@ -341,6 +376,51 @@ const ensureGoalsCategoryAndSubcategory = async (
   };
 };
 
+const ensureFallbackCategory = async (tx: GoalCategorySyncClient): Promise<{ categoryId: string }> => {
+  let category = await tx.category.findFirst({
+    where: {
+      deletedAt: null,
+      OR: [{ name: FALLBACK_CATEGORY_NAME }, { name: FALLBACK_CATEGORY_ASCII_NAME }],
+    },
+    select: { id: true },
+  });
+
+  if (!category) {
+    category = await tx.category.create({
+      data: {
+        name: FALLBACK_CATEGORY_NAME,
+        icon: FALLBACK_CATEGORY_ICON,
+        iconBg: FALLBACK_CATEGORY_ICON_BG,
+      },
+      select: { id: true },
+    });
+  }
+
+  return { categoryId: category.id };
+};
+
+const updateLinkedEntriesForGoal = async (
+  tx: GoalCategorySyncClient,
+  goalId: string,
+  goal: { categoryId: string | null; subcategoryId: string | null; icon: string; colorKey: PrismaGoalColorKey },
+): Promise<number> => {
+  const result = await tx.transaction.updateMany({
+    where: {
+      goalId,
+      deletedAt: null,
+    },
+    data: {
+      categoryId: goal.categoryId,
+      subcategoryId: goal.subcategoryId,
+      transactionType: "SAVING",
+      uiIcon: goal.icon,
+      uiIconBg: GOAL_COLOR_ICON_BG[COLOR_FROM_PRISMA[goal.colorKey]],
+    },
+  });
+
+  return result.count;
+};
+
 export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => ({
   async listActive() {
     const goals = await prisma.goal.findMany({
@@ -492,19 +572,25 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
         : existing.subcategoryId;
       await assertActiveCategory(prisma, categoryId);
       const refs = await assertActiveSubcategory(prisma, categoryId, initialSubcategoryId);
-      const goal = await prisma.goal.update({
-        where: { id },
-        data: {
-          title,
-          categoryId: refs.categoryId,
-          subcategoryId: refs.subcategoryId,
-          ...(input.description !== undefined ? { description: input.description.trim() } : {}),
-          ...(input.targetAmount !== undefined ? { targetAmount: toDecimal(input.targetAmount) } : {}),
-          ...(input.currency !== undefined ? { currency: input.currency } : {}),
-          ...(input.deadlineDate !== undefined ? { deadlineDate: toDbDate(input.deadlineDate) } : {}),
-          ...(input.icon !== undefined ? { icon: input.icon.trim() } : {}),
-          ...(input.colorKey !== undefined ? { colorKey: COLOR_TO_PRISMA[input.colorKey] } : {}),
-        },
+      const goal = await prisma.$transaction(async (tx) => {
+        const updated = await tx.goal.update({
+          where: { id },
+          data: {
+            title,
+            categoryId: refs.categoryId,
+            subcategoryId: refs.subcategoryId,
+            ...(input.description !== undefined ? { description: input.description.trim() } : {}),
+            ...(input.targetAmount !== undefined ? { targetAmount: toDecimal(input.targetAmount) } : {}),
+            ...(input.currency !== undefined ? { currency: input.currency } : {}),
+            ...(input.deadlineDate !== undefined ? { deadlineDate: toDbDate(input.deadlineDate) } : {}),
+            ...(input.icon !== undefined ? { icon: input.icon.trim() } : {}),
+            ...(input.colorKey !== undefined ? { colorKey: COLOR_TO_PRISMA[input.colorKey] } : {}),
+          },
+        });
+
+        await updateLinkedEntriesForGoal(tx, id, updated);
+
+        return updated;
       });
 
       return toGoalRecord(goal);
@@ -513,7 +599,7 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
     const goal = await prisma.$transaction(async (tx) => {
       const refs = await ensureGoalsCategoryAndSubcategory(tx, title);
 
-      return tx.goal.update({
+      const updated = await tx.goal.update({
         where: { id },
         data: {
           title,
@@ -527,9 +613,123 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
           ...(input.colorKey !== undefined ? { colorKey: COLOR_TO_PRISMA[input.colorKey] } : {}),
         },
       });
+
+      await updateLinkedEntriesForGoal(tx, id, updated);
+
+      return updated;
     });
 
     return toGoalRecord(goal);
+  },
+
+  async resolveDeletion(id, input) {
+    const existing = await prisma.goal.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return null;
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const sourceGoal = await tx.goal.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (!sourceGoal) {
+        return null;
+      }
+
+      let resolvedEntriesCount = 0;
+
+      if (input.mode === "delete_entries") {
+        const result = await tx.transaction.updateMany({
+          where: {
+            goalId: id,
+            deletedAt: null,
+          },
+          data: { deletedAt: new Date() },
+        });
+        resolvedEntriesCount = result.count;
+      }
+
+      if (input.mode === "redirect_goal") {
+        if (input.targetGoalId === id) {
+          throw new GoalsRepositoryError("INVALID_REQUEST", "Target goal must be different from the deleted goal.");
+        }
+
+        const targetGoal = await tx.goal.findFirst({
+          where: {
+            id: input.targetGoalId,
+            deletedAt: null,
+          },
+        });
+
+        if (!targetGoal) {
+          throw new GoalsRepositoryError("MISSING_GOAL", `Active goal '${input.targetGoalId}' was not found.`);
+        }
+
+        resolvedEntriesCount = await updateLinkedEntriesForGoal(tx, id, targetGoal);
+        await tx.transaction.updateMany({
+          where: {
+            goalId: id,
+            deletedAt: null,
+          },
+          data: { goalId: input.targetGoalId },
+        });
+      }
+
+      if (input.mode === "redirect_account") {
+        const targetAccount = await tx.account.findFirst({
+          where: {
+            id: input.targetAccountId,
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+
+        if (!targetAccount) {
+          throw new GoalsRepositoryError("MISSING_ACCOUNT", `Active account '${input.targetAccountId}' was not found.`);
+        }
+
+        const fallbackCategory = await ensureFallbackCategory(tx);
+        const result = await tx.transaction.updateMany({
+          where: {
+            goalId: id,
+            deletedAt: null,
+          },
+          data: {
+            accountId: input.targetAccountId,
+            categoryId: fallbackCategory.categoryId,
+            subcategoryId: null,
+            goalId: null,
+            transactionType: "REGULAR",
+            uiIcon: FALLBACK_CATEGORY_ICON,
+            uiIconBg: FALLBACK_CATEGORY_ICON_BG,
+          },
+        });
+        resolvedEntriesCount = result.count;
+      }
+
+      await tx.goal.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      return {
+        deleted: true,
+        mode: input.mode,
+        resolvedEntriesCount,
+      };
+    });
   },
 
   async softDelete(id) {

@@ -1,4 +1,4 @@
-import type { GoalDetailRecord, GoalEntryRecord, GoalProgressRecord, GoalsProgressSummaryRecord, GoalRecord } from "./goalsRepository";
+import type { GoalDetailRecord, GoalEntryRecord, GoalProgressRecord, GoalsProgressSummaryRecord, GoalRecord, ResolveGoalDeletionRecord } from "./goalsRepository";
 
 export type GoalResponse = Omit<GoalRecord, "deletedAt">;
 
@@ -16,6 +16,8 @@ export interface GoalListResponse {
 export interface DeleteGoalResponse {
   deleted: true;
 }
+
+export type ResolveGoalDeletionResponse = ResolveGoalDeletionRecord;
 
 export interface ClearGoalsResponse {
   deletedCount: number;

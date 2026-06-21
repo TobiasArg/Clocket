@@ -1,13 +1,14 @@
 import { CoreFinanceApiError } from "../core-finance/coreFinanceApiErrors";
 import { isValidCurrency, parseJsonObjectBody, readDateOnlyInput, readDecimalInput, readOptionalNullableString, readRequiredString } from "../core-finance/coreFinanceRequest";
-import { toGoalDetailResponse, toGoalProgressResponse, toGoalResponse, type ClearGoalsResponse, type DeleteGoalResponse, type GoalDetailResponse, type GoalListResponse, type GoalResponse } from "./goalsContracts";
-import { GoalsRepositoryError, type CreateGoalInput, type GoalColorKey, type GoalsRepository, type UpdateGoalInput } from "./goalsRepository";
+import { toGoalDetailResponse, toGoalProgressResponse, toGoalResponse, type ClearGoalsResponse, type DeleteGoalResponse, type GoalDetailResponse, type GoalListResponse, type GoalResponse, type ResolveGoalDeletionResponse } from "./goalsContracts";
+import { GoalsRepositoryError, type CreateGoalInput, type GoalColorKey, type GoalsRepository, type ResolveGoalDeletionInput, type UpdateGoalInput } from "./goalsRepository";
 
 export interface GoalsService {
   listGoals: () => Promise<GoalListResponse>;
   getGoal: (id: string) => Promise<GoalDetailResponse>;
   createGoal: (body: unknown) => Promise<GoalResponse>;
   updateGoal: (id: string, body: unknown) => Promise<GoalResponse>;
+  resolveGoalDeletion: (id: string, body: unknown) => Promise<ResolveGoalDeletionResponse>;
   deleteGoal: (id: string) => Promise<DeleteGoalResponse>;
   clearGoals: () => Promise<ClearGoalsResponse>;
 }
@@ -115,6 +116,28 @@ export const createGoalsService = ({ repository }: { repository: GoalsRepository
     return patch;
   };
 
+  const parseResolveDeletion = (body: unknown): ResolveGoalDeletionInput => {
+    const parsedBody = parseJsonObjectBody(body);
+    if (!parsedBody.ok) throw new CoreFinanceApiError(parsedBody.response.error, parsedBody.response);
+
+    const mode = parsedBody.value.mode;
+    if (mode === "delete_entries") {
+      return { mode };
+    }
+    if (mode === "redirect_goal") {
+      const targetGoal = readRequiredString(parsedBody.value, "targetGoalId");
+      if (!targetGoal.ok) throw new CoreFinanceApiError(targetGoal.response.error, targetGoal.response);
+      return { mode, targetGoalId: targetGoal.value };
+    }
+    if (mode === "redirect_account") {
+      const targetAccount = readRequiredString(parsedBody.value, "targetAccountId");
+      if (!targetAccount.ok) throw new CoreFinanceApiError(targetAccount.response.error, targetAccount.response);
+      return { mode, targetAccountId: targetAccount.value };
+    }
+
+    throw new CoreFinanceApiError("Field 'mode' must be one of 'delete_entries', 'redirect_goal', or 'redirect_account'.", { code: "INVALID_REQUEST", status: 400 });
+  };
+
   return {
     async listGoals() {
       const result = await repository.listActiveWithProgress();
@@ -131,6 +154,9 @@ export const createGoalsService = ({ repository }: { repository: GoalsRepository
     },
     async updateGoal(id, body) {
       return toGoalResponse(requireFound(await run(() => repository.update(id, parseUpdate(body))), id));
+    },
+    async resolveGoalDeletion(id, body) {
+      return requireFound(await run(() => repository.resolveDeletion(id, parseResolveDeletion(body))), id);
     },
     async deleteGoal(id) {
       if (!await repository.softDelete(id)) throw new CoreFinanceApiError(`Goal '${id}' was not found.`, { code: "NOT_FOUND", status: 404 });
