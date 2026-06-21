@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useCurrency } from "./useCurrency";
 import { useGoals } from "./useGoals";
-import { useTransactions } from "./useTransactions";
 import {
   formatCurrency,
   GOAL_COLOR_OPTIONS,
@@ -108,7 +107,6 @@ export const useGoalsPageModel = (
   const { onAddClick } = options;
   const { currency: appCurrency } = useCurrency();
   const { items, isLoading, error, create } = useGoals();
-  const { items: transactions } = useTransactions();
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [titleInput, setTitleInput] = useState<string>("");
@@ -137,26 +135,8 @@ export const useGoalsPageModel = (
     isIconValid
   );
 
-  const savedByGoalId = useMemo(() => {
-    const map = new Map<string, number>();
-    transactions.forEach((transaction) => {
-      if (!transaction.goalId) {
-        return;
-      }
-
-      const amount = Number(transaction.amount.replace(/[^0-9+.-]/g, ""));
-      if (!Number.isFinite(amount) || amount >= 0) {
-        return;
-      }
-
-      map.set(transaction.goalId, (map.get(transaction.goalId) ?? 0) + Math.abs(amount));
-    });
-
-    return map;
-  }, [transactions]);
-
   const summary = useMemo<GoalsSummary>(() => {
-    const totalSaved = items.reduce((sum, goal) => sum + (savedByGoalId.get(goal.id) ?? 0), 0);
+    const totalSaved = items.reduce((sum, goal) => sum + (goal.savedAmount ?? 0), 0);
     const totalTarget = items.reduce((sum, goal) => sum + goal.targetAmount, 0);
     const percent = totalTarget > 0 ? clampPercent((totalSaved / totalTarget) * 100) : 0;
 
@@ -165,14 +145,12 @@ export const useGoalsPageModel = (
       totalTarget,
       percent,
     };
-  }, [items, savedByGoalId]);
+  }, [items]);
 
   const goalRows = useMemo<GoalListPresentation[]>(() => {
     return items.map((goal) => {
-      const savedAmount = savedByGoalId.get(goal.id) ?? 0;
-      const percent = goal.targetAmount > 0
-        ? clampPercent((savedAmount / goal.targetAmount) * 100)
-        : 0;
+      const savedAmount = goal.savedAmount ?? 0;
+      const percent = goal.progressPercent ?? 0;
       const color = getGoalColorOption(goal.colorKey);
 
       return {
@@ -189,7 +167,7 @@ export const useGoalsPageModel = (
         targetAmountLabel: formatCurrency(goal.targetAmount),
       };
     });
-  }, [items, savedByGoalId]);
+  }, [items]);
 
   const resetEditor = useCallback(() => {
     setIsEditorOpen(false);

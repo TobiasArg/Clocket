@@ -163,6 +163,9 @@ export type {
 
 export type {
   CreateGoalInput,
+  GoalDeleteResolutionInput,
+  GoalDeleteResolutionResult,
+  GoalDetailItem,
   GoalPlanItem,
   GoalsRepository,
   UpdateGoalPatch,

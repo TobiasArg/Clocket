@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   goalsRepository,
   type CreateGoalInput,
+  type GoalDeleteResolutionInput,
+  type GoalDeleteResolutionResult,
   type GoalPlanItem,
   type GoalsRepository,
   type UpdateGoalPatch,
@@ -18,6 +20,7 @@ export interface UseGoalsResult {
   refresh: () => Promise<void>;
   create: (input: CreateGoalInput) => Promise<GoalPlanItem | null>;
   update: (id: string, patch: UpdateGoalPatch) => Promise<GoalPlanItem | null>;
+  resolveDeletion: (id: string, input: GoalDeleteResolutionInput) => Promise<GoalDeleteResolutionResult | null>;
   remove: (id: string) => Promise<boolean>;
   clearAll: () => Promise<void>;
 }
@@ -173,6 +176,30 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
     [isSharedRepository, repository],
   );
 
+  const resolveDeletion = useCallback(
+    async (id: string, input: GoalDeleteResolutionInput): Promise<GoalDeleteResolutionResult | null> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await repository.resolveDeletion(id, input);
+        if (result?.deleted) {
+          if (isSharedRepository && sharedGoalsCache !== null) {
+            sharedGoalsCache = sharedGoalsCache.filter((item) => item.id !== id);
+          }
+          setItems((current) => current.filter((item) => item.id !== id));
+        }
+        return result;
+      } catch (resolveError) {
+        setError(getErrorMessage(resolveError));
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isSharedRepository, repository],
+  );
+
   const clearAll = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -201,6 +228,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
     refresh,
     create,
     update,
+    resolveDeletion,
     remove,
     clearAll,
   };

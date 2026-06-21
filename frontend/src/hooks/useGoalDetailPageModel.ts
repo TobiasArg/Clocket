@@ -1,19 +1,18 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCurrency } from "./useCurrency";
 import { useAccounts } from "./useAccounts";
-import { useCategories } from "./useCategories";
 import { useGoals } from "./useGoals";
-import { useTransactions } from "./useTransactions";
+import { goalsRepository } from "@/utils";
 import {
   formatCurrency,
-  getGoalCategoryName,
-  getGoalColorOption,
   GOAL_COLOR_OPTIONS,
   GOAL_ICON_OPTIONS,
   toArsTransactionAmount,
   getUsdRate,
   type TransactionInputCurrency,
 } from "@/utils";
+import { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
+import type { GoalDetailItem } from "@/domain/goals/repository";
 import type { GoalColorKey } from "@/types";
 
 export type GoalDeleteResolution = "redirect_goal" | "redirect_account" | "delete_entries";
@@ -79,12 +78,6 @@ export interface UseGoalDetailPageModelResult {
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-const parseSignedAmount = (value: string): number => {
-  const normalized = value.replace(/[^0-9+.-]/g, "");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
 const formatEntryDate = (value: string): string => {
   if (!ISO_DATE_PATTERN.test(value)) {
     return value;
@@ -124,25 +117,9 @@ const convertArsToCurrency = (amountArs: number, currency: TransactionInputCurre
   return amountArs;
 };
 
-const ensureUncategorizedCategory = async (
-  categories: ReturnType<typeof useCategories>["items"],
-  createCategory: ReturnType<typeof useCategories>["create"],
-): Promise<{ id: string; name: string } | null> => {
-  const existing = categories.find((category) => (
-    category.name.trim().toLocaleLowerCase("es-ES") === "sin categoría" ||
-    category.name.trim().toLocaleLowerCase("es-ES") === "sin categoria"
-  ));
-  if (existing) {
-    return { id: existing.id, name: existing.name };
-  }
-
-  const created = await createCategory({
-    name: "Sin categoría",
-    icon: "tag",
-    iconBg: "bg-[#71717A]",
-  });
-
-  return created ? { id: created.id, name: created.name } : null;
+const dispatchTransactionsChanged = (): void => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(TRANSACTIONS_CHANGED_EVENT));
 };
 
 export const useGoalDetailPageModel = (
@@ -154,38 +131,40 @@ export const useGoalDetailPageModel = (
     items: goals,
     isLoading: isGoalsLoading,
     error: goalsError,
-    remove: removeGoal,
+    refresh: refreshGoals,
+    resolveDeletion,
     update: updateGoal,
   } = useGoals();
   const { items: accounts } = useAccounts();
-  const { items: categories, create: createCategory } = useCategories();
-  const {
-    items: transactions,
-    isLoading: isTransactionsLoading,
-    update: updateTransaction,
-    remove: removeTransaction,
-  } = useTransactions();
+  const [goalDetail, setGoalDetail] = useState<GoalDetailItem | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
-  const goal = useMemo(
+  const fallbackGoal = useMemo(
     () => goals.find((item) => item.id === goalId) ?? null,
     [goalId, goals],
   );
-  const goalEntries = useMemo(
-    () => transactions.filter((transaction) => transaction.goalId === goalId),
-    [goalId, transactions],
-  );
+  const goal = goalDetail ?? fallbackGoal;
 
-  const savedAmount = useMemo(
-    () => goalEntries.reduce((sum, entry) => {
-      const amount = parseSignedAmount(entry.amount);
-      return amount < 0 ? sum + Math.abs(amount) : sum;
-    }, 0),
-    [goalEntries],
-  );
+  const loadGoalDetail = useCallback(async () => {
+    setIsDetailLoading(true);
+    setDetailError(null);
+    try {
+      setGoalDetail(await goalsRepository.getById(goalId));
+    } catch (error) {
+      setDetailError(error instanceof Error ? error.message : "We couldn't load this goal.");
+    } finally {
+      setIsDetailLoading(false);
+    }
+  }, [goalId]);
+
+  useEffect(() => {
+    void loadGoalDetail();
+  }, [loadGoalDetail]);
+
+  const savedAmount = goal?.savedAmount ?? 0;
   const targetAmount = goal?.targetAmount ?? 0;
-  const progressPercent = targetAmount > 0
-    ? Math.max(0, Math.min(100, Math.round((savedAmount / targetAmount) * 100)))
-    : 0;
+  const progressPercent = goal?.progressPercent ?? 0;
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [deleteResolution, setDeleteResolution] = useState<GoalDeleteResolution>("delete_entries");
@@ -219,15 +198,14 @@ export const useGoalDetailPageModel = (
   );
 
   const entries = useMemo<GoalEntryPresentation[]>(() => {
-    return [...goalEntries]
-      .sort((left, right) => right.date.localeCompare(left.date))
+    return [...(goalDetail?.entries ?? [])]
       .map((entry) => ({
         id: entry.id,
-        amountLabel: formatCurrency(Math.abs(parseSignedAmount(entry.amount))),
+        amountLabel: formatCurrency(Math.abs(entry.amount)),
         date: formatEntryDate(entry.date),
         note: entry.name,
       }));
-  }, [goalEntries]);
+  }, [goalDetail]);
 
   const visibleGoalsForRedirect = useMemo(
     () => goals.filter((item) => item.id !== goalId),
@@ -309,18 +287,8 @@ export const useGoalDetailPageModel = (
       return;
     }
 
-    const updatedColor = getGoalColorOption(updated.colorKey);
-    for (const entry of goalEntries) {
-      await updateTransaction(entry.id, {
-        goalId: updated.id,
-        categoryId: updated.categoryId,
-        category: getGoalCategoryName(updated.title),
-        subcategoryName: updated.title,
-        transactionType: "saving",
-        icon: updated.icon,
-        iconBg: updatedColor.iconBgClass,
-      });
-    }
+    await loadGoalDetail();
+    dispatchTransactionsChanged();
 
     closeEdit();
   }, [
@@ -333,9 +301,8 @@ export const useGoalDetailPageModel = (
     deadlineDateInput,
     selectedIcon,
     selectedColorKey,
-    goalEntries,
     updateGoal,
-    updateTransaction,
+    loadGoalDetail,
     closeEdit,
   ]);
 
@@ -344,55 +311,17 @@ export const useGoalDetailPageModel = (
       return false;
     }
 
-    if (deleteResolution === "redirect_goal") {
-      const targetGoal = goals.find((item) => item.id === redirectGoalId);
-      if (!targetGoal) {
-        return false;
-      }
-
-      for (const entry of goalEntries) {
-        const redirectColor = getGoalColorOption(targetGoal.colorKey);
-        await updateTransaction(entry.id, {
-          goalId: targetGoal.id,
-          categoryId: targetGoal.categoryId,
-          category: getGoalCategoryName(targetGoal.title),
-          subcategoryName: targetGoal.title,
-          transactionType: "saving",
-          icon: targetGoal.icon,
-          iconBg: redirectColor.iconBgClass,
-        });
-      }
-    }
-
-    if (deleteResolution === "redirect_account") {
-      const fallbackCategory = await ensureUncategorizedCategory(categories, createCategory);
-      if (!fallbackCategory) {
-        return false;
-      }
-
-      for (const entry of goalEntries) {
-        await updateTransaction(entry.id, {
-          accountId: redirectAccountId,
-          categoryId: fallbackCategory.id,
-          category: fallbackCategory.name,
-          subcategoryName: undefined,
-          transactionType: "regular",
-          goalId: undefined,
-        });
-      }
-    }
-
-    if (deleteResolution === "delete_entries") {
-      for (const entry of goalEntries) {
-        await removeTransaction(entry.id);
-      }
-    }
-
-    const removed = await removeGoal(goal.id);
-    if (!removed) {
+    const result = await resolveDeletion(goal.id, deleteResolution === "delete_entries"
+      ? { mode: "delete_entries" }
+      : deleteResolution === "redirect_goal"
+        ? { mode: "redirect_goal", targetGoalId: redirectGoalId }
+        : { mode: "redirect_account", targetAccountId: redirectAccountId });
+    if (!result?.deleted) {
       return false;
     }
 
+    await refreshGoals();
+    dispatchTransactionsChanged();
     setIsDeleteDialogOpen(false);
     return true;
   }, [
@@ -400,14 +329,9 @@ export const useGoalDetailPageModel = (
     canConfirmDelete,
     deleteResolution,
     redirectGoalId,
-    goals,
-    goalEntries,
-    categories,
-    createCategory,
     redirectAccountId,
-    updateTransaction,
-    removeTransaction,
-    removeGoal,
+    resolveDeletion,
+    refreshGoals,
   ]);
 
   return {
@@ -417,7 +341,7 @@ export const useGoalDetailPageModel = (
     deleteResolution,
     descriptionInput,
     entries,
-    error: goalsError,
+    error: goalsError ?? detailError,
     goal,
     handleCloseEdit,
     handleDeleteGoal,
@@ -429,7 +353,7 @@ export const useGoalDetailPageModel = (
     isDescriptionValid,
     isEditFormValid,
     isEditSheetOpen,
-    isLoading: isGoalsLoading || isTransactionsLoading,
+    isLoading: isGoalsLoading || isDetailLoading,
     isTargetValid,
     isTitleValid,
     progressPercent,
