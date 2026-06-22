@@ -143,6 +143,11 @@ const createGoalsService = (): GoalsService => ({
   getGoal: vi.fn().mockResolvedValue(goal),
   createGoal: vi.fn().mockResolvedValue(goal),
   updateGoal: vi.fn().mockResolvedValue(goal),
+  resolveGoalDeletion: vi.fn().mockResolvedValue({
+    deleted: true,
+    mode: "delete_entries",
+    resolvedEntriesCount: 0,
+  }),
   deleteGoal: vi.fn().mockResolvedValue({ deleted: true }),
   clearGoals: vi.fn().mockResolvedValue({ deleted: true }),
 });

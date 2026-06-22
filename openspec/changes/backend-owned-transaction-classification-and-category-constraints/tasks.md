@@ -1,6 +1,6 @@
 ## 1. Backend Classification and Constraint Rules
 
-- [ ] 1.1 Add category classification contracts for transaction editor options and category usage/constraints.
+- [x] 1.1 Add category classification contracts for transaction editor options and category usage/constraints.
 - [ ] 1.2 Add backend validation for transaction amount sign, category type eligibility, account reference, category reference, and subcategory reference.
 - [ ] 1.3 Add backend transaction shaping for icon, icon background, amount classification, and category/subcategory labels.
 - [ ] 1.4 Add backend category/subcategory duplicate prevention using normalized names.
