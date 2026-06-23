@@ -265,7 +265,7 @@ export const createCategoriesRepository = (prisma: PrismaClient): CategoriesRepo
 
     const subcategories = normalizeSubcategoryInputs(inputSubcategories);
     assertNoDuplicateSubcategoryInputs(subcategories);
-    const desiredNames = subcategories.map((subcategory) => subcategory.name);
+    const desiredNormalizedNames = new Set(subcategories.map((subcategory) => normalizeName(subcategory.name)));
 
     const category = await prisma.$transaction(async (tx) => {
       const existingSubcategories = await tx.subcategory.findMany({
@@ -273,7 +273,7 @@ export const createCategoriesRepository = (prisma: PrismaClient): CategoriesRepo
         select: { id: true, name: true },
       });
       for (const existing of existingSubcategories) {
-        if (!desiredNames.includes(existing.name)) {
+        if (!desiredNormalizedNames.has(normalizeName(existing.name))) {
           const transactionCount = await tx.transaction.count({
             where: { subcategoryId: existing.id, deletedAt: null },
           });
@@ -297,11 +297,14 @@ export const createCategoriesRepository = (prisma: PrismaClient): CategoriesRepo
       const existingByNormalizedName = new Map(
         existingSubcategories.map((subcategory) => [normalizeName(subcategory.name), subcategory.id]),
       );
+      const retainedExistingIds = subcategories
+        .map((subcategory) => existingByName.get(subcategory.name) ?? existingByNormalizedName.get(normalizeName(subcategory.name)))
+        .filter((id): id is string => Boolean(id));
 
       await tx.subcategory.deleteMany({
         where: {
           categoryId,
-          name: { notIn: desiredNames },
+          ...(retainedExistingIds.length > 0 ? { id: { notIn: retainedExistingIds } } : {}),
         },
       });
 
@@ -311,7 +314,7 @@ export const createCategoriesRepository = (prisma: PrismaClient): CategoriesRepo
         if (existingId) {
           await tx.subcategory.update({
             where: { id: existingId },
-            data: { sortOrder: subcategory.sortOrder },
+            data: { name: subcategory.name, sortOrder: subcategory.sortOrder },
           });
         } else {
           await tx.subcategory.create({
@@ -346,13 +349,14 @@ export const createCategoriesRepository = (prisma: PrismaClient): CategoriesRepo
       return false;
     }
 
-    const [transactionCount, budgetCount, goalCount, installmentPlanCount] = await Promise.all([
+    const [transactionCount, budgetCount, budgetScopeRuleCount, goalCount, installmentPlanCount] = await Promise.all([
       prisma.transaction.count({ where: { categoryId: id, deletedAt: null } }),
       prisma.budget.count({ where: { categoryId: id, deletedAt: null } }),
+      prisma.budgetScopeRule.count({ where: { categoryId: id } }),
       prisma.goal.count({ where: { categoryId: id, deletedAt: null } }),
       prisma.installmentPlan.count({ where: { categoryId: id, deletedAt: null } }),
     ]);
-    if (transactionCount + budgetCount + goalCount + installmentPlanCount > 0) {
+    if (transactionCount + budgetCount + budgetScopeRuleCount + goalCount + installmentPlanCount > 0) {
       throw new CategoryRepositoryError("CATEGORY_IN_USE", `Category '${id}' is in use.`);
     }
 

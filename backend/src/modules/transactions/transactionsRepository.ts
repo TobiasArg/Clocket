@@ -126,7 +126,10 @@ const classifyTransaction = (
   amount: Prisma.Decimal,
   transactionType: TransactionRecordType,
 ): "income" | "expense" | "saving" => {
-  if (transactionType === "saving") return "saving";
+  if (transactionType === "saving") {
+    if (amount.lt(0)) return "saving";
+    throw new TransactionRepositoryError("INVALID_AMOUNT_SIGN", "Saving transactions require a negative amount.");
+  }
   if (amount.gt(0)) return "income";
   if (amount.lt(0)) return "expense";
   throw new TransactionRepositoryError("INVALID_AMOUNT_SIGN", "Transaction amount must be different from zero.");

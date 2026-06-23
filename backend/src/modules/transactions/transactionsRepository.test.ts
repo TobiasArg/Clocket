@@ -201,7 +201,7 @@ describe("createTransactionsRepository", () => {
       accountId,
       transactionType: "saving",
       name: "Goal saving",
-      amount: "100.00",
+      amount: "-100.00",
       date: "2026-06-02",
     })).rejects.toMatchObject({
       code: "SAVING_REQUIRES_GOAL",
@@ -237,6 +237,23 @@ describe("createTransactionsRepository", () => {
     })).rejects.toMatchObject({ code: "INVALID_AMOUNT_SIGN" });
   });
 
+  it("rejects saving transactions with positive amounts", async () => {
+    const prisma = createPrismaMock();
+    prisma.account.findFirst.mockResolvedValue({ id: accountId });
+    const repository = createTransactionsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.create({
+      accountId,
+      categoryId,
+      goalId,
+      transactionType: "saving",
+      name: "Goal saving",
+      amount: "100.00",
+      date: "2026-06-02",
+    })).rejects.toMatchObject({ code: "INVALID_AMOUNT_SIGN" });
+    expect(prisma.transaction.create).not.toHaveBeenCalled();
+  });
+
   it("updates active transactions and validates new goal/installment links", async () => {
     const prisma = createPrismaMock();
     prisma.transaction.findFirst.mockResolvedValue(baseTransaction);
@@ -250,7 +267,7 @@ describe("createTransactionsRepository", () => {
       installmentPlanId,
       transactionType: "SAVING" as const,
       name: "Goal saving",
-      amount: new Prisma.Decimal("100.00"),
+      amount: new Prisma.Decimal("-100.00"),
       date: new Date("2026-06-03T00:00:00.000Z"),
       cuotaInstallmentIndex: 1,
       cuotaInstallmentsCount: 12,
@@ -265,7 +282,7 @@ describe("createTransactionsRepository", () => {
       installmentPlanId,
       transactionType: "saving",
       name: " Goal saving ",
-      amount: "100.00",
+      amount: "-100.00",
       date: "2026-06-03",
       cuotaInstallmentIndex: 1,
       cuotaInstallmentsCount: 12,
@@ -273,7 +290,7 @@ describe("createTransactionsRepository", () => {
       transactionType: "saving",
       goalId,
       installmentPlanId,
-      amount: "100.00",
+      amount: "-100.00",
       date: "2026-06-03",
     });
     expect(prisma.transaction.update).toHaveBeenCalledWith({
@@ -286,7 +303,7 @@ describe("createTransactionsRepository", () => {
         installmentPlanId,
         transactionType: "SAVING",
         name: "Goal saving",
-        amount: new Prisma.Decimal("100.00"),
+        amount: new Prisma.Decimal("-100.00"),
         date: new Date("2026-06-03T00:00:00.000Z"),
         cuotaInstallmentIndex: 1,
         cuotaInstallmentsCount: 12,

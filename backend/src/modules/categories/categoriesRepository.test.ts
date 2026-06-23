@@ -63,6 +63,7 @@ const createPrismaMock = () => {
       },
       transaction: { count: vi.fn().mockResolvedValue(0) },
       budget: { count: vi.fn().mockResolvedValue(0) },
+      budgetScopeRule: { count: vi.fn().mockResolvedValue(0) },
       goal: { count: vi.fn().mockResolvedValue(0) },
       installmentPlan: { count: vi.fn().mockResolvedValue(0) },
       $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
@@ -256,12 +257,12 @@ describe("createCategoriesRepository", () => {
     expect(tx.subcategory.deleteMany).toHaveBeenCalledWith({
       where: {
         categoryId,
-        name: { notIn: ["Groceries", "Coffee"] },
+        id: { notIn: [baseSubcategory.id] },
       },
     });
     expect(tx.subcategory.update).toHaveBeenCalledWith({
       where: { id: baseSubcategory.id },
-      data: { sortOrder: 0 },
+      data: { name: "Groceries", sortOrder: 0 },
     });
     expect(tx.subcategory.create).toHaveBeenCalledWith({
       data: {
@@ -300,6 +301,16 @@ describe("createCategoriesRepository", () => {
     const { prisma } = createPrismaMock();
     prisma.category.findFirst.mockResolvedValue({ id: categoryId });
     prisma.transaction.count.mockResolvedValue(1);
+    const repository = createCategoriesRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.softDelete(categoryId)).rejects.toMatchObject({ code: "CATEGORY_IN_USE" });
+    expect(prisma.category.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects deleting categories referenced by budget scope rules", async () => {
+    const { prisma } = createPrismaMock();
+    prisma.category.findFirst.mockResolvedValue({ id: categoryId });
+    prisma.budgetScopeRule.count.mockResolvedValue(1);
     const repository = createCategoriesRepository(prisma as unknown as PrismaClient);
 
     await expect(repository.softDelete(categoryId)).rejects.toMatchObject({ code: "CATEGORY_IN_USE" });

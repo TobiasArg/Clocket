@@ -197,6 +197,7 @@ export const useCategoriesPageModel = (
     });
 
     if (!created) {
+      setStatusMessage(error ?? errorLabel);
       return;
     }
 
@@ -211,7 +212,7 @@ export const useCategoriesPageModel = (
 
     const removed = await remove(category.id);
     if (!removed) {
-      setStatusMessage(errorLabel);
+      setStatusMessage(error ?? errorLabel);
       return;
     }
 
@@ -235,7 +236,7 @@ export const useCategoriesPageModel = (
     });
 
     if (!updated) {
-      setStatusMessage(errorLabel);
+      setStatusMessage(error ?? errorLabel);
       return;
     }
 
@@ -266,7 +267,7 @@ export const useCategoriesPageModel = (
     });
 
     if (!updated) {
-      setStatusMessage(errorLabel);
+      setStatusMessage(error ?? errorLabel);
       return;
     }
 
