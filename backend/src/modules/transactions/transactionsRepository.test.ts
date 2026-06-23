@@ -74,6 +74,7 @@ describe("createTransactionsRepository", () => {
       goalId: null,
       installmentPlanId: null,
       transactionType: "regular",
+      classification: "income",
       name: "Groceries",
       amount: "35.40",
       currency: "USD",
@@ -81,6 +82,8 @@ describe("createTransactionsRepository", () => {
       notes: null,
       uiIcon: "cart",
       uiIconBg: "bg-emerald-500",
+      categoryName: null,
+      subcategoryName: null,
       cuotaInstallmentIndex: null,
       cuotaInstallmentsCount: null,
       createdAt: "2026-06-02T10:00:00.000Z",
@@ -96,6 +99,10 @@ describe("createTransactionsRepository", () => {
           lte: new Date("2026-06-30T00:00:00.000Z"),
         },
       },
+      include: {
+        category: true,
+        subcategory: true,
+      },
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     });
   });
@@ -104,6 +111,7 @@ describe("createTransactionsRepository", () => {
     const prisma = createPrismaMock();
     prisma.account.findFirst.mockResolvedValue({ id: accountId });
     prisma.subcategory.findFirst.mockResolvedValue({ id: subcategoryId, categoryId });
+    prisma.category.findFirst.mockResolvedValue({ id: categoryId, incomeEligible: true, expenseEligible: true, savingEligible: true });
     prisma.transaction.create.mockResolvedValue(baseTransaction);
     const repository = createTransactionsRepository(prisma as unknown as PrismaClient);
 
@@ -134,10 +142,14 @@ describe("createTransactionsRepository", () => {
         currency: "USD",
         date: new Date("2026-06-02T00:00:00.000Z"),
         notes: null,
-        uiIcon: "cart",
-        uiIconBg: "bg-emerald-500",
+        uiIcon: null,
+        uiIconBg: null,
         cuotaInstallmentIndex: null,
         cuotaInstallmentsCount: null,
+      },
+      include: {
+        category: true,
+        subcategory: true,
       },
     });
   });
@@ -197,11 +209,39 @@ describe("createTransactionsRepository", () => {
     expect(prisma.transaction.create).not.toHaveBeenCalled();
   });
 
+  it("rejects category eligibility mismatches and zero amounts", async () => {
+    const prisma = createPrismaMock();
+    prisma.account.findFirst.mockResolvedValue({ id: accountId });
+    prisma.category.findFirst.mockResolvedValue({
+      id: categoryId,
+      incomeEligible: false,
+      expenseEligible: true,
+      savingEligible: true,
+    });
+    const repository = createTransactionsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.create({
+      accountId,
+      categoryId,
+      name: "Consulting",
+      amount: "35.40",
+      date: "2026-06-02",
+    })).rejects.toMatchObject({ code: "CATEGORY_NOT_ELIGIBLE_FOR_CLASSIFICATION" });
+
+    await expect(repository.create({
+      accountId,
+      categoryId,
+      name: "No amount",
+      amount: "0.00",
+      date: "2026-06-02",
+    })).rejects.toMatchObject({ code: "INVALID_AMOUNT_SIGN" });
+  });
+
   it("updates active transactions and validates new goal/installment links", async () => {
     const prisma = createPrismaMock();
     prisma.transaction.findFirst.mockResolvedValue(baseTransaction);
     prisma.account.findFirst.mockResolvedValue({ id: accountId });
-    prisma.category.findFirst.mockResolvedValue({ id: categoryId });
+    prisma.category.findFirst.mockResolvedValue({ id: categoryId, incomeEligible: true, expenseEligible: true, savingEligible: true });
     prisma.goal.findFirst.mockResolvedValue({ id: goalId });
     prisma.installmentPlan.findFirst.mockResolvedValue({ id: installmentPlanId });
     prisma.transaction.update.mockResolvedValue({
@@ -250,6 +290,12 @@ describe("createTransactionsRepository", () => {
         date: new Date("2026-06-03T00:00:00.000Z"),
         cuotaInstallmentIndex: 1,
         cuotaInstallmentsCount: 12,
+        uiIcon: null,
+        uiIconBg: null,
+      },
+      include: {
+        category: true,
+        subcategory: true,
       },
     });
   });

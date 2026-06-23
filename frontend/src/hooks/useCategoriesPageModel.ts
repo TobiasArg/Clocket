@@ -228,15 +228,6 @@ export const useCategoriesPageModel = (
     const existingSubcategories = Array.isArray(selectedCategory.subcategories)
       ? selectedCategory.subcategories
       : [];
-    const isDuplicate = existingSubcategories.some((subcategory) => (
-      subcategory.trim().toLocaleLowerCase("es-ES")
-      === normalizedSubcategoryName.toLocaleLowerCase("es-ES")
-    ));
-
-    if (isDuplicate) {
-      return;
-    }
-
     const nextSubcategories = [...existingSubcategories, normalizedSubcategoryName];
     const updated = await update(selectedCategory.id, {
       subcategories: nextSubcategories,

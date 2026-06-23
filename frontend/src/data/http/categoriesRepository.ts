@@ -1,6 +1,7 @@
 import type {
   CategoriesRepository,
   CategoryItem,
+  TransactionEditorOptions,
   CreateCategoryInput,
   UpdateCategoryPatch,
 } from "@/domain/categories/repository";
@@ -21,6 +22,11 @@ export interface CategoryResponse {
   name: string;
   icon: string;
   iconBg: string;
+  eligibility?: {
+    income: boolean;
+    expense: boolean;
+    saving: boolean;
+  };
   subcategoryCount: number;
   subcategories: SubcategoryResponse[];
   createdAt: string;
@@ -35,11 +41,14 @@ interface DeleteResponse {
   deleted: true;
 }
 
+interface TransactionEditorOptionsResponse extends TransactionEditorOptions {}
+
 export const toCategoryItem = (category: CategoryResponse): CategoryItem => ({
   id: category.id,
   name: category.name,
   icon: category.icon,
   iconBg: category.iconBg,
+  eligibility: category.eligibility ?? { income: false, expense: true, saving: true },
   subcategoryCount: category.subcategoryCount,
   subcategories: category.subcategories.map((subcategory) => subcategory.name),
 });
@@ -57,6 +66,15 @@ export class HttpCategoriesRepository implements CategoriesRepository {
     return withCoreFinanceErrors(async () => {
       const response = await coreFinanceHttpClient.get<CategoryListResponse>("/api/categories");
       return response.data.categories.map(toCategoryItem);
+    });
+  }
+
+  public async listTransactionEditorOptions(): Promise<TransactionEditorOptions> {
+    return withCoreFinanceErrors(async () => {
+      const response = await coreFinanceHttpClient.get<TransactionEditorOptionsResponse>(
+        "/api/categories/transaction-editor-options",
+      );
+      return response.data;
     });
   }
 

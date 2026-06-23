@@ -45,6 +45,7 @@ const createExportRepositories = (): SettingsExportRepositories => ({
   },
   categoriesRepository: {
     list: vi.fn().mockResolvedValue([{ id: "category-1", name: "General", icon: "wallet", iconBg: "bg", subcategoryCount: 0 }]),
+    listTransactionEditorOptions: vi.fn().mockResolvedValue({ classifications: [], categories: [] }),
     getById: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

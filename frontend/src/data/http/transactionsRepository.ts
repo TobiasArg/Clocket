@@ -29,6 +29,9 @@ interface TransactionResponse {
   notes: string | null;
   uiIcon: string | null;
   uiIconBg: string | null;
+  classification?: "income" | "expense" | "saving";
+  categoryName?: string | null;
+  subcategoryName?: string | null;
   cuotaInstallmentIndex: number | null;
   cuotaInstallmentsCount: number | null;
   createdAt: string;
@@ -227,7 +230,7 @@ export class HttpTransactionsRepository implements TransactionsRepository {
       transactionType: transaction.transactionType,
       goalId: toOptional(transaction.goalId),
       categoryId: toOptional(transaction.categoryId),
-      subcategoryName: subcategory?.name,
+      subcategoryName: transaction.subcategoryName ?? subcategory?.name,
       cuotaPlanId: toOptional(transaction.installmentPlanId),
       cuotaInstallmentIndex: toOptional(transaction.cuotaInstallmentIndex),
       cuotaInstallmentsCount: toOptional(transaction.cuotaInstallmentsCount),
@@ -236,7 +239,7 @@ export class HttpTransactionsRepository implements TransactionsRepository {
       icon: transaction.uiIcon ?? category?.icon ?? (isIncome ? "arrow-up-right" : "receipt"),
       iconBg: transaction.uiIconBg ?? category?.iconBg ?? (isIncome ? "bg-[#16A34A]" : "bg-[#18181B]"),
       name: transaction.name,
-      category: category?.name ?? "Sin categoría",
+      category: transaction.categoryName ?? category?.name ?? "Sin categoría",
       amount: formatRawSignedAmount(amount),
       amountColor: isIncome ? TRANSACTION_INCOME_TEXT_CLASS : TRANSACTION_EXPENSE_TEXT_CLASS,
       meta: buildMeta(transaction),
@@ -256,8 +259,6 @@ export class HttpTransactionsRepository implements TransactionsRepository {
       currency: "ARS",
       date: input.date,
       notes: extractNotes(input.meta) ?? null,
-      uiIcon: input.icon,
-      uiIconBg: input.iconBg,
       cuotaInstallmentIndex: input.cuotaInstallmentIndex ?? null,
       cuotaInstallmentsCount: input.cuotaInstallmentsCount ?? null,
     };
@@ -277,8 +278,6 @@ export class HttpTransactionsRepository implements TransactionsRepository {
       ...(patch.amount !== undefined ? { amount: parseSignedAmount(patch.amount), currency: "ARS" } : {}),
       ...(patch.date !== undefined ? { date: patch.date } : {}),
       ...(patch.meta !== undefined ? { notes: extractNotes(patch.meta) } : {}),
-      ...(patch.icon !== undefined ? { uiIcon: patch.icon } : {}),
-      ...(patch.iconBg !== undefined ? { uiIconBg: patch.iconBg } : {}),
       ...(patch.cuotaInstallmentIndex !== undefined
         ? { cuotaInstallmentIndex: patch.cuotaInstallmentIndex ?? null }
         : {}),

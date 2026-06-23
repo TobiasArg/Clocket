@@ -122,9 +122,9 @@ describe("HttpTransactionsRepository", () => {
       amount: -120.5,
       currency: "ARS",
       notes: "Market",
-      uiIcon: "fork",
-      uiIconBg: "bg-red-500",
     }));
+    expect(httpPostMock.mock.calls[0]?.[1]).not.toHaveProperty("uiIcon");
+    expect(httpPostMock.mock.calls[0]?.[1]).not.toHaveProperty("uiIconBg");
     expect(listener).toHaveBeenCalledTimes(1);
     eventTarget.removeEventListener(TRANSACTIONS_CHANGED_EVENT, listener);
     vi.unstubAllGlobals();

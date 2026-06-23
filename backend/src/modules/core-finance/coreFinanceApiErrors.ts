@@ -1,5 +1,6 @@
 import { createApiErrorResponse, type ApiErrorResponse } from "../../api/http";
 import { TransactionRepositoryError } from "../transactions/transactionsRepository";
+import { CategoryRepositoryError } from "../categories/categoriesRepository";
 
 export type CoreFinanceApiErrorCode =
   | "INVALID_REQUEST"
@@ -12,7 +13,13 @@ export type CoreFinanceApiErrorCode =
   | "SUBCATEGORY_CATEGORY_MISMATCH"
   | "MISSING_GOAL"
   | "SAVING_REQUIRES_GOAL"
+  | "INVALID_AMOUNT_SIGN"
+  | "CATEGORY_NOT_ELIGIBLE_FOR_CLASSIFICATION"
   | "MISSING_INSTALLMENT_PLAN"
+  | "DUPLICATE_CATEGORY"
+  | "DUPLICATE_SUBCATEGORY"
+  | "CATEGORY_IN_USE"
+  | "SUBCATEGORY_IN_USE"
   | "EMPTY_SCOPE"
   | "OVERLAPPING_BUDGET"
   | "INVALID_ASSET_TYPE"
@@ -87,6 +94,14 @@ export const mapCoreFinanceError = (error: unknown): CoreFinanceApiErrorResponse
       error: error.message,
       code: error.code,
       status: 422,
+    });
+  }
+
+  if (error instanceof CategoryRepositoryError) {
+    return createCoreFinanceApiErrorResponse({
+      error: error.message,
+      code: error.code,
+      status: 409,
     });
   }
 

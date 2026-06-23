@@ -16,6 +16,8 @@ export type TransactionRepositoryErrorCode =
   | "SUBCATEGORY_CATEGORY_MISMATCH"
   | "MISSING_GOAL"
   | "SAVING_REQUIRES_GOAL"
+  | "INVALID_AMOUNT_SIGN"
+  | "CATEGORY_NOT_ELIGIBLE_FOR_CLASSIFICATION"
   | "MISSING_INSTALLMENT_PLAN";
 
 export class TransactionRepositoryError extends Error {
@@ -36,6 +38,7 @@ export interface TransactionRecord {
   goalId: string | null;
   installmentPlanId: string | null;
   transactionType: TransactionRecordType;
+  classification?: "income" | "expense" | "saving";
   name: string;
   amount: string;
   currency: CurrencyCode;
@@ -43,6 +46,8 @@ export interface TransactionRecord {
   notes: string | null;
   uiIcon: string | null;
   uiIconBg: string | null;
+  categoryName?: string | null;
+  subcategoryName?: string | null;
   cuotaInstallmentIndex: number | null;
   cuotaInstallmentsCount: number | null;
   createdAt: string;
@@ -88,7 +93,12 @@ export interface TransactionsRepository {
   softDelete: (id: string) => Promise<boolean>;
 }
 
-type TransactionModel = NonNullable<Awaited<ReturnType<PrismaClient["transaction"]["findUnique"]>>>;
+const transactionInclude = {
+  category: true,
+  subcategory: true,
+} satisfies Prisma.TransactionInclude;
+
+type TransactionModel = Prisma.TransactionGetPayload<{ include: typeof transactionInclude }>;
 
 type ReferenceCandidate = {
   accountId: string;
@@ -97,6 +107,7 @@ type ReferenceCandidate = {
   goalId: string | null;
   installmentPlanId: string | null;
   transactionType: TransactionRecordType;
+  amount: Prisma.Decimal;
 };
 
 const TRANSACTION_TYPE_TO_PRISMA: Record<TransactionRecordType, PrismaTransactionType> = {
@@ -110,6 +121,16 @@ const TRANSACTION_TYPE_FROM_PRISMA: Record<PrismaTransactionType, TransactionRec
 };
 
 const toDecimal = (value: DecimalInput): Prisma.Decimal => new Prisma.Decimal(value);
+
+const classifyTransaction = (
+  amount: Prisma.Decimal,
+  transactionType: TransactionRecordType,
+): "income" | "expense" | "saving" => {
+  if (transactionType === "saving") return "saving";
+  if (amount.gt(0)) return "income";
+  if (amount.lt(0)) return "expense";
+  throw new TransactionRepositoryError("INVALID_AMOUNT_SIGN", "Transaction amount must be different from zero.");
+};
 
 const toIso = (value: Date): string => value.toISOString();
 
@@ -148,13 +169,16 @@ const toTransactionRecord = (transaction: TransactionModel): TransactionRecord =
   goalId: transaction.goalId,
   installmentPlanId: transaction.installmentPlanId,
   transactionType: TRANSACTION_TYPE_FROM_PRISMA[transaction.transactionType],
+  classification: classifyTransaction(transaction.amount, TRANSACTION_TYPE_FROM_PRISMA[transaction.transactionType]),
   name: transaction.name,
   amount: transaction.amount.toFixed(2),
   currency: transaction.currency,
   date: toDateOnly(transaction.date),
   notes: transaction.notes,
-  uiIcon: transaction.uiIcon,
-  uiIconBg: transaction.uiIconBg,
+  uiIcon: transaction.category?.icon ?? transaction.uiIcon,
+  uiIconBg: transaction.category?.iconBg ?? transaction.uiIconBg,
+  categoryName: transaction.category?.name ?? null,
+  subcategoryName: transaction.subcategory?.name ?? null,
   cuotaInstallmentIndex: transaction.cuotaInstallmentIndex,
   cuotaInstallmentsCount: transaction.cuotaInstallmentsCount,
   createdAt: toIso(transaction.createdAt),
@@ -181,14 +205,21 @@ const assertActiveAccount = async (prisma: PrismaClient, accountId: string): Pro
 
 const assertActiveCategory = async (
   prisma: PrismaClient,
-  categoryId: string,
-): Promise<void> => {
+  categoryId: string | null,
+): Promise<{ id: string; incomeEligible: boolean; expenseEligible: boolean; savingEligible: boolean }> => {
+  if (!categoryId) {
+    throw new TransactionRepositoryError(
+      "MISSING_CATEGORY",
+      "Transactions require an active category reference.",
+    );
+  }
+
   const category = await prisma.category.findFirst({
     where: {
       id: categoryId,
       deletedAt: null,
     },
-    select: { id: true },
+    select: { id: true, incomeEligible: true, expenseEligible: true, savingEligible: true },
   });
 
   if (!category) {
@@ -197,6 +228,8 @@ const assertActiveCategory = async (
       `Active category '${categoryId}' was not found.`,
     );
   }
+
+  return category;
 };
 
 const resolveCategoryReferences = async (
@@ -304,6 +337,7 @@ const validateReferences = async (
   candidate: ReferenceCandidate,
 ): Promise<ReferenceCandidate> => {
   await assertActiveAccount(prisma, candidate.accountId);
+  const classification = classifyTransaction(candidate.amount, candidate.transactionType);
   const categoryRefs = await resolveCategoryReferences(
     prisma,
     candidate.categoryId,
@@ -311,6 +345,19 @@ const validateReferences = async (
   );
   await assertActiveGoal(prisma, candidate.goalId, candidate.transactionType);
   await assertActiveInstallmentPlan(prisma, candidate.installmentPlanId);
+  const category = await assertActiveCategory(prisma, categoryRefs.categoryId);
+  const isEligible = classification === "income"
+    ? category.incomeEligible
+    : classification === "expense"
+      ? category.expenseEligible
+      : category.savingEligible;
+
+  if (!isEligible) {
+    throw new TransactionRepositoryError(
+      "CATEGORY_NOT_ELIGIBLE_FOR_CLASSIFICATION",
+      `Category '${category.id}' is not eligible for ${classification} transactions.`,
+    );
+  }
 
   return {
     ...candidate,
@@ -337,6 +384,7 @@ export const createTransactionsRepository = (prisma: PrismaClient): Transactions
             }
           : {}),
       },
+      include: transactionInclude,
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     });
 
@@ -349,12 +397,14 @@ export const createTransactionsRepository = (prisma: PrismaClient): Transactions
         id,
         deletedAt: null,
       },
+      include: transactionInclude,
     });
 
     return transaction ? toTransactionRecord(transaction) : null;
   },
 
   async create(input) {
+    const amount = toDecimal(input.amount);
     const references = await validateReferences(prisma, {
       accountId: input.accountId,
       categoryId: trimNullable(input.categoryId) ?? null,
@@ -362,6 +412,7 @@ export const createTransactionsRepository = (prisma: PrismaClient): Transactions
       goalId: trimNullable(input.goalId) ?? null,
       installmentPlanId: trimNullable(input.installmentPlanId) ?? null,
       transactionType: input.transactionType ?? "regular",
+      amount,
     });
 
     const transaction = await prisma.transaction.create({
@@ -373,15 +424,16 @@ export const createTransactionsRepository = (prisma: PrismaClient): Transactions
         installmentPlanId: references.installmentPlanId,
         transactionType: TRANSACTION_TYPE_TO_PRISMA[references.transactionType],
         name: input.name.trim(),
-        amount: toDecimal(input.amount),
+        amount,
         currency: input.currency ?? "USD",
         date: toDbDate(input.date),
         notes: trimNullable(input.notes) ?? null,
-        uiIcon: trimNullable(input.uiIcon) ?? null,
-        uiIconBg: trimNullable(input.uiIconBg) ?? null,
+        uiIcon: null,
+        uiIconBg: null,
         cuotaInstallmentIndex: input.cuotaInstallmentIndex ?? null,
         cuotaInstallmentsCount: input.cuotaInstallmentsCount ?? null,
       },
+      include: transactionInclude,
     });
 
     return toTransactionRecord(transaction);
@@ -401,6 +453,7 @@ export const createTransactionsRepository = (prisma: PrismaClient): Transactions
 
     const transactionType = input.transactionType
       ?? TRANSACTION_TYPE_FROM_PRISMA[existing.transactionType];
+    const amount = input.amount !== undefined ? toDecimal(input.amount) : existing.amount;
     const references = await validateReferences(prisma, {
       accountId: input.accountId ?? existing.accountId,
       categoryId: input.categoryId !== undefined
@@ -414,6 +467,7 @@ export const createTransactionsRepository = (prisma: PrismaClient): Transactions
         ? trimNullable(input.installmentPlanId) ?? null
         : existing.installmentPlanId,
       transactionType,
+      amount,
     });
 
     const transaction = await prisma.transaction.update({
@@ -426,12 +480,12 @@ export const createTransactionsRepository = (prisma: PrismaClient): Transactions
         installmentPlanId: references.installmentPlanId,
         transactionType: TRANSACTION_TYPE_TO_PRISMA[references.transactionType],
         ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-        ...(input.amount !== undefined ? { amount: toDecimal(input.amount) } : {}),
+        ...(input.amount !== undefined ? { amount } : {}),
         ...(input.currency !== undefined ? { currency: input.currency } : {}),
         ...(input.date !== undefined ? { date: toDbDate(input.date) } : {}),
         ...(input.notes !== undefined ? { notes: trimNullable(input.notes) ?? null } : {}),
-        ...(input.uiIcon !== undefined ? { uiIcon: trimNullable(input.uiIcon) ?? null } : {}),
-        ...(input.uiIconBg !== undefined ? { uiIconBg: trimNullable(input.uiIconBg) ?? null } : {}),
+        uiIcon: null,
+        uiIconBg: null,
         ...(input.cuotaInstallmentIndex !== undefined
           ? { cuotaInstallmentIndex: input.cuotaInstallmentIndex }
           : {}),
@@ -439,6 +493,7 @@ export const createTransactionsRepository = (prisma: PrismaClient): Transactions
           ? { cuotaInstallmentsCount: input.cuotaInstallmentsCount }
           : {}),
       },
+      include: transactionInclude,
     });
 
     return toTransactionRecord(transaction);

@@ -5,9 +5,9 @@ import { mapCoreFinanceError, type CoreFinanceApiErrorResponse } from "../core-f
 import { parseIdParam } from "../core-finance/coreFinanceRequest";
 import { createCategoriesRepository } from "./categoriesRepository";
 import { createCategoriesService, type CategoriesService } from "./categoriesService";
-import type { CategoryListResponse, CategoryResponse, DeleteCategoryResponse } from "./categoriesContracts";
+import type { CategoryListResponse, CategoryResponse, DeleteCategoryResponse, TransactionEditorOptionsResponse } from "./categoriesContracts";
 
-type CategoriesApiResponse = CategoryListResponse | CategoryResponse | DeleteCategoryResponse | CoreFinanceApiErrorResponse;
+type CategoriesApiResponse = CategoryListResponse | CategoryResponse | DeleteCategoryResponse | TransactionEditorOptionsResponse | CoreFinanceApiErrorResponse;
 
 const createDefaultService = (): CategoriesService => createCategoriesService({
   repository: createCategoriesRepository(getPrismaClient()),
@@ -74,6 +74,21 @@ export const createCategorySubcategoriesHandler = (dependencies: { service?: Cat
         return;
       }
       requireMethod(req, res as NextApiResponse<CoreFinanceApiErrorResponse>, "PUT", "INVALID_REQUEST");
+    } catch (error) {
+      sendError(res as NextApiResponse<CoreFinanceApiErrorResponse>, mapCoreFinanceError(error));
+    }
+  };
+};
+
+export const createCategoryTransactionEditorOptionsHandler = (dependencies: { service?: CategoriesService } = {}) => {
+  return async function handler(req: NextApiRequest, res: NextApiResponse<CategoriesApiResponse>): Promise<void> {
+    const service = dependencies.service ?? createDefaultService();
+    try {
+      if (req.method === "GET") {
+        sendJson(res, 200, await service.listTransactionEditorOptions());
+        return;
+      }
+      requireMethod(req, res as NextApiResponse<CoreFinanceApiErrorResponse>, "GET", "INVALID_REQUEST");
     } catch (error) {
       sendError(res as NextApiResponse<CoreFinanceApiErrorResponse>, mapCoreFinanceError(error));
     }

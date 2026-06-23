@@ -2,6 +2,7 @@ import type {
   CategoriesRepository,
   CategoryItem,
   CreateCategoryInput,
+  TransactionEditorOptions,
   UpdateCategoryPatch,
 } from "@/domain/categories/repository";
 
@@ -136,6 +137,31 @@ export class LocalStorageCategoriesRepository implements CategoriesRepository {
 
   public async list(): Promise<CategoryItem[]> {
     return cloneCategories(this.readState().items);
+  }
+
+  public async listTransactionEditorOptions(): Promise<TransactionEditorOptions> {
+    const categories = this.readState().items.map((category) => ({
+      id: category.id,
+      name: category.name,
+      icon: category.icon,
+      iconBg: category.iconBg,
+      eligibility: category.eligibility ?? { income: false, expense: true, saving: true },
+      subcategories: (category.subcategories ?? []).map((name, index) => ({
+        id: `${category.id}:subcategory:${index}`,
+        categoryId: category.id,
+        name,
+        sortOrder: index,
+      })),
+    }));
+
+    return {
+      classifications: [
+        { classification: "income", label: "Ingreso", amountSign: "positive", requiresGoal: false },
+        { classification: "expense", label: "Gasto", amountSign: "negative", requiresGoal: false },
+        { classification: "saving", label: "Ahorro", amountSign: "negative", requiresGoal: true },
+      ],
+      categories,
+    };
   }
 
   public async getById(id: string): Promise<CategoryItem | null> {

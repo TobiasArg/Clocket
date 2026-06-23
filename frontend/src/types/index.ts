@@ -346,6 +346,11 @@ export interface Category {
   icon: string;
   iconBg: string;
   name: string;
+  eligibility?: {
+    income: boolean;
+    expense: boolean;
+    saving: boolean;
+  };
   subcategoryCount: number;
   subcategories?: string[];
 }

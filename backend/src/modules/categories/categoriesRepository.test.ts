@@ -18,6 +18,9 @@ const baseCategory = {
   name: "Food",
   icon: "utensils",
   iconBg: "bg-emerald-500",
+  incomeEligible: false,
+  expenseEligible: true,
+  savingEligible: true,
   createdAt: new Date("2026-06-01T10:00:00.000Z"),
   updatedAt: new Date("2026-06-01T10:00:00.000Z"),
   deletedAt: null,
@@ -34,6 +37,10 @@ const createTransactionClientMock = () => ({
     update: vi.fn(),
     create: vi.fn(),
   },
+  transaction: { count: vi.fn().mockResolvedValue(0) },
+  budgetScopeSubcategory: { count: vi.fn().mockResolvedValue(0) },
+  goal: { count: vi.fn().mockResolvedValue(0) },
+  installmentPlan: { count: vi.fn().mockResolvedValue(0) },
 });
 
 const createPrismaMock = () => {
@@ -43,7 +50,7 @@ const createPrismaMock = () => {
     tx,
     prisma: {
       category: {
-        findMany: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
         findFirst: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
@@ -54,6 +61,10 @@ const createPrismaMock = () => {
         update: vi.fn(),
         create: vi.fn(),
       },
+      transaction: { count: vi.fn().mockResolvedValue(0) },
+      budget: { count: vi.fn().mockResolvedValue(0) },
+      goal: { count: vi.fn().mockResolvedValue(0) },
+      installmentPlan: { count: vi.fn().mockResolvedValue(0) },
       $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
     },
   };
@@ -70,6 +81,9 @@ describe("createCategoriesRepository", () => {
       name: "Food",
       icon: "utensils",
       iconBg: "bg-emerald-500",
+      incomeEligible: false,
+      expenseEligible: true,
+      savingEligible: true,
       createdAt: "2026-06-01T10:00:00.000Z",
       updatedAt: "2026-06-01T10:00:00.000Z",
       deletedAt: null,
@@ -113,7 +127,7 @@ describe("createCategoriesRepository", () => {
       name: " Food ",
       icon: " utensils ",
       iconBg: " bg-emerald-500 ",
-      subcategories: [" Groceries ", { name: "Restaurants" }, "Groceries", "   "],
+      subcategories: [" Groceries ", { name: "Restaurants" }, "   "],
     })).resolves.toMatchObject({
       name: "Food",
       icon: "utensils",
@@ -128,6 +142,9 @@ describe("createCategoriesRepository", () => {
         name: "Food",
         icon: "utensils",
         iconBg: "bg-emerald-500",
+        incomeEligible: false,
+        expenseEligible: true,
+        savingEligible: true,
         subcategories: {
           create: [
             { name: "Groceries", sortOrder: 0 },
@@ -176,6 +193,32 @@ describe("createCategoriesRepository", () => {
     });
   });
 
+  it("rejects duplicate category names using normalized comparison", async () => {
+    const { prisma } = createPrismaMock();
+    prisma.category.findMany.mockResolvedValue([{ id: categoryId, name: "Comida" }]);
+    const repository = createCategoriesRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.create({
+      name: " comida ",
+      icon: "utensils",
+      iconBg: "bg-emerald-500",
+    })).rejects.toMatchObject({ code: "DUPLICATE_CATEGORY" });
+    expect(prisma.category.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects duplicate subcategory names using normalized comparison", async () => {
+    const { prisma } = createPrismaMock();
+    const repository = createCategoriesRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.create({
+      name: "Food",
+      icon: "utensils",
+      iconBg: "bg-emerald-500",
+      subcategories: [" Café ", "cafe"],
+    })).rejects.toMatchObject({ code: "DUPLICATE_SUBCATEGORY" });
+    expect(prisma.category.create).not.toHaveBeenCalled();
+  });
+
   it("returns null when updating subcategories for a missing or deleted category", async () => {
     const { prisma } = createPrismaMock();
     prisma.category.findFirst.mockResolvedValue(null);
@@ -204,7 +247,6 @@ describe("createCategoriesRepository", () => {
     await expect(repository.replaceSubcategories(categoryId, [
       " Groceries ",
       "Coffee",
-      "Groceries",
     ])).resolves.toMatchObject({
       subcategories: [
         { id: baseSubcategory.id, name: "Groceries", sortOrder: 0 },
@@ -252,5 +294,28 @@ describe("createCategoriesRepository", () => {
       where: { id: categoryId },
       data: { deletedAt: expect.any(Date) as Date },
     });
+  });
+
+  it("rejects deleting categories referenced by transactions", async () => {
+    const { prisma } = createPrismaMock();
+    prisma.category.findFirst.mockResolvedValue({ id: categoryId });
+    prisma.transaction.count.mockResolvedValue(1);
+    const repository = createCategoriesRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.softDelete(categoryId)).rejects.toMatchObject({ code: "CATEGORY_IN_USE" });
+    expect(prisma.category.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects removing subcategories referenced by transactions", async () => {
+    const { prisma, tx } = createPrismaMock();
+    prisma.category.findFirst.mockResolvedValue({ id: categoryId });
+    tx.subcategory.findMany.mockResolvedValue([{ id: baseSubcategory.id, name: "Groceries" }]);
+    tx.transaction.count.mockResolvedValue(1);
+    const repository = createCategoriesRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.replaceSubcategories(categoryId, ["Restaurants"])).rejects.toMatchObject({
+      code: "SUBCATEGORY_IN_USE",
+    });
+    expect(tx.subcategory.deleteMany).not.toHaveBeenCalled();
   });
 });

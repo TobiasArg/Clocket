@@ -14,6 +14,7 @@ export interface CategoryResponse {
   name: string;
   icon: string;
   iconBg: string;
+  eligibility: CategoryClassificationEligibilityResponse;
   subcategoryCount: number;
   subcategories: SubcategoryResponse[];
   createdAt: string;
@@ -117,6 +118,11 @@ export const toCategoryResponse = (category: CategoryRecord): CategoryResponse =
   name: category.name,
   icon: category.icon,
   iconBg: category.iconBg,
+  eligibility: {
+    income: category.incomeEligible ?? false,
+    expense: category.expenseEligible ?? true,
+    saving: category.savingEligible ?? true,
+  },
   subcategoryCount: category.subcategories.length,
   subcategories: category.subcategories.map(toSubcategoryResponse),
   createdAt: category.createdAt,

@@ -141,22 +141,6 @@ const getAmountColorBySign = (sign: AmountSign): string => {
   return sign === "+" ? TRANSACTION_INCOME_TEXT_CLASS : TRANSACTION_EXPENSE_TEXT_CLASS;
 };
 
-const normalizeCategoryMatcher = (value: string | undefined): string => {
-  return (value ?? "").trim().toLocaleLowerCase("es-ES");
-};
-
-const isIncomeCategory = (category: { id?: string; name: string }): boolean => {
-  const normalizedName = normalizeCategoryMatcher(category.name);
-  const normalizedId = normalizeCategoryMatcher(category.id);
-
-  return (
-    normalizedName === "ingreso" ||
-    normalizedName === "ingresos" ||
-    normalizedName.includes("ingreso") ||
-    normalizedId.includes("income")
-  );
-};
-
 const getAbsoluteAmountFromValue = (value: string): string => {
   const absolute = Math.abs(parseSignedAmountValue(value));
   if (!Number.isFinite(absolute)) {
@@ -281,11 +265,11 @@ export const useTransactionsPageModel = (
 
   const sortedCategories = useMemo(() => {
     const ordered = [...categories].sort((left, right) => left.name.localeCompare(right.name));
-    if (editingAmountSign !== "+") {
-      return ordered;
-    }
-
-    return ordered.filter((category) => isIncomeCategory(category));
+    return ordered.filter((category) => (
+      editingAmountSign === "+"
+        ? (category.eligibility?.income ?? true)
+        : (category.eligibility?.expense ?? true)
+    ));
   }, [categories, editingAmountSign]);
 
   const accountsById = useMemo(() => {

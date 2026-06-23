@@ -1,6 +1,7 @@
 import { CoreFinanceApiError } from "../core-finance/coreFinanceApiErrors";
 import { parseJsonObjectBody, readOptionalString, readRequiredString } from "../core-finance/coreFinanceRequest";
 import {
+  type TransactionEditorOptionsResponse,
   toCategoryResponse,
   type CategoryListResponse,
   type CategoryResponse,
@@ -13,6 +14,7 @@ const DEFAULT_ICON_BG = "bg-[#71717A]";
 
 export interface CategoriesService {
   listCategories: () => Promise<CategoryListResponse>;
+  listTransactionEditorOptions: () => Promise<TransactionEditorOptionsResponse>;
   getCategory: (id: string) => Promise<CategoryResponse>;
   createCategory: (body: unknown) => Promise<CategoryResponse>;
   updateCategory: (id: string, body: unknown) => Promise<CategoryResponse>;
@@ -67,6 +69,9 @@ export const createCategoriesService = ({
       icon: readOptionalString(parsedBody.value, "icon") ?? DEFAULT_ICON,
       iconBg: readOptionalString(parsedBody.value, "iconBg") ?? DEFAULT_ICON_BG,
       subcategories: parseSubcategories(parsedBody.value.subcategories),
+      incomeEligible: typeof parsedBody.value.incomeEligible === "boolean" ? parsedBody.value.incomeEligible : undefined,
+      expenseEligible: typeof parsedBody.value.expenseEligible === "boolean" ? parsedBody.value.expenseEligible : undefined,
+      savingEligible: typeof parsedBody.value.savingEligible === "boolean" ? parsedBody.value.savingEligible : undefined,
     };
   };
 
@@ -90,6 +95,17 @@ export const createCategoriesService = ({
       if (!iconBg.ok) throw new CoreFinanceApiError(iconBg.response.error, iconBg.response);
       patch.iconBg = iconBg.value;
     }
+    for (const key of ["incomeEligible", "expenseEligible", "savingEligible"] as const) {
+      if (key in parsedBody.value) {
+        if (typeof parsedBody.value[key] !== "boolean") {
+          throw new CoreFinanceApiError(`Field '${key}' must be a boolean.`, {
+            code: "INVALID_REQUEST",
+            status: 400,
+          });
+        }
+        patch[key] = parsedBody.value[key];
+      }
+    }
 
     return patch;
   };
@@ -104,6 +120,33 @@ export const createCategoriesService = ({
     async listCategories() {
       const categories = await repository.listActive();
       return { categories: categories.map(toCategoryResponse) };
+    },
+    async listTransactionEditorOptions() {
+      const categories = await repository.listTransactionEditorOptions();
+      return {
+        classifications: [
+          { classification: "income", label: "Ingreso", amountSign: "positive", requiresGoal: false },
+          { classification: "expense", label: "Gasto", amountSign: "negative", requiresGoal: false },
+          { classification: "saving", label: "Ahorro", amountSign: "negative", requiresGoal: true },
+        ],
+        categories: categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          icon: category.icon,
+          iconBg: category.iconBg,
+          eligibility: {
+            income: category.incomeEligible ?? false,
+            expense: category.expenseEligible ?? true,
+            saving: category.savingEligible ?? true,
+          },
+          subcategories: category.subcategories.map((subcategory) => ({
+            id: subcategory.id,
+            categoryId: subcategory.categoryId,
+            name: subcategory.name,
+            sortOrder: subcategory.sortOrder,
+          })),
+        })),
+      };
     },
     async getCategory(id) {
       return toCategoryResponse(requireFound(await repository.getById(id), "Category", id));

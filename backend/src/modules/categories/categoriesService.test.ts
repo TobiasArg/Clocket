@@ -23,6 +23,7 @@ const category = (overrides: Partial<CategoryRecord> = {}): CategoryRecord => ({
 
 const createRepository = (): CategoriesRepository => ({
   listActive: vi.fn().mockResolvedValue([category()]),
+  listTransactionEditorOptions: vi.fn().mockResolvedValue([category()]),
   getById: vi.fn().mockResolvedValue(category()),
   create: vi.fn().mockResolvedValue(category({ id: "created" })),
   update: vi.fn().mockResolvedValue(category({ name: "Updated" })),

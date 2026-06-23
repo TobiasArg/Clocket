@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createMockRequest, createMockResponse } from "../../api/testUtils";
-import { createCategoriesCollectionHandler, createCategoryItemHandler, createCategorySubcategoriesHandler } from "./categoriesApiHandler";
+import { createCategoriesCollectionHandler, createCategoryItemHandler, createCategorySubcategoriesHandler, createCategoryTransactionEditorOptionsHandler } from "./categoriesApiHandler";
 import type { CategoriesService } from "./categoriesService";
 
 const categoryResponse = {
@@ -8,6 +8,7 @@ const categoryResponse = {
   name: "Food",
   icon: "utensils",
   iconBg: "bg-orange-500",
+  eligibility: { income: false, expense: true, saving: true },
   subcategoryCount: 0,
   subcategories: [],
   createdAt: "2026-06-01T00:00:00.000Z",
@@ -16,6 +17,7 @@ const categoryResponse = {
 
 const createService = (): CategoriesService => ({
   listCategories: vi.fn().mockResolvedValue({ categories: [categoryResponse] }),
+  listTransactionEditorOptions: vi.fn().mockResolvedValue({ classifications: [], categories: [] }),
   getCategory: vi.fn().mockResolvedValue(categoryResponse),
   createCategory: vi.fn().mockResolvedValue({ ...categoryResponse, id: "created" }),
   updateCategory: vi.fn().mockResolvedValue({ ...categoryResponse, name: "Updated" }),
@@ -63,5 +65,16 @@ describe("categories API handlers", () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.headers.get("Allow")).toBe("PUT");
+  });
+
+  it("handles transaction editor options route", async () => {
+    const service = createService();
+    const handler = createCategoryTransactionEditorOptionsHandler({ service });
+    const response = createMockResponse();
+
+    await handler(createMockRequest({ method: "GET" }), response);
+
+    expect(response.statusCode).toBe(200);
+    expect(service.listTransactionEditorOptions).toHaveBeenCalled();
   });
 });

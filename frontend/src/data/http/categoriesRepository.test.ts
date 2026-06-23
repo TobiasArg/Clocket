@@ -61,6 +61,32 @@ describe("HttpCategoriesRepository", () => {
     })]);
   });
 
+  it("maps backend transaction editor options", async () => {
+    httpGetMock.mockResolvedValue({
+      data: {
+        classifications: [{ classification: "income", label: "Ingreso", amountSign: "positive", requiresGoal: false }],
+        categories: [{
+          id: "category-1",
+          name: "Consulting",
+          icon: "briefcase",
+          iconBg: "bg-emerald-500",
+          eligibility: { income: true, expense: false, saving: false },
+          subcategories: [{ id: "subcategory-1", categoryId: "category-1", name: "Clients", sortOrder: 0 }],
+        }],
+      },
+    });
+
+    await expect(new HttpCategoriesRepository().listTransactionEditorOptions()).resolves.toEqual({
+      classifications: [expect.objectContaining({ classification: "income" })],
+      categories: [expect.objectContaining({
+        id: "category-1",
+        eligibility: { income: true, expense: false, saving: false },
+        subcategories: [expect.objectContaining({ name: "Clients" })],
+      })],
+    });
+    expect(httpGetMock).toHaveBeenCalledWith("/api/categories/transaction-editor-options");
+  });
+
   it("updates metadata before replacing subcategories", async () => {
     httpPatchMock.mockResolvedValue({ data: { ...categoryPayload, name: "Updated" } });
     httpPutMock.mockResolvedValue({ data: { ...categoryPayload, name: "Updated", subcategoryCount: 2 } });
