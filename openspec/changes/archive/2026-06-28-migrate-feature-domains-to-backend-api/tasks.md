@@ -51,5 +51,5 @@
 - [x] 6.3 Run `npm --prefix frontend test`.
 - [x] 6.4 Run `npm --prefix frontend run build`.
 - [x] 6.5 Run `openspec validate migrate-feature-domains-to-backend-api --strict --no-interactive`.
-- [ ] 6.6 Manually verify migrated budgets, goals, cuotas, investments, and settings flows against backend APIs.
-- [ ] 6.7 Document any structural deviations, validation gaps, and rollback notes in the implementation PR.
+- [x] 6.6 Manually verify migrated budgets, goals, cuotas, investments, and settings flows against backend APIs. Evidence reconciled from archived stabilization QA in `openspec/changes/archive/2026-06-12-stabilize-feature-domain-backend-cutover/qa-evidence.md`.
+- [x] 6.7 Document any structural deviations, validation gaps, and rollback notes in the implementation PR. Final archive note: no blocking implementation gaps remain for this cutover; remaining localStorage exposure, exchange-rate ownership, export hardening, and auth/user ownership are tracked as separate OpenSpec changes.
