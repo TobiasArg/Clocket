@@ -37,7 +37,7 @@ interface GoalEntryResponse {
 interface GoalDetailResponse extends GoalResponse { entries: GoalEntryResponse[] }
 interface GoalListResponse { goals: GoalResponse[] }
 interface DeleteResponse { deleted: true }
-interface ResolveGoalDeletionResponse extends GoalDeleteResolutionResult {}
+type ResolveGoalDeletionResponse = GoalDeleteResolutionResult;
 
 const toNumber = (value: string | number | undefined): number => {
   const parsed = typeof value === "number" ? value : Number(value ?? 0);

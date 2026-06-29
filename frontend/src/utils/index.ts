@@ -75,19 +75,6 @@ export {
   MarketQuoteApiError,
 } from "@/data/http";
 
-export {
-  LocalStorageAccountsRepository,
-  LocalStorageAppSettingsRepository,
-  LocalStorageBudgetsRepository,
-  LocalStorageCategoriesRepository,
-  LocalStorageCuotasRepository,
-  LocalStorageGoalsRepository,
-  LocalStorageInvestmentsPortfolioRepository,
-  investmentsPortfolioRepository,
-  LocalStorageInvestmentsRepository,
-  LocalStorageTransactionsRepository,
-} from "@/data/localStorage";
-
 export { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
 
 export type { MonthWindow, MonthlyBalance } from "@/domain/transactions/monthlyBalance";

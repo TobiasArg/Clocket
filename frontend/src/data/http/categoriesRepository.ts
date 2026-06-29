@@ -41,7 +41,7 @@ interface DeleteResponse {
   deleted: true;
 }
 
-interface TransactionEditorOptionsResponse extends TransactionEditorOptions {}
+type TransactionEditorOptionsResponse = TransactionEditorOptions;
 
 export const toCategoryItem = (category: CategoryResponse): CategoryItem => ({
   id: category.id,
