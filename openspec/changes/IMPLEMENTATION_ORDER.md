@@ -13,19 +13,17 @@ Auth, sessions, authorization, `userId`, and shared-ledger behavior remain out o
 - `backend-owned-goal-progress-and-entry-resolution`
 - `backend-owned-transaction-classification-and-category-constraints`
 - `migrate-feature-domains-to-backend-api`
+- `frontend-localstorage-repository-retirement`
+- `backend-owned-exchange-rate-boundary`
 
 ## P2 — Cleanup and hardening
 
-1. `frontend-localstorage-repository-retirement`
-   - Retire or quarantine legacy localStorage repositories from active runtime paths.
-2. `backend-owned-exchange-rate-boundary`
-   - Move canonical USD/ARS exchange-rate reads to a backend-owned boundary.
-3. `settings-export-contract-hardening`
+1. `settings-export-contract-hardening`
    - Harden full JSON export as a versioned backend-canonical backup contract.
 
 ## Future-gated
 
-4. `add-auth-user-ownership`
+2. `add-auth-user-ownership`
    - Do not implement until product intentionally activates auth, sessions, authorization, `userId`, and shared-ledger decisions.
 
 ## Parallelization rules
