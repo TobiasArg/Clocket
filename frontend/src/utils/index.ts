@@ -13,9 +13,13 @@ export { APP_SETTINGS_STORAGE_KEY, applyTheme, getStoredTheme, initializeThemeFr
 
 export {
   DEFAULT_USD_RATE,
+  getUsdArsExchangeRateState,
   getUsdRate,
   normalizeUsdRate,
+  resetUsdArsExchangeRateStateForTests,
+  setUsdArsExchangeRateState,
   toArsTransactionAmount,
+  type UsdArsExchangeRateState,
 } from "@/domain/currency/transactionCurrency";
 
 export {
@@ -55,6 +59,7 @@ export {
 
 export {
   fetchCryptoRate,
+  fetchUsdArsExchangeRate,
   fetchStockQuote,
   httpAccountsRepository as accountsRepository,
   httpAppSettingsRepository as appSettingsRepository,
@@ -73,6 +78,7 @@ export {
   HttpInvestmentsRepository,
   HttpTransactionsRepository,
   MarketQuoteApiError,
+  refreshUsdArsExchangeRate,
 } from "@/data/http";
 
 export { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";

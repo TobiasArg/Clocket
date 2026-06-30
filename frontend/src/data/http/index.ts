@@ -49,5 +49,10 @@ export {
   httpAnalyticsRepository,
 } from "./analyticsRepository";
 export {
+  fetchUsdArsExchangeRate,
+  refreshUsdArsExchangeRate,
+  type ExchangeRateResponse,
+} from "./exchangeRatesRepository";
+export {
   ensureFeatureBackendCleanStartCutover,
 } from "./featureDomainCleanStart";

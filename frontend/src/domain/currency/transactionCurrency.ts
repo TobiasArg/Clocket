@@ -2,6 +2,34 @@ export type TransactionInputCurrency = "ARS" | "USD";
 
 export const DEFAULT_USD_RATE = 1500;
 
+export interface UsdArsExchangeRateState {
+  baseCurrency: "USD";
+  quoteCurrency: "ARS";
+  rate: number;
+  source: "BACKEND_CONFIG" | "BACKEND_DEFAULT" | "FRONTEND_FALLBACK";
+  asOf: string | null;
+  isStale: boolean;
+  isDefault: boolean;
+  isUnavailable: boolean;
+  fallbackReason: string | null;
+}
+
+const createFallbackUsdArsRateState = (fallbackReason: string): UsdArsExchangeRateState => ({
+  baseCurrency: "USD",
+  quoteCurrency: "ARS",
+  rate: DEFAULT_USD_RATE,
+  source: "FRONTEND_FALLBACK",
+  asOf: null,
+  isStale: false,
+  isDefault: true,
+  isUnavailable: true,
+  fallbackReason,
+});
+
+let usdArsRateState: UsdArsExchangeRateState = createFallbackUsdArsRateState(
+  "Backend exchange-rate state has not been loaded yet.",
+);
+
 export const normalizeUsdRate = (value: number | undefined): number => {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return DEFAULT_USD_RATE;
@@ -10,8 +38,26 @@ export const normalizeUsdRate = (value: number | undefined): number => {
   return value;
 };
 
-// TODO: replace with API value when exchange-rate integration is ready.
-export const getUsdRate = (): number => DEFAULT_USD_RATE;
+export const getUsdArsExchangeRateState = (): UsdArsExchangeRateState => usdArsRateState;
+
+export const setUsdArsExchangeRateState = (
+  nextState: UsdArsExchangeRateState,
+): UsdArsExchangeRateState => {
+  usdArsRateState = {
+    ...nextState,
+    rate: normalizeUsdRate(nextState.rate),
+  };
+  return usdArsRateState;
+};
+
+export const resetUsdArsExchangeRateStateForTests = (): UsdArsExchangeRateState => {
+  usdArsRateState = createFallbackUsdArsRateState(
+    "Backend exchange-rate state has not been loaded yet.",
+  );
+  return usdArsRateState;
+};
+
+export const getUsdRate = (): number => usdArsRateState.rate;
 
 export const toArsTransactionAmount = (
   amount: number,
