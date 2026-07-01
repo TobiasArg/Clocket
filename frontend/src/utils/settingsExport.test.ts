@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   httpAccountsRepository,
   httpAppSettingsRepository,
@@ -10,11 +10,17 @@ import {
   httpTransactionsRepository,
 } from "@/data/http";
 import type { SettingsExportRepositories } from "./settingsExport";
-import { buildExportSnapshot, buildTransactionsCsv, defaultSettingsExportRepositories } from "./settingsExport";
+import {
+  buildExportSnapshot,
+  buildTransactionsCsv,
+  defaultSettingsExportRepositories,
+  SETTINGS_EXPORT_REQUIRED_DOMAINS,
+  SettingsExportError,
+} from "./settingsExport";
 
 const createExportRepositories = (): SettingsExportRepositories => ({
   accountsRepository: {
-    list: vi.fn().mockResolvedValue([{ id: "account-1", name: "Cuenta", balance: "$100", icon: "wallet" }]),
+    list: vi.fn().mockResolvedValue([{ id: "account-1", name: "Cuenta", balance: 100, icon: "wallet", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z" }]),
     getById: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -102,6 +108,16 @@ const createExportRepositories = (): SettingsExportRepositories => ({
 });
 
 describe("settingsExport", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-30T12:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    Reflect.deleteProperty(globalThis, "localStorage");
+  });
+
   it("uses HTTP repositories as the default export source after backend cutover", () => {
     expect(defaultSettingsExportRepositories).toMatchObject({
       accountsRepository: httpAccountsRepository,
@@ -121,7 +137,33 @@ describe("settingsExport", () => {
     const snapshot = await buildExportSnapshot(repositories);
 
     expect(snapshot.version).toBe(1);
-    expect(snapshot.exportedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
+    expect(snapshot.exportedAt).toBe("2026-06-30T12:00:00.000Z");
+    expect(snapshot.complete).toBe(true);
+    expect(snapshot.manifest).toEqual({
+      name: "clocket-settings-export",
+      requiredDomains: SETTINGS_EXPORT_REQUIRED_DOMAINS,
+      includedDomains: SETTINGS_EXPORT_REQUIRED_DOMAINS,
+    });
+    expect(snapshot.counts).toEqual({
+      settings: 1,
+      accounts: 1,
+      categories: 1,
+      budgets: 1,
+      goals: 1,
+      cuotas: 1,
+      transactions: 1,
+      investmentPositions: 1,
+      investmentRefs: 1,
+    });
+    expect(snapshot.integrity.algorithm).toMatch(/^(SHA-256|FALLBACK-DJB2)$/);
+    expect(snapshot.integrity.checksum).toEqual(expect.any(String));
+    expect(snapshot.integrity.checksum.length).toBeGreaterThan(8);
+    expect(snapshot.scope).toEqual({
+      importRestore: "out_of_scope",
+      localStorageImport: "out_of_scope",
+      auth: "out_of_scope",
+      userOwnership: "out_of_scope",
+    });
     expect(snapshot.data.settings).toHaveProperty("currency", "USD");
     expect(snapshot.data.accounts).toHaveLength(1);
     expect(snapshot.data.budgets).toHaveLength(1);
@@ -130,6 +172,80 @@ describe("settingsExport", () => {
     expect(snapshot.data.transactions).toHaveLength(1);
     expect(snapshot.data.investments.positions).toHaveLength(1);
     expect(snapshot.data.investments.refs).toHaveProperty("stock:AAPL");
+  });
+
+  it("keeps checksum stable for identical payloads and changes it when data changes", async () => {
+    const firstSnapshot = await buildExportSnapshot(createExportRepositories());
+    const secondSnapshot = await buildExportSnapshot(createExportRepositories());
+    const changedRepositories = createExportRepositories();
+    vi.mocked(changedRepositories.accountsRepository.list).mockResolvedValue([
+      { id: "account-2", name: "Cuenta 2", balance: 200, icon: "wallet", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z" },
+    ]);
+
+    const changedSnapshot = await buildExportSnapshot(changedRepositories);
+
+    expect(secondSnapshot.integrity).toEqual(firstSnapshot.integrity);
+    expect(changedSnapshot.integrity.checksum).not.toBe(firstSnapshot.integrity.checksum);
+  });
+
+  it("treats empty backend domains as complete with zero counts", async () => {
+    const repositories = createExportRepositories();
+    vi.mocked(repositories.accountsRepository.list).mockResolvedValue([]);
+    vi.mocked(repositories.categoriesRepository.list).mockResolvedValue([]);
+    vi.mocked(repositories.budgetsRepository.list).mockResolvedValue([]);
+    vi.mocked(repositories.goalsRepository.list).mockResolvedValue([]);
+    vi.mocked(repositories.cuotasRepository.list).mockResolvedValue([]);
+    vi.mocked(repositories.transactionsRepository.list).mockResolvedValue([]);
+    vi.mocked(repositories.investmentsRepository.listPositions).mockResolvedValue([]);
+    vi.mocked(repositories.investmentsRepository.getRefsMap).mockResolvedValue({});
+
+    const snapshot = await buildExportSnapshot(repositories);
+
+    expect(snapshot.complete).toBe(true);
+    expect(snapshot.counts).toMatchObject({
+      accounts: 0,
+      categories: 0,
+      budgets: 0,
+      goals: 0,
+      cuotas: 0,
+      transactions: 0,
+      investmentPositions: 0,
+      investmentRefs: 0,
+    });
+  });
+
+  it("does not merge legacy localStorage records into the full JSON export", async () => {
+    const localStorageMock = {
+      getItem: vi.fn().mockReturnValue(JSON.stringify([{ id: "legacy-account" }])),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+    };
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: localStorageMock,
+    });
+    const repositories = createExportRepositories();
+
+    const snapshot = await buildExportSnapshot(repositories);
+
+    expect(snapshot.data.accounts).toEqual([{ id: "account-1", name: "Cuenta", balance: 100, icon: "wallet", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z" }]);
+    expect(JSON.stringify(snapshot)).not.toContain("legacy-account");
+    expect(localStorageMock.getItem).not.toHaveBeenCalled();
+  });
+
+  it("fails with a controlled domain error when a required domain cannot be read", async () => {
+    const repositories = createExportRepositories();
+    const cause = new Error("backend unavailable");
+    vi.mocked(repositories.budgetsRepository.list).mockRejectedValue(cause);
+
+    await expect(buildExportSnapshot(repositories)).rejects.toMatchObject({
+      name: "SettingsExportError",
+      code: "SETTINGS_EXPORT_DOMAIN_READ_FAILED",
+      domain: "budgets",
+      cause,
+    });
+    await expect(buildExportSnapshot(repositories)).rejects.toBeInstanceOf(SettingsExportError);
   });
 
   it("builds CSV with headers and transaction rows", () => {
@@ -150,5 +266,9 @@ describe("settingsExport", () => {
     expect(csv).toContain("id,date,name,category,amount,accountId,transactionType,goalId,meta");
     expect(csv).toContain("Compra");
     expect(csv).toContain("2026-01-10");
+    expect(csv).not.toContain("manifest");
+    expect(csv).not.toContain("counts");
+    expect(csv).not.toContain("checksum");
+    expect(csv).not.toContain("complete");
   });
 });

@@ -39,9 +39,60 @@ export const defaultSettingsExportRepositories: SettingsExportRepositories = {
   transactionsRepository: httpTransactionsRepository,
 };
 
+export const SETTINGS_EXPORT_CONTRACT_VERSION = 1 as const;
+
+export const SETTINGS_EXPORT_REQUIRED_DOMAINS = [
+  "settings",
+  "accounts",
+  "categories",
+  "budgets",
+  "goals",
+  "cuotas",
+  "transactions",
+  "investmentPositions",
+  "investmentRefs",
+] as const;
+
+export type SettingsExportDomain = typeof SETTINGS_EXPORT_REQUIRED_DOMAINS[number];
+
+export interface SettingsExportCounts {
+  settings: number;
+  accounts: number;
+  categories: number;
+  budgets: number;
+  goals: number;
+  cuotas: number;
+  transactions: number;
+  investmentPositions: number;
+  investmentRefs: number;
+}
+
+export interface SettingsExportManifest {
+  name: "clocket-settings-export";
+  requiredDomains: readonly SettingsExportDomain[];
+  includedDomains: readonly SettingsExportDomain[];
+}
+
+export interface SettingsExportIntegrity {
+  algorithm: "SHA-256" | "FALLBACK-DJB2";
+  checksum: string;
+}
+
+export interface SettingsExportScope {
+  importRestore: "out_of_scope";
+  localStorageImport: "out_of_scope";
+  auth: "out_of_scope";
+  userOwnership: "out_of_scope";
+}
+
 export interface SettingsExportSnapshot {
+  complete: true;
   exportedAt: string;
-  version: number;
+  version: typeof SETTINGS_EXPORT_CONTRACT_VERSION;
+  manifest: SettingsExportManifest;
+  counts: SettingsExportCounts;
+  integrity: SettingsExportIntegrity;
+  scope: SettingsExportScope;
   data: {
     settings: Awaited<ReturnType<AppSettingsRepository["get"]>>;
     accounts: Awaited<ReturnType<AccountsRepository["list"]>>;
@@ -55,6 +106,20 @@ export interface SettingsExportSnapshot {
       refs: Awaited<ReturnType<InvestmentsRepository["getRefsMap"]>>;
     };
   };
+}
+
+type SettingsExportSnapshotWithoutIntegrity = Omit<SettingsExportSnapshot, "integrity">;
+
+export class SettingsExportError extends Error {
+  public readonly code = "SETTINGS_EXPORT_DOMAIN_READ_FAILED";
+
+  public constructor(
+    public readonly domain: SettingsExportDomain,
+    public readonly cause: unknown,
+  ) {
+    super(`Failed to read required export domain: ${domain}`);
+    this.name = "SettingsExportError";
+  }
 }
 
 const escapeCsvValue = (value: string): string => `"${value.replaceAll("\"", "\"\"")}"`;
@@ -72,6 +137,72 @@ const triggerBrowserDownload = (blob: Blob, fileName: string): void => {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+};
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> => (
+  typeof value === "object"
+  && value !== null
+  && !Array.isArray(value)
+);
+
+const stableStringify = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  if (isPlainObject(value)) {
+    const entries = Object.keys(value)
+      .sort()
+      .filter((key) => value[key] !== undefined)
+      .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`);
+    return `{${entries.join(",")}}`;
+  }
+
+  return JSON.stringify(value) ?? "null";
+};
+
+const toHex = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let hex = "";
+
+  for (const value of bytes) {
+    hex += value.toString(16).padStart(2, "0");
+  }
+
+  return hex;
+};
+
+const fallbackDigest = (payload: string): string => {
+  let hash = 5381;
+
+  for (let index = 0; index < payload.length; index += 1) {
+    hash = ((hash << 5) + hash) ^ payload.charCodeAt(index);
+  }
+
+  return `fallback-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+};
+
+const buildIntegrity = async (snapshot: SettingsExportSnapshotWithoutIntegrity): Promise<SettingsExportIntegrity> => {
+  const payload = stableStringify(snapshot);
+
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const encoded = new TextEncoder().encode(payload);
+    const digest = await crypto.subtle.digest("SHA-256", encoded);
+    return { algorithm: "SHA-256", checksum: toHex(digest) };
+  }
+
+  return { algorithm: "FALLBACK-DJB2", checksum: fallbackDigest(payload) };
+};
+
+const readRequiredDomain = async <T>(
+  domain: SettingsExportDomain,
+  read: () => Promise<T>,
+): Promise<T> => {
+  try {
+    return await read();
+  } catch (error) {
+    throw new SettingsExportError(domain, error);
+  }
 };
 
 export const buildTransactionsCsv = (transactions: TransactionItem[]): string => {
@@ -120,31 +251,44 @@ export const buildExportSnapshot = async (
     transactionsRepository,
   } = repositories;
 
-  const [
-    settings,
-    accounts,
-    categories,
-    budgets,
-    goals,
-    cuotas,
-    transactions,
-    positions,
-    refs,
-  ] = await Promise.all([
-    appSettingsRepository.get(),
-    accountsRepository.list(),
-    categoriesRepository.list(),
-    budgetsRepository.list(),
-    goalsRepository.list(),
-    cuotasRepository.list(),
-    transactionsRepository.list(),
-    investmentsRepository.listPositions(),
-    investmentsRepository.getRefsMap(),
+  const [settings, accounts, categories, budgets, goals, cuotas, transactions, positions, refs] = await Promise.all([
+    readRequiredDomain("settings", () => appSettingsRepository.get()),
+    readRequiredDomain("accounts", () => accountsRepository.list()),
+    readRequiredDomain("categories", () => categoriesRepository.list()),
+    readRequiredDomain("budgets", () => budgetsRepository.list()),
+    readRequiredDomain("goals", () => goalsRepository.list()),
+    readRequiredDomain("cuotas", () => cuotasRepository.list()),
+    readRequiredDomain("transactions", () => transactionsRepository.list()),
+    readRequiredDomain("investmentPositions", () => investmentsRepository.listPositions()),
+    readRequiredDomain("investmentRefs", () => investmentsRepository.getRefsMap()),
   ]);
 
-  return {
+  const snapshotWithoutIntegrity: SettingsExportSnapshotWithoutIntegrity = {
+    complete: true,
     exportedAt: new Date().toISOString(),
-    version: 1,
+    version: SETTINGS_EXPORT_CONTRACT_VERSION,
+    manifest: {
+      name: "clocket-settings-export",
+      requiredDomains: SETTINGS_EXPORT_REQUIRED_DOMAINS,
+      includedDomains: SETTINGS_EXPORT_REQUIRED_DOMAINS,
+    },
+    counts: {
+      settings: 1,
+      accounts: accounts.length,
+      categories: categories.length,
+      budgets: budgets.length,
+      goals: goals.length,
+      cuotas: cuotas.length,
+      transactions: transactions.length,
+      investmentPositions: positions.length,
+      investmentRefs: Object.keys(refs).length,
+    },
+    scope: {
+      importRestore: "out_of_scope",
+      localStorageImport: "out_of_scope",
+      auth: "out_of_scope",
+      userOwnership: "out_of_scope",
+    },
     data: {
       settings,
       accounts,
@@ -158,6 +302,11 @@ export const buildExportSnapshot = async (
         refs,
       },
     },
+  };
+
+  return {
+    ...snapshotWithoutIntegrity,
+    integrity: await buildIntegrity(snapshotWithoutIntegrity),
   };
 };
 
