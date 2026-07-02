@@ -1,6 +1,6 @@
-# Frontend-to-Backend Implementation Order
+# Clocket OpenSpec Implementation Order
 
-This order is the active priority guide for the remaining backend-ownership OpenSpec roadmap. Implement and archive changes top-to-bottom unless a production blocker or explicit product decision changes priority.
+This order is the active priority guide for the current OpenSpec roadmap after the July product/technical audit. Implement and archive changes top-to-bottom unless a production blocker or explicit product decision changes priority.
 
 Auth, sessions, authorization, `userId`, and shared-ledger behavior remain out of scope for this roadmap until `add-auth-user-ownership` is intentionally activated.
 
@@ -15,22 +15,44 @@ Auth, sessions, authorization, `userId`, and shared-ledger behavior remain out o
 - `migrate-feature-domains-to-backend-api`
 - `frontend-localstorage-repository-retirement`
 - `backend-owned-exchange-rate-boundary`
+- `settings-export-contract-hardening`
 
-## P2 — Cleanup and hardening
+## P0 — Roadmap correctness and financial correctness
 
-1. `settings-export-contract-hardening`
-   - Harden full JSON export as a versioned backend-canonical backup contract.
+1. `repair-openspec-roadmap-state`
+   - Repair stale OpenSpec context/order, complete canonical spec purposes, and add traceability for future changes.
+   - This is first because it aligns planning artifacts before runtime changes.
+
+2. `fix-financial-balance-and-currency-correctness`
+   - Correct account opening-balance handling, USD/ARS aggregate conversion, and analytics freshness.
+   - This is highest product/runtime priority because it affects user trust in financial values.
+
+## P1 — Security exposure and backend integrity
+
+3. `harden-settings-security-export`
+   - Redact PIN verifier material from settings reads/exports and improve domain-aware export errors.
+
+4. `harden-backend-data-integrity-boundaries`
+   - Harden destructive actions, installment idempotency, validation, and read endpoint side-effect boundaries.
+
+## P2 — Delivery confidence and accessibility/product quality
+
+5. `harden-ci-quality-gates`
+   - Add CI gates for frontend, backend, OpenSpec, and DB smoke validation.
+
+6. `improve-accessible-finance-ui-foundations`
+   - Improve dialog/sheet semantics, delete accessibility, app landmarks, live regions, and calm Spanish copy.
 
 ## Future-gated
 
-2. `add-auth-user-ownership`
+7. `add-auth-user-ownership`
    - Do not implement until product intentionally activates auth, sessions, authorization, `userId`, and shared-ledger decisions.
 
 ## Parallelization rules
 
 - Do not implement two hardening changes in parallel unless their touched modules are isolated and both can pass full backend/frontend validation independently.
-- P2 cleanup should proceed in the listed order unless a production blocker or explicit product decision changes priority.
-- Keep auth/user ownership separate from P2 cleanup and hardening to avoid mixing critical persistence/security migration work with lower-risk cleanup.
+- Runtime financial correctness work takes priority over polish unless a security exposure or CI blocker is actively preventing delivery.
+- Keep auth/user ownership separate from the audit-driven hardening roadmap to avoid mixing critical persistence/security migration work with lower-risk cleanup.
 
 ## Validation baseline per implemented change
 
