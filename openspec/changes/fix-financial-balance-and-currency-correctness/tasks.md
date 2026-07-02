@@ -9,11 +9,11 @@
 - [ ] 2.1 Add backend tests for mixed USD/ARS transactions, budgets, goals, and analytics aggregates.
 - [ ] 2.2 Update backend aggregate services to convert values to the requested/display currency using the exchange-rate boundary.
 - [ ] 2.3 Update frontend display helpers/hooks so numeric values and symbols share the same currency basis.
-- [ ] 2.4 Surface default/unavailable exchange-rate metadata where a fallback rate affects displayed money.
+- [ ] 2.4 Preserve default/unavailable exchange-rate metadata at the data boundary while keeping UI fallback behavior silent for this iteration.
 
 ## 3. Analytics Freshness
 
-- [ ] 3.1 Replace array-length-only analytics invalidation with mutation/rate/currency-aware invalidation.
+- [ ] 3.1 Replace array-length-only analytics invalidation with simple mutation/rate/currency-aware refetch or version invalidation.
 - [ ] 3.2 Add tests for editing a transaction amount/category without changing collection length.
 - [ ] 3.3 Add tests for currency setting changes and exchange-rate refreshes.
 

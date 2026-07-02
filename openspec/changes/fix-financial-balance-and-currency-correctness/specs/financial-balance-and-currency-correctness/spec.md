@@ -22,8 +22,8 @@ Financial aggregates SHALL NOT sum raw values from different currencies without 
 
 #### Scenario: Exchange rate is unavailable
 - **WHEN** conversion requires USD/ARS and the backend only has a default fallback rate
-- **THEN** affected responses or UI state SHALL expose that the rate is defaulted or unavailable
-- **AND** the UI SHALL avoid presenting the converted value as a precise provider-backed quote
+- **THEN** backend exchange-rate metadata SHALL still identify that the default fallback rate is being used
+- **AND** frontend displays MAY remain silent and use the fallback rate without an explicit warning in this iteration
 
 ### Requirement: Analytics refresh after value changes
 Home and Statistics analytics SHALL refresh or recompute when underlying financial values change, not only when collection sizes change.

@@ -20,14 +20,16 @@ Clocket has moved core finance data to backend-owned HTTP repositories, but some
 ## Decisions
 
 1. **Balance contract includes opening balance.** Displayed account balance SHALL be opening balance plus non-saving transaction net flow. Alternative ledger-only was rejected because the product currently asks users for an initial account balance.
-2. **Backend read models own canonical aggregate math.** Frontend MAY compute fallback values while loading, but backend analytics/budget/goal responses MUST be the canonical source once available.
-3. **Current-rate conversion is explicit.** Aggregates with mixed currencies MUST convert to the requested/display currency using the backend exchange-rate boundary and expose fallback/unavailable metadata when the rate is defaulted.
-4. **Invalidation is event/version based, not array-length based.** Hooks SHOULD refetch or recompute on mutations, currency changes, and rate changes, not only on item count changes.
+2. **Store original currency and convert on read.** Records keep their original currency; backend read models and frontend fallback displays convert on read for aggregates. Normalizing all persisted values to ARS or USD is rejected for now because it would lose original-entry semantics and expand migration scope.
+3. **Backend read models own canonical aggregate math.** Frontend MAY compute fallback values while loading, but backend analytics/budget/goal responses MUST be the canonical source once available.
+4. **Current-rate conversion is consistent and quiet in UI.** Aggregates with mixed currencies MUST convert to the requested/display currency using the backend exchange-rate boundary. If the backend falls back to the default rate, metadata remains available in the data boundary, but the UI will not show a warning in this iteration to keep the experience low-friction.
+5. **Invalidation starts with simple explicit refetch/versioning.** Hooks SHOULD refetch or recompute on mutations, currency changes, and rate changes without adding SWR/React Query or a new store in this change.
 
 ## Risks / Trade-offs
 
 - Existing users may have balances that already include prior transactions → migration notes/manual QA must verify no double counting.
-- Using current FX rate for historical values is simple but not analytically perfect → label as current-rate conversion and leave historical FX out of scope.
+- Using current FX rate for historical values is simple but not analytically perfect → leave historical FX out of scope and keep UI copy neutral.
+- Silent fallback avoids UI anxiety but can hide quote freshness risk → keep backend metadata/test coverage so a later UX change can surface it if needed.
 - Backend/frontend fallback calculations can diverge → tests should compare representative backend responses and frontend displays.
 
 ## Migration Plan
