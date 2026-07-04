@@ -1,7 +1,8 @@
 # manual-qa-validation Specification
 
 ## Purpose
-TBD - created by archiving change stabilize-feature-domain-backend-cutover. Update Purpose after archive.
+Define manual QA and evidence expectations for migrated feature-domain flows so stabilization work remains reviewable and auth/user ownership stays out of scope.
+
 ## Requirements
 ### Requirement: Manual QA covers migrated feature flows
 The stabilization SHALL include manual QA evidence for migrated feature-domain flows and affected UI interactions.
@@ -27,4 +28,3 @@ The stabilization SHALL NOT introduce authentication, authorization, sessions, o
 #### Scenario: A stabilization issue appears related to user ownership
 - **WHEN** a finding would require user ownership or auth semantics to solve fully
 - **THEN** the finding SHALL be documented as out of scope and SHALL NOT be implemented in this stabilization change
-

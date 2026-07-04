@@ -1,7 +1,8 @@
 # backend-owned-budget-usage-read-models Specification
 
 ## Purpose
-TBD - created by archiving change backend-owned-budget-usage-read-models. Update Purpose after archive.
+Establish backend-owned budget usage read models as the canonical source for monthly budget spending, scope matching, detail breakdowns, and frontend budget display values.
+
 ## Requirements
 ### Requirement: Budget usage read models are backend-owned
 The backend SHALL own canonical budget usage read models derived from backend-persisted budgets and transactions.
@@ -67,4 +68,3 @@ The budget usage read-model change SHALL NOT introduce authentication, authoriza
 - **WHEN** a design or implementation concern would require user identity or ownership to solve fully
 - **THEN** the concern SHALL be documented as future work
 - **AND** SHALL NOT be implemented in this change
-

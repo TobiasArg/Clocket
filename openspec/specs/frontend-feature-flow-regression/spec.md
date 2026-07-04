@@ -1,7 +1,8 @@
 # frontend-feature-flow-regression Specification
 
 ## Purpose
-TBD - created by archiving change stabilize-feature-domain-backend-cutover. Update Purpose after archive.
+Protect migrated frontend finance flows from regressions after backend cutover by requiring HTTP-backed CRUD behavior, refresh persistence, validation, and resilient loading/error/empty states.
+
 ## Requirements
 ### Requirement: Migrated frontend flows remain functional
 The frontend SHALL keep existing user flows functional for migrated budgets, goals, cuotas/installments, investments, and app settings after the backend cutover.
@@ -39,4 +40,3 @@ The frontend SHALL preserve loading, empty, error, and null-reference resilience
 #### Scenario: Backend returns nullable references
 - **WHEN** a migrated backend payload includes null or missing optional references
 - **THEN** frontend hooks/page models SHALL handle the value safely and preserve existing display behavior
-

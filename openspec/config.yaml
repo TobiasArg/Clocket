@@ -3,10 +3,11 @@ schema: spec-driven
 context: |
   Project: Clocket, a personal finance monorepo.
   Frontend: Vite, React 18, TypeScript, Tailwind CSS v4.
-  Backend current state: Next.js 14 Pages Router API Routes in backend/pages/api, JavaScript, Axios, Alpha Vantage market quote proxy.
-  Backend target direction: keep Next.js API Routes first, migrate backend code to TypeScript service boundaries, document NestJS only as an escalation option if domain complexity requires it later, use Prisma ORM and PostgreSQL for persistence in a later phase, and do not implement auth yet.
-  Current persistence: frontend localStorage repositories own most financial data and business rules.
-  Audit baseline: BACKEND_RESTRUCTURE_AUDIT.md documents migration priorities and must be treated as the source of context for backend restructuring.
+  Backend current state: Next.js 14 Pages Router API Routes in backend/pages/api with TypeScript service/module boundaries under backend/src.
+  Current persistence: backend-owned Prisma/PostgreSQL persistence is canonical for active finance domains; frontend runtime repositories use HTTP/API-backed adapters for budgets, goals, installments/cuotas, investments, settings, market refs/snapshots, exchange rates, and migrated feature-domain flows.
+  Legacy frontend localStorage repositories are archived compatibility/test history only and must not be treated as the active source of financial truth or reintroduced through runtime barrels.
+  Backend target direction: keep Next.js API Routes first, continue hardening backend service boundaries, validation, read models, integrity, CI, and accessibility; document NestJS only as an escalation option if domain complexity requires it later; do not implement auth, sessions, user ownership, or shared-ledger behavior until explicitly activated.
+  Audit baseline: active OpenSpec changes and openspec/changes/IMPLEMENTATION_ORDER.md are the current roadmap source; archived specs preserve historical implementation context.
   Repo conventions: use Conventional Commits, branch from dev, keep changes staged by medium-sized validated steps, and avoid broad rewrites before contracts and tests exist.
 
 rules:

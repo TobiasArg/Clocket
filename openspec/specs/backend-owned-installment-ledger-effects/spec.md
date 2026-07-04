@@ -1,7 +1,8 @@
 # backend-owned-installment-ledger-effects Specification
 
 ## Purpose
-TBD - created by archiving change backend-owned-installment-ledger-effects. Update Purpose after archive.
+Define the backend as the canonical owner for installment paid-count transitions and generated transaction ledger effects so retries, reconciliation, and frontend flows cannot create duplicate or divergent cuota state.
+
 ## Requirements
 ### Requirement: Installment ledger effects are backend-owned
 The backend SHALL own canonical installment paid-count transitions and generated transaction ledger effects for installment plans.
@@ -55,4 +56,3 @@ The installment ledger effects change SHALL NOT introduce authentication, author
 - **WHEN** a design or implementation concern would require user identity or ownership to solve fully
 - **THEN** the concern SHALL be documented as future work
 - **AND** SHALL NOT be implemented in this change
-

@@ -1,7 +1,8 @@
 # backend-owned-market-refresh Specification
 
 ## Purpose
-TBD - created by archiving change backend-owned-investment-market-refresh. Update Purpose after archive.
+Define backend-owned investment quote refresh orchestration, including freshness checks, provider calls, snapshot/ref persistence, de-duplication, cooldowns, and stale fallback behavior.
+
 ## Requirements
 ### Requirement: Investment quote refresh orchestration is backend-owned
 The backend SHALL own investment quote refresh orchestration for requested investment positions or assets, including freshness checks, provider fetches, snapshot persistence, daily/month reference updates, stale fallback behavior, and per-request asset de-duplication.
@@ -49,4 +50,3 @@ The existing direct market quote endpoint SHALL remain compatible while investme
 #### Scenario: Investment refresh needs provider data
 - **WHEN** investment refresh needs a provider quote
 - **THEN** backend services SHALL use provider/service dependencies in-process rather than requiring the frontend to call the direct market quote endpoint first
-

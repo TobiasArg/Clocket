@@ -1,7 +1,8 @@
 # market-refresh-validation Specification
 
 ## Purpose
-TBD - created by archiving change backend-owned-investment-market-refresh. Update Purpose after archive.
+Capture automated and manual validation expectations for backend-owned investment market refresh, including provider success/failure handling, frontend mapping, and explicit evidence before archival.
+
 ## Requirements
 ### Requirement: Backend market refresh behavior is tested
 The implementation SHALL include backend tests for investment refresh orchestration, provider success/failure handling, snapshot/ref persistence, request validation, and asset de-duplication.
@@ -35,4 +36,3 @@ The investment refresh orchestration change SHALL NOT introduce authentication, 
 #### Scenario: Refresh scope appears to require user ownership
 - **WHEN** a design or implementation concern would require user identity or ownership to solve fully
 - **THEN** the concern SHALL be documented as future work for the auth/ownership change and SHALL NOT be implemented in this change
-

@@ -1,7 +1,8 @@
 # feature-domain-runtime-stability Specification
 
 ## Purpose
-TBD - created by archiving change stabilize-feature-domain-backend-cutover. Update Purpose after archive.
+Require migrated feature-domain APIs to remain stable, validated, backend-persistent, and frontend-compatible after the backend repository cutover.
+
 ## Requirements
 ### Requirement: Migrated feature-domain APIs remain runtime-stable
 The backend SHALL preserve stable runtime behavior for migrated budgets, goals, installments/cuotas, investments, market snapshots/refs, and app settings APIs using backend persistence as the canonical source of truth.
@@ -31,4 +32,3 @@ Migrated feature-domain APIs SHALL return payloads that frontend HTTP repositori
 #### Scenario: Backend payload contains persistence-specific values
 - **WHEN** the backend returns decimals, nullable references, timestamps, backend-generated IDs, or normalized references
 - **THEN** the response SHALL include enough information for the frontend HTTP repository to expose the existing domain-level shape without localStorage ID remapping
-

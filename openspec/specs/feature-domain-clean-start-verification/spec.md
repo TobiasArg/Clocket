@@ -1,7 +1,8 @@
 # feature-domain-clean-start-verification Specification
 
 ## Purpose
-TBD - created by archiving change stabilize-feature-domain-backend-cutover. Update Purpose after archive.
+Verify that migrated feature domains start cleanly from backend-owned data without importing, merging, or trusting legacy browser localStorage records or IDs.
+
 ## Requirements
 ### Requirement: Legacy feature localStorage does not affect migrated runtime
 The frontend SHALL ignore or clear legacy localStorage records for migrated feature domains during backend-owned runtime.
@@ -27,4 +28,3 @@ Stabilization SHALL verify persistence by backend read-after-write behavior rath
 #### Scenario: Backend persistence is verified
 - **WHEN** a migrated record is created or updated during QA
 - **THEN** verification SHALL confirm backend read-after-write and browser refresh persistence without copying data into localStorage
-

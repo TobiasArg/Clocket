@@ -1,7 +1,8 @@
 # frontend-investment-refresh-cutover Specification
 
 ## Purpose
-TBD - created by archiving change backend-owned-investment-market-refresh. Update Purpose after archive.
+Ensure the investments UI delegates quote refresh orchestration to backend-owned refresh endpoints while preserving portfolio display behavior and avoiding direct provider-sensitive frontend calls.
+
 ## Requirements
 ### Requirement: Frontend investment refresh delegates to backend
 The frontend SHALL delegate investment quote refresh orchestration to the backend investment refresh endpoint and SHALL NOT call direct market quote provider endpoints from the investment portfolio refresh domain flow.
@@ -38,4 +39,3 @@ The frontend SHALL NOT retain provider-sensitive investment refresh orchestratio
 #### Scenario: Investment refresh code is reviewed after cutover
 - **WHEN** maintainers inspect the active investment refresh flow after cutover
 - **THEN** it SHALL NOT directly import or call `fetchStockQuote`, `fetchCryptoRate`, or direct market quote provider error handling from the investment refresh domain path
-

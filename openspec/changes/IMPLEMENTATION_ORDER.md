@@ -4,6 +4,8 @@ This order is the active priority guide for the current OpenSpec roadmap after t
 
 Auth, sessions, authorization, `userId`, and shared-ledger behavior remain out of scope for this roadmap until `add-auth-user-ownership` is intentionally activated.
 
+`openspec list --json` reports all active changes as `in-progress`; priority and gating are governed by this document, not by list order.
+
 ## Completed and archived
 
 - `backend-owned-investment-market-refresh`
@@ -46,7 +48,8 @@ Auth, sessions, authorization, `userId`, and shared-ledger behavior remain out o
 ## Future-gated
 
 7. `add-auth-user-ownership`
-   - Do not implement until product intentionally activates auth, sessions, authorization, `userId`, and shared-ledger decisions.
+   - Active OpenSpec artifact only; current implementation state is 0/25 tasks complete.
+   - Do not implement, archive, or partially modify until product intentionally activates auth, sessions, authorization, `userId`, and shared-ledger decisions.
 
 ## Parallelization rules
 
