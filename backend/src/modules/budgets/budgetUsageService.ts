@@ -1,5 +1,12 @@
 import { CoreFinanceApiError } from "../core-finance/coreFinanceApiErrors";
 import type { CategoryRecord, CategoriesRepository } from "../categories/categoriesRepository";
+import { getUsdArsExchangeRate } from "../exchange-rates/exchangeRateService";
+import {
+  convertToDisplayCurrency,
+  parseDisplayCurrency,
+  type MoneyConversionContext,
+} from "../exchange-rates/moneyConversion";
+import type { ExchangeRateSuccessResponse } from "../exchange-rates/exchangeRateContracts";
 import type { TransactionRecord, TransactionsRepository } from "../transactions/transactionsRepository";
 import {
   toBudgetResponse,
@@ -67,6 +74,11 @@ const getMonthDateWindow = (periodMonth: string): { dateFrom: string; dateTo: st
 };
 
 const isExpenseTransaction = (transaction: TransactionRecord): boolean => toNumber(transaction.amount) < 0;
+const getDisplayAmount = (
+  amount: string | number,
+  currency: "USD" | "ARS",
+  context: MoneyConversionContext | null,
+): number => convertToDisplayCurrency(amount, currency, context);
 
 const doesRuleMatchTransaction = (
   rule: BudgetScopeRuleRecord,
@@ -94,8 +106,9 @@ const doesBudgetMatchTransaction = (budget: BudgetRecord, transaction: Transacti
 const buildUsageItem = (
   budget: BudgetRecord,
   spentAmount: number,
+  conversionContext: MoneyConversionContext | null,
 ): BudgetUsageItemResponse => {
-  const limitAmount = toNumber(budget.limitAmount);
+  const limitAmount = getDisplayAmount(budget.limitAmount, budget.currency, conversionContext);
   const progress = rawProgress(spentAmount, limitAmount);
   return {
     budget: toBudgetResponse(budget),
@@ -108,7 +121,9 @@ const buildUsageItem = (
 };
 
 const buildSummary = (items: BudgetUsageItemResponse[]): BudgetUsageSummaryResponse => {
-  const totalLimitAmount = items.reduce((sum, item) => sum + toNumber(item.budget.limitAmount), 0);
+  const totalLimitAmount = items.reduce((sum, item) => (
+    sum + toNumber(item.spentAmount) + toNumber(item.remainingAmount) - toNumber(item.overspentAmount)
+  ), 0);
   const totalSpentAmount = items.reduce((sum, item) => sum + toNumber(item.spentAmount), 0);
   const progress = rawProgress(totalSpentAmount, totalLimitAmount);
   return {
@@ -142,6 +157,7 @@ const buildDetailGroups = (
   budget: BudgetRecord,
   transactions: TransactionRecord[],
   categories: CategoryRecord[],
+  conversionContext: MoneyConversionContext | null,
 ): BudgetUsageDetailGroupResponse[] => {
   const lookup = buildCategoryLookup(categories);
   const grouped = new Map<string, { categoryId: string | null; subcategoryId: string | null; label: string; amount: number }>();
@@ -159,7 +175,7 @@ const buildDetailGroups = (
     const subcategoryName = subcategoryMeta?.name ?? "Sin subcategoría";
     const label = `${categoryName} · ${subcategoryName}`;
     const key = `${categoryId ?? "none"}:${subcategoryId ?? "none"}`;
-    const amount = Math.abs(toNumber(transaction.amount));
+    const amount = Math.abs(getDisplayAmount(transaction.amount, transaction.currency, conversionContext));
     const current = grouped.get(key);
     if (!current) {
       grouped.set(key, { categoryId, subcategoryId, label, amount });
@@ -188,10 +204,12 @@ export const createBudgetUsageService = ({
   budgetsRepository,
   categoriesRepository,
   transactionsRepository,
+  exchangeRateProvider = getUsdArsExchangeRate,
 }: {
   budgetsRepository: Pick<BudgetsRepository, "listActive" | "getById">;
   categoriesRepository: Pick<CategoriesRepository, "listActive">;
   transactionsRepository: Pick<TransactionsRepository, "listActive">;
+  exchangeRateProvider?: () => ExchangeRateSuccessResponse;
 }): BudgetUsageService => {
   const loadMonthlyInputs = async (periodMonth: string) => {
     const { dateFrom, dateTo } = getMonthDateWindow(periodMonth);
@@ -202,23 +220,31 @@ export const createBudgetUsageService = ({
     return { budgets, transactions };
   };
 
-  const buildUsageItems = (budgets: BudgetRecord[], transactions: TransactionRecord[]) => (
+  const buildUsageItems = (
+    budgets: BudgetRecord[],
+    transactions: TransactionRecord[],
+    conversionContext: MoneyConversionContext | null,
+  ) => (
     budgets.map((budget) => {
       const spentAmount = transactions.reduce((sum, transaction) => {
         if (!isExpenseTransaction(transaction) || !doesBudgetMatchTransaction(budget, transaction)) {
           return sum;
         }
-        return sum + Math.abs(toNumber(transaction.amount));
+        return sum + Math.abs(getDisplayAmount(transaction.amount, transaction.currency, conversionContext));
       }, 0);
-      return buildUsageItem(budget, spentAmount);
+      return buildUsageItem(budget, spentAmount, conversionContext);
     })
   );
 
   return {
     async listBudgetUsage(query = {}) {
       const periodMonth = parsePeriodMonth(query);
+      const displayCurrency = parseDisplayCurrency(query);
+      const conversionContext = displayCurrency
+        ? { currency: displayCurrency, exchangeRate: exchangeRateProvider() }
+        : null;
       const { budgets, transactions } = await loadMonthlyInputs(periodMonth);
-      const items = buildUsageItems(budgets, transactions);
+      const items = buildUsageItems(budgets, transactions, conversionContext);
       return {
         periodMonth,
         summary: buildSummary(items),
@@ -232,6 +258,10 @@ export const createBudgetUsageService = ({
         throw new CoreFinanceApiError(`Budget '${id}' was not found.`, { code: "NOT_FOUND", status: 404 });
       }
       const periodMonth = query.periodMonth || query.month ? parsePeriodMonth(query) : budget.periodMonth;
+      const displayCurrency = parseDisplayCurrency(query);
+      const conversionContext = displayCurrency
+        ? { currency: displayCurrency, exchangeRate: exchangeRateProvider() }
+        : null;
       const { dateFrom, dateTo } = getMonthDateWindow(periodMonth);
       const [transactions, categories] = await Promise.all([
         transactionsRepository.listActive({ dateFrom, dateTo }),
@@ -241,14 +271,14 @@ export const createBudgetUsageService = ({
         if (!isExpenseTransaction(transaction) || !doesBudgetMatchTransaction(budget, transaction)) {
           return sum;
         }
-        return sum + Math.abs(toNumber(transaction.amount));
+        return sum + Math.abs(getDisplayAmount(transaction.amount, transaction.currency, conversionContext));
       }, 0);
-      const usage = buildUsageItem(budget, spentAmount);
+      const usage = buildUsageItem(budget, spentAmount, conversionContext);
       return {
         periodMonth,
         budget: toBudgetResponse(budget),
         usage,
-        groups: buildDetailGroups(budget, transactions, categories),
+        groups: buildDetailGroups(budget, transactions, categories, conversionContext),
       };
     },
   };

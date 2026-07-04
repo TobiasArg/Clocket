@@ -14,6 +14,8 @@ export interface TransactionItem extends TransactionDetailed {
   cuotaInstallmentsCount?: number;
   date: string;
   createdAt?: string;
+  rawAmount?: number;
+  currency?: "USD" | "ARS";
 }
 
 export type CreateTransactionInput = Omit<TransactionItem, "id" | "transactionType"> & {

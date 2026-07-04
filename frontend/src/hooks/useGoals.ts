@@ -8,6 +8,7 @@ import {
   type GoalsRepository,
   type UpdateGoalPatch,
 } from "@/utils";
+import { useCurrency } from "./useCurrency";
 
 export interface UseGoalsOptions {
   repository?: GoalsRepository;
@@ -29,7 +30,9 @@ const FALLBACK_ERROR_MESSAGE =
   "We couldn't complete that goal action. Please try again.";
 
 let sharedGoalsCache: GoalPlanItem[] | null = null;
+let sharedGoalsCacheCurrency: "USD" | "ARS" | null = null;
 let sharedGoalsRefreshPromise: Promise<GoalPlanItem[]> | null = null;
+let sharedGoalsRefreshCurrency: "USD" | "ARS" | null = null;
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -40,6 +43,7 @@ const getErrorMessage = (error: unknown): string => {
 };
 
 export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
+  const { currency: appCurrency } = useCurrency();
   const repository = useMemo(
     () => options.repository ?? goalsRepository,
     [options.repository],
@@ -47,7 +51,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
   const isSharedRepository = repository === goalsRepository;
 
   const [items, setItems] = useState<GoalPlanItem[]>(() => (
-    isSharedRepository && sharedGoalsCache !== null
+    isSharedRepository && sharedGoalsCache !== null && sharedGoalsCacheCurrency === appCurrency
       ? sharedGoalsCache
       : []
   ));
@@ -58,7 +62,8 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
     if (
       isSharedRepository &&
       !force &&
-      sharedGoalsCache !== null
+      sharedGoalsCache !== null &&
+      sharedGoalsCacheCurrency === appCurrency
     ) {
       setItems(sharedGoalsCache);
       setError(null);
@@ -70,18 +75,20 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
 
     let request: Promise<GoalPlanItem[]>;
     if (isSharedRepository) {
-      if (!sharedGoalsRefreshPromise) {
-        sharedGoalsRefreshPromise = repository.list();
+      if (!sharedGoalsRefreshPromise || sharedGoalsRefreshCurrency !== appCurrency) {
+        sharedGoalsRefreshPromise = repository.list(appCurrency);
+        sharedGoalsRefreshCurrency = appCurrency;
       }
       request = sharedGoalsRefreshPromise;
     } else {
-      request = repository.list();
+      request = repository.list(appCurrency);
     }
 
     try {
       const nextItems = await request;
       if (isSharedRepository) {
         sharedGoalsCache = nextItems;
+        sharedGoalsCacheCurrency = appCurrency;
       }
       setItems(nextItems);
     } catch (refreshError) {
@@ -89,10 +96,11 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
     } finally {
       if (isSharedRepository && sharedGoalsRefreshPromise === request) {
         sharedGoalsRefreshPromise = null;
+        sharedGoalsRefreshCurrency = null;
       }
       setIsLoading(false);
     }
-  }, [isSharedRepository, repository]);
+  }, [appCurrency, isSharedRepository, repository]);
 
   const refresh = useCallback(async () => {
     await loadGoals(true);
@@ -107,6 +115,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         const created = await repository.create(input);
         if (isSharedRepository) {
           sharedGoalsCache = [...(sharedGoalsCache ?? []), created];
+          sharedGoalsCacheCurrency = appCurrency;
         }
         setItems((current) => [...current, created]);
         return created;
@@ -117,7 +126,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         setIsLoading(false);
       }
     },
-    [isSharedRepository, repository],
+    [appCurrency, isSharedRepository, repository],
   );
 
   const update = useCallback(
@@ -135,6 +144,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
           sharedGoalsCache = sharedGoalsCache.map(
             (item) => (item.id === updated.id ? updated : item),
           );
+          sharedGoalsCacheCurrency = appCurrency;
         }
         setItems((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
@@ -147,7 +157,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         setIsLoading(false);
       }
     },
-    [isSharedRepository, repository],
+    [appCurrency, isSharedRepository, repository],
   );
 
   const remove = useCallback(
@@ -162,6 +172,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
             sharedGoalsCache = sharedGoalsCache.filter(
               (item) => item.id !== id,
             );
+            sharedGoalsCacheCurrency = appCurrency;
           }
           setItems((current) => current.filter((item) => item.id !== id));
         }
@@ -173,7 +184,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         setIsLoading(false);
       }
     },
-    [isSharedRepository, repository],
+    [appCurrency, isSharedRepository, repository],
   );
 
   const resolveDeletion = useCallback(
@@ -186,6 +197,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         if (result?.deleted) {
           if (isSharedRepository && sharedGoalsCache !== null) {
             sharedGoalsCache = sharedGoalsCache.filter((item) => item.id !== id);
+            sharedGoalsCacheCurrency = appCurrency;
           }
           setItems((current) => current.filter((item) => item.id !== id));
         }
@@ -197,7 +209,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
         setIsLoading(false);
       }
     },
-    [isSharedRepository, repository],
+    [appCurrency, isSharedRepository, repository],
   );
 
   const clearAll = useCallback(async () => {
@@ -208,6 +220,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
       await repository.clearAll();
       if (isSharedRepository) {
         sharedGoalsCache = [];
+        sharedGoalsCacheCurrency = appCurrency;
       }
       setItems([]);
     } catch (clearError) {
@@ -215,7 +228,7 @@ export const useGoals = (options: UseGoalsOptions = {}): UseGoalsResult => {
     } finally {
       setIsLoading(false);
     }
-  }, [isSharedRepository, repository]);
+  }, [appCurrency, isSharedRepository, repository]);
 
   useEffect(() => {
     void loadGoals(false);

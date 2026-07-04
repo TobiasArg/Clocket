@@ -1,11 +1,14 @@
 import { CoreFinanceApiError } from "../core-finance/coreFinanceApiErrors";
 import { isValidCurrency, parseJsonObjectBody, readDateOnlyInput, readDecimalInput, readOptionalNullableString, readRequiredString } from "../core-finance/coreFinanceRequest";
+import { getUsdArsExchangeRate } from "../exchange-rates/exchangeRateService";
+import { parseDisplayCurrency } from "../exchange-rates/moneyConversion";
+import type { ExchangeRateSuccessResponse } from "../exchange-rates/exchangeRateContracts";
 import { toGoalDetailResponse, toGoalProgressResponse, toGoalResponse, type ClearGoalsResponse, type DeleteGoalResponse, type GoalDetailResponse, type GoalListResponse, type GoalResponse, type ResolveGoalDeletionResponse } from "./goalsContracts";
 import { GoalsRepositoryError, type CreateGoalInput, type GoalColorKey, type GoalsRepository, type ResolveGoalDeletionInput, type UpdateGoalInput } from "./goalsRepository";
 
 export interface GoalsService {
-  listGoals: () => Promise<GoalListResponse>;
-  getGoal: (id: string) => Promise<GoalDetailResponse>;
+  listGoals: (query?: Record<string, string | string[] | undefined>) => Promise<GoalListResponse>;
+  getGoal: (id: string, query?: Record<string, string | string[] | undefined>) => Promise<GoalDetailResponse>;
   createGoal: (body: unknown) => Promise<GoalResponse>;
   updateGoal: (id: string, body: unknown) => Promise<GoalResponse>;
   resolveGoalDeletion: (id: string, body: unknown) => Promise<ResolveGoalDeletionResponse>;
@@ -24,7 +27,13 @@ const readBoolean = (body: Record<string, unknown>, key: string): boolean | unde
   throw new CoreFinanceApiError(`Field '${key}' must be a boolean.`, { code: "INVALID_REQUEST", status: 400 });
 };
 
-export const createGoalsService = ({ repository }: { repository: GoalsRepository }): GoalsService => {
+export const createGoalsService = ({
+  repository,
+  exchangeRateProvider = getUsdArsExchangeRate,
+}: {
+  repository: GoalsRepository;
+  exchangeRateProvider?: () => ExchangeRateSuccessResponse;
+}): GoalsService => {
   const requireFound = <T>(record: T | null, id: string): T => {
     if (!record) throw new CoreFinanceApiError(`Goal '${id}' was not found.`, { code: "NOT_FOUND", status: 404 });
     return record;
@@ -139,15 +148,23 @@ export const createGoalsService = ({ repository }: { repository: GoalsRepository
   };
 
   return {
-    async listGoals() {
-      const result = await repository.listActiveWithProgress();
+    async listGoals(query = {}) {
+      const displayCurrency = parseDisplayCurrency(query);
+      const conversionContext = displayCurrency
+        ? { currency: displayCurrency, exchangeRate: exchangeRateProvider() }
+        : null;
+      const result = await repository.listActiveWithProgress(conversionContext);
       return {
         goals: result.goals.map(toGoalProgressResponse),
         summary: result.summary,
       };
     },
-    async getGoal(id) {
-      return toGoalDetailResponse(requireFound(await repository.getByIdWithProgress(id), id));
+    async getGoal(id, query = {}) {
+      const displayCurrency = parseDisplayCurrency(query);
+      const conversionContext = displayCurrency
+        ? { currency: displayCurrency, exchangeRate: exchangeRateProvider() }
+        : null;
+      return toGoalDetailResponse(requireFound(await repository.getByIdWithProgress(id, conversionContext), id));
     },
     async createGoal(body) {
       return toGoalResponse(await run(() => repository.create(parseCreate(body))));

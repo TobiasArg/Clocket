@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SubcategoryItem } from "@/types";
 import { useBudgets } from "./useBudgets";
 import { useCategories } from "./useCategories";
+import { useCurrency } from "./useCurrency";
 import { sanitizeScopeRulesForCategories } from "./useBudgetsPageModel";
 import {
   CATEGORY_COLOR_OPTIONS,
@@ -153,6 +154,7 @@ export const useBudgetDetailPageModel = (
     spentValue,
     subcategories,
   } = options;
+  const { currency: appCurrency } = useCurrency();
 
   const { items: budgets, isLoading: isBudgetsLoading, update, getUsageById } = useBudgets();
   const {
@@ -266,13 +268,13 @@ export const useBudgetDetailPageModel = (
       return {
         dotColor: categoryMeta?.iconBg ?? "bg-[#71717A]",
         name: group.label,
-        amount: formatCurrency(group.amount),
+        amount: formatCurrency(group.amount, { currency: appCurrency }),
         percent: `${percent}%`,
         barColor: categoryMeta?.iconBg ?? "bg-[#71717A]",
         barWidthPercent: percent,
       };
     });
-  }, [categoryById, subcategories, usageDetail]);
+  }, [appCurrency, categoryById, subcategories, usageDetail]);
 
   const normalizedSelectedScopeRules = useMemo(
     () => normalizeBudgetScopeRules(selectedScopeRulesState),
@@ -442,7 +444,9 @@ export const useBudgetDetailPageModel = (
   const isLoading = isBudgetsLoading && !resolvedBudget;
   const isEmpty = !resolvedBudget;
 
-  const budgetLimit = resolvedBudget?.limitAmount ?? 0;
+  const budgetLimit = usageDetail
+    ? usageDetail.usage.spentAmount + usageDetail.usage.remainingAmount - usageDetail.usage.overspentAmount
+    : (resolvedBudget?.limitAmount ?? 0);
   const resolvedProgressPercent =
     progressPercent ?? usageDetail?.usage.clampedProgress ?? (budgetLimit > 0 ? clampPercent((spentAmount / budgetLimit) * 100) : 0);
   const remaining = usageDetail?.usage.remainingAmount ?? Math.max(0, budgetLimit - spentAmount);
@@ -451,11 +455,11 @@ export const useBudgetDetailPageModel = (
   const resolvedBudgetIcon = budgetIcon ?? primaryCategoryMeta?.icon ?? "tag";
   const resolvedBudgetDescription = budgetDescription ?? "Seguimiento mensual";
   const resolvedSpentValue =
-    spentValue ?? `${formatCurrency(spentAmount)} / ${formatCurrency(budgetLimit)}`;
+    spentValue ?? `${formatCurrency(spentAmount, { currency: appCurrency })} / ${formatCurrency(budgetLimit, { currency: appCurrency })}`;
   const resolvedPercentBadgeText = percentBadgeText ?? `${resolvedProgressPercent}% del budget`;
   const resolvedProgressUsedLabel = progressUsedLabel ?? `${resolvedProgressPercent}% usado`;
   const resolvedProgressRemainingLabel =
-    progressRemainingLabel ?? `${formatCurrency(remaining)} restante`;
+    progressRemainingLabel ?? `${formatCurrency(remaining, { currency: appCurrency })} restante`;
   const resolvedProgressTextColor = toTextToneClass(resolvedProgressColor);
 
   const categoryColorOptions = useMemo<BudgetDetailCategoryColorOption[]>(() => {

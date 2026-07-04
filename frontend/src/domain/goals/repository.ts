@@ -9,6 +9,7 @@ export interface CreateGoalInput {
   icon: string;
   title: string;
   targetAmount: number;
+  currency?: "USD" | "ARS";
 }
 
 export interface UpdateGoalPatch {
@@ -18,6 +19,7 @@ export interface UpdateGoalPatch {
   icon?: string;
   title?: string;
   targetAmount?: number;
+  currency?: "USD" | "ARS";
   categoryId?: string;
 }
 
@@ -64,8 +66,8 @@ export interface GoalDeleteResolutionResult {
 }
 
 export interface GoalsRepository {
-  list: () => Promise<GoalPlanItem[]>;
-  getById: (id: string) => Promise<GoalDetailItem | null>;
+  list: (currency?: "USD" | "ARS") => Promise<GoalPlanItem[]>;
+  getById: (id: string, currency?: "USD" | "ARS") => Promise<GoalDetailItem | null>;
   create: (input: CreateGoalInput) => Promise<GoalPlanItem>;
   update: (id: string, patch: UpdateGoalPatch) => Promise<GoalPlanItem | null>;
   resolveDeletion: (id: string, input: GoalDeleteResolutionInput) => Promise<GoalDeleteResolutionResult | null>;

@@ -19,12 +19,14 @@ export type AccountItem = Account;
 export interface CreateAccountInput {
   name: string;
   balance: number;
+  currency?: "USD" | "ARS";
   icon: string;
 }
 
 export interface UpdateAccountPatch {
   name?: string;
   balance?: number;
+  currency?: "USD" | "ARS";
   icon?: string;
 }
 

@@ -90,18 +90,34 @@ const transaction = (overrides: Partial<TransactionRecord>): TransactionRecord =
   ...overrides,
 });
 
-const createService = ({ transactions = [] as TransactionRecord[], categories = [category()] } = {}) => createAnalyticsService({
-  accountsRepository: { listActive: vi.fn().mockResolvedValue([account()]) },
+const createService = ({
+  accounts = [account()],
+  transactions = [] as TransactionRecord[],
+  categories = [category()],
+} = {}) => createAnalyticsService({
+  accountsRepository: { listActive: vi.fn().mockResolvedValue(accounts) },
   categoriesRepository: { listActive: vi.fn().mockResolvedValue(categories) },
   goalsRepository: { listActive: vi.fn().mockResolvedValue([goal()]) },
   installmentPlansRepository: { listActive: vi.fn().mockResolvedValue([installment()]) },
   transactionsRepository: { listActive: vi.fn().mockResolvedValue(transactions) },
+  exchangeRateProvider: () => ({
+    baseCurrency: "USD",
+    quoteCurrency: "ARS",
+    rate: 1500,
+    source: "BACKEND_CONFIG",
+    asOf: "2026-06-18T12:00:00.000Z",
+    isStale: false,
+    isDefault: false,
+    isUnavailable: false,
+    fallbackReason: null,
+  }),
   now,
 });
 
 describe("createAnalyticsService", () => {
   it("computes home monthly income, expense, net, category breakdowns, and installments", async () => {
     const service = createService({
+      accounts: [account({ balance: "100.00" })],
       transactions: [
         transaction({ id: "income", name: "Salary", amount: "1000.00" }),
         transaction({ id: "expense", name: "Lunch", categoryId: "cat-food", amount: "-150.00" }),
@@ -111,13 +127,42 @@ describe("createAnalyticsService", () => {
 
     await expect(service.getHomeAnalytics()).resolves.toMatchObject({
       periodMonth: "2026-06",
-      totalBalance: "850.00",
+      totalBalance: "950.00",
       monthlyIncome: "1000.00",
       monthlyExpense: "150.00",
       spendingCategories: [{ label: "Food", percentage: 100, color: "bg-[#DC2626]" }],
       dashboardGoals: [{ id: "goal-1", progressPercent: 20 }],
       pendingInstallmentsTotal: "100.00",
       visibleInstallments: [{ name: "Laptop", progressLabel: "5/12 cuotas" }],
+    });
+  });
+
+  it("includes opening balance in home account summaries", async () => {
+    const service = createService({
+      accounts: [account({ balance: "1000.00" })],
+      transactions: [transaction({ id: "expense", amount: "-100.00" })],
+    });
+
+    await expect(service.getHomeAnalytics()).resolves.toMatchObject({
+      totalBalance: "900.00",
+      accountSummaries: [{ id: "account-1", balance: "900.00", expense: "100.00" }],
+    });
+  });
+
+  it("converts mixed USD and ARS home analytics to the requested display currency", async () => {
+    const service = createService({
+      accounts: [account({ balance: "1.00", currency: "USD" })],
+      transactions: [
+        transaction({ id: "ars-income", amount: "1500.00", currency: "ARS" }),
+        transaction({ id: "usd-expense", amount: "-1.00", currency: "USD" }),
+      ],
+    });
+
+    await expect(service.getHomeAnalytics({ currency: "ARS" })).resolves.toMatchObject({
+      totalBalance: "1500.00",
+      monthlyIncome: "1500.00",
+      monthlyExpense: "1500.00",
+      accountSummaries: [{ balance: "1500.00", income: "1500.00", expense: "1500.00" }],
     });
   });
 
@@ -141,6 +186,22 @@ describe("createAnalyticsService", () => {
     expect(result.trendPointsByView.month).toHaveLength(6);
     expect(result.trendPointsByView.month.at(-1)).toMatchObject({ bucketSaved: "250.00", cumulativeSaved: "250.00", value: 25 });
     expect(result.flowByView.day.every((bucket) => "rangeStart" in bucket && "rangeEnd" in bucket)).toBe(true);
+  });
+
+  it("converts mixed USD and ARS statistics aggregates to the requested display currency", async () => {
+    const service = createService({
+      transactions: [
+        transaction({ id: "ars-income", amount: "3000.00", currency: "ARS" }),
+        transaction({ id: "usd-expense", categoryId: "cat-food", amount: "-1.00", currency: "USD" }),
+        transaction({ id: "usd-saving", goalId: "goal-1", transactionType: "saving", amount: "-1.00", currency: "USD" }),
+      ],
+    });
+
+    const result = await service.getStatisticsAnalytics({ scope: "month", currency: "ARS" });
+
+    expect(result.monthlyBalance).toEqual({ income: "3000.00", expense: "1500.00", net: "1500.00" });
+    expect(result.categoryRows).toMatchObject([{ amount: "1500.00", percentage: 100 }]);
+    expect(result.totalGoalsSaved).toBe("1500.00");
   });
 
   it("returns empty-state responses and rejects invalid query params", async () => {

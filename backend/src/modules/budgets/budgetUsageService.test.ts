@@ -96,7 +96,22 @@ const createService = ({ budgets = [foodBudget], transactions = [] as Transactio
     }]),
   };
   return {
-    service: createBudgetUsageService({ budgetsRepository, transactionsRepository, categoriesRepository }),
+    service: createBudgetUsageService({
+      budgetsRepository,
+      transactionsRepository,
+      categoriesRepository,
+      exchangeRateProvider: () => ({
+        baseCurrency: "USD",
+        quoteCurrency: "ARS",
+        rate: 1500,
+        source: "BACKEND_CONFIG",
+        asOf: "2026-06-18T12:00:00.000Z",
+        isStale: false,
+        isDefault: false,
+        isUnavailable: false,
+        fallbackReason: null,
+      }),
+    }),
     budgetsRepository,
     transactionsRepository,
   };
@@ -155,6 +170,42 @@ describe("createBudgetUsageService", () => {
       groups: [
         { categoryId: foodCategoryId, subcategoryId: groceriesSubcategoryId, label: "Food · Groceries", amount: "120.00", percentageBasis: 80 },
         { categoryId: foodCategoryId, subcategoryId: null, label: "Food · Sin subcategoría", amount: "30.00", percentageBasis: 20 },
+      ],
+    });
+  });
+
+  it("converts mixed budget limits and transactions to the requested display currency", async () => {
+    const { service } = createService({
+      budgets: [foodBudget],
+      transactions: [
+        transaction({ id: "groceries", categoryId: foodCategoryId, subcategoryId: groceriesSubcategoryId, amount: "-150000.00", currency: "ARS" }),
+      ],
+    });
+
+    await expect(service.listBudgetUsage({ periodMonth: "2026-06", currency: "ARS" })).resolves.toMatchObject({
+      summary: {
+        totalLimitAmount: "750000.00",
+        totalSpentAmount: "150000.00",
+        rawProgress: 20,
+      },
+      budgets: [{ spentAmount: "150000.00", rawProgress: 20, remainingAmount: "600000.00" }],
+    });
+  });
+
+  it("converts budget detail groups before calculating percentages", async () => {
+    const { service } = createService({
+      budgets: [foodBudget],
+      transactions: [
+        transaction({ id: "usd", categoryId: foodCategoryId, subcategoryId: groceriesSubcategoryId, amount: "-1.00", currency: "USD" }),
+        transaction({ id: "ars", categoryId: foodCategoryId, subcategoryId: null, amount: "-1500.00", currency: "ARS" }),
+      ],
+    });
+
+    await expect(service.getBudgetUsageDetail(foodBudget.id, { periodMonth: "2026-06", currency: "ARS" })).resolves.toMatchObject({
+      usage: { spentAmount: "3000.00" },
+      groups: [
+        { amount: "1500.00", percentageBasis: 50 },
+        { amount: "1500.00", percentageBasis: 50 },
       ],
     });
   });

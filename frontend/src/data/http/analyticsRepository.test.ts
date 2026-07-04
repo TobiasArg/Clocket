@@ -37,9 +37,9 @@ describe("HttpAnalyticsRepository", () => {
       },
     });
 
-    const model = await new HttpAnalyticsRepository().getHome();
+    const model = await new HttpAnalyticsRepository().getHome("ARS");
 
-    expect(httpGetMock).toHaveBeenCalledWith("/api/analytics/home");
+    expect(httpGetMock).toHaveBeenCalledWith("/api/analytics/home", { params: { currency: "ARS" } });
     expect(model.balanceSlides).toHaveLength(2);
     expect(model.displayedSpendingCategories).toEqual([{ label: "Food", percentage: 100, color: "bg-[#DC2626]" }]);
     expect(model.recentTransactions[0]).toMatchObject({ name: "Lunch", amountColor: "text-[var(--text-primary)]" });
@@ -69,9 +69,9 @@ describe("HttpAnalyticsRepository", () => {
       },
     });
 
-    const model = await new HttpAnalyticsRepository().getStatistics("month");
+    const model = await new HttpAnalyticsRepository().getStatistics("month", "ARS");
 
-    expect(httpGetMock).toHaveBeenCalledWith("/api/analytics/statistics", { params: { scope: "month" } });
+    expect(httpGetMock).toHaveBeenCalledWith("/api/analytics/statistics", { params: { scope: "month", currency: "ARS" } });
     expect(model.monthlyBalance).toEqual({ income: 500, expense: 125, net: 375 });
     expect(model.categoryRows[0].value).toContain("(100%)");
     expect(model.flowByView.day[0].expenseTotal).toBe(125);

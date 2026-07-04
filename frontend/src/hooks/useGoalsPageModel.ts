@@ -6,7 +6,6 @@ import {
   GOAL_COLOR_OPTIONS,
   GOAL_ICON_OPTIONS,
   getGoalColorOption,
-  toArsTransactionAmount,
   type TransactionInputCurrency,
 } from "@/utils";
 import type { GoalColorKey } from "@/types";
@@ -163,11 +162,11 @@ export const useGoalsPageModel = (
         percentBg: color.softBgClass,
         percentColor: color.textClass,
         barColor: color.barClass,
-        savedAmountLabel: formatCurrency(savedAmount),
-        targetAmountLabel: formatCurrency(goal.targetAmount),
+        savedAmountLabel: formatCurrency(savedAmount, { currency: appCurrency }),
+        targetAmountLabel: formatCurrency(goal.targetAmount, { currency: appCurrency }),
       };
     });
-  }, [items]);
+  }, [appCurrency, items]);
 
   const resetEditor = useCallback(() => {
     setIsEditorOpen(false);
@@ -202,12 +201,11 @@ export const useGoalsPageModel = (
       return;
     }
 
-    const normalizedTargetAmount = toArsTransactionAmount(targetAmountValue, selectedCurrency);
-
     const created = await create({
       title: normalizedTitle,
       description: normalizedDescription,
-      targetAmount: normalizedTargetAmount,
+      targetAmount: targetAmountValue,
+      currency: selectedCurrency,
       deadlineDate: deadlineDateInput,
       icon: selectedIcon,
       colorKey: selectedColorKey,

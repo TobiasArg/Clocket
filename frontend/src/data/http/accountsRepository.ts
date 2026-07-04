@@ -45,6 +45,7 @@ const toAccountItem = (account: AccountResponse): AccountItem => ({
   id: account.id,
   name: account.name,
   balance: parseBalance(account.balance),
+  currency: account.currency,
   icon: account.icon,
   createdAt: account.createdAt,
   updatedAt: account.updatedAt,

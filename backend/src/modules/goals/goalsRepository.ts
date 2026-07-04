@@ -4,6 +4,10 @@ import {
   type GoalColorKey as PrismaGoalColorKey,
   type PrismaClient,
 } from "../../generated/prisma/client";
+import {
+  convertToDisplayCurrency,
+  type MoneyConversionContext,
+} from "../exchange-rates/moneyConversion";
 
 type DecimalInput = string | number | Prisma.Decimal;
 
@@ -111,9 +115,9 @@ export type UpdateGoalInput = Partial<CreateGoalInput>;
 
 export interface GoalsRepository {
   listActive: () => Promise<GoalRecord[]>;
-  listActiveWithProgress: () => Promise<GoalListWithProgressRecord>;
+  listActiveWithProgress: (conversionContext?: MoneyConversionContext | null) => Promise<GoalListWithProgressRecord>;
   getById: (id: string) => Promise<GoalRecord | null>;
-  getByIdWithProgress: (id: string) => Promise<GoalDetailRecord | null>;
+  getByIdWithProgress: (id: string, conversionContext?: MoneyConversionContext | null) => Promise<GoalDetailRecord | null>;
   create: (input: CreateGoalInput) => Promise<GoalRecord>;
   update: (id: string, input: UpdateGoalInput) => Promise<GoalRecord | null>;
   resolveDeletion: (id: string, input: ResolveGoalDeletionInput) => Promise<ResolveGoalDeletionRecord | null>;
@@ -243,21 +247,31 @@ const toNumber = (value: string): number => {
 };
 
 const toCurrencyString = (value: number): string => (Number.isFinite(value) ? value : 0).toFixed(2);
+const getDisplayAmount = (
+  amount: string | number,
+  currency: CurrencyCode,
+  conversionContext: MoneyConversionContext | null | undefined,
+): number => convertToDisplayCurrency(amount, currency, conversionContext ?? null);
 
 const clampPercent = (value: number): number => {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, Math.round(value)));
 };
 
-const buildProgress = (goal: GoalRecord, entries: GoalEntryRecord[]): GoalProgressRecord => {
+const buildProgress = (
+  goal: GoalRecord,
+  entries: GoalEntryRecord[],
+  conversionContext?: MoneyConversionContext | null,
+): GoalProgressRecord => {
   const savedAmount = entries.reduce((sum, entry) => {
-    const amount = toNumber(entry.amount);
+    const amount = getDisplayAmount(entry.amount, entry.currency, conversionContext);
     return amount < 0 ? sum + Math.abs(amount) : sum;
   }, 0);
-  const targetAmount = Math.max(0, toNumber(goal.targetAmount));
+  const targetAmount = Math.max(0, getDisplayAmount(goal.targetAmount, goal.currency, conversionContext));
 
   return {
     ...goal,
+    ...(conversionContext ? { targetAmount: toCurrencyString(targetAmount), currency: conversionContext.currency } : {}),
     savedAmount: toCurrencyString(savedAmount),
     progressPercent: targetAmount > 0 ? clampPercent((savedAmount / targetAmount) * 100) : 0,
     entryCount: entries.length,
@@ -431,7 +445,7 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
     return goals.map(toGoalRecord);
   },
 
-  async listActiveWithProgress() {
+  async listActiveWithProgress(conversionContext = null) {
     const goals = await prisma.goal.findMany({
       where: { deletedAt: null },
       orderBy: [{ deadlineDate: "asc" }, { createdAt: "asc" }],
@@ -454,7 +468,7 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
       current.push(entry);
       entriesByGoalId.set(entry.goalId, current);
     });
-    const goalsWithProgress = goalRecords.map((goal) => buildProgress(goal, entriesByGoalId.get(goal.id) ?? []));
+    const goalsWithProgress = goalRecords.map((goal) => buildProgress(goal, entriesByGoalId.get(goal.id) ?? [], conversionContext));
 
     return {
       goals: goalsWithProgress,
@@ -473,7 +487,7 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
     return goal ? toGoalRecord(goal) : null;
   },
 
-  async getByIdWithProgress(id) {
+  async getByIdWithProgress(id, conversionContext = null) {
     const goal = await prisma.goal.findFirst({
       where: {
         id,
@@ -496,7 +510,7 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
     const entryRecords = entries.map(toTransactionEntryRecord);
 
     return {
-      ...buildProgress(goalRecord, entryRecords),
+      ...buildProgress(goalRecord, entryRecords, conversionContext),
       entries: entryRecords,
     };
   },

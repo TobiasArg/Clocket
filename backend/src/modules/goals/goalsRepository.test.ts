@@ -168,6 +168,53 @@ describe("createGoalsRepository", () => {
     });
   });
 
+  it("converts mixed goal targets and entries to the requested display currency", async () => {
+    const { prisma } = createPrismaMock();
+    prisma.goal.findMany.mockResolvedValue([baseGoal]);
+    prisma.transaction.findMany.mockResolvedValue([
+      {
+        id: "00000000-0000-4000-8000-000000000301",
+        accountId: "00000000-0000-4000-8000-000000000401",
+        categoryId,
+        subcategoryId,
+        goalId,
+        installmentPlanId: null,
+        transactionType: "SAVING" as const,
+        name: "Trip deposit",
+        amount: new Prisma.Decimal("-150000.00"),
+        currency: "ARS" as const,
+        date: new Date("2026-06-12T00:00:00.000Z"),
+        notes: null,
+        uiIcon: null,
+        uiIconBg: null,
+        cuotaInstallmentIndex: null,
+        cuotaInstallmentsCount: null,
+        createdAt: new Date("2026-06-12T10:00:00.000Z"),
+        updatedAt: new Date("2026-06-12T10:00:00.000Z"),
+        deletedAt: null,
+      },
+    ]);
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.listActiveWithProgress({
+      currency: "ARS",
+      exchangeRate: {
+        baseCurrency: "USD",
+        quoteCurrency: "ARS",
+        rate: 1500,
+        source: "BACKEND_CONFIG",
+        asOf: "2026-06-18T12:00:00.000Z",
+        isStale: false,
+        isDefault: false,
+        isUnavailable: false,
+        fallbackReason: null,
+      },
+    })).resolves.toMatchObject({
+      goals: [{ targetAmount: "1800000.00", currency: "ARS", savedAmount: "150000.00", progressPercent: 8 }],
+      summary: { totalSaved: "150000.00", totalTarget: "1800000.00", progressPercent: 8 },
+    });
+  });
+
   it("returns goal detail progress with ordered linked entry presentation data", async () => {
     const { prisma } = createPrismaMock();
     prisma.goal.findFirst.mockResolvedValue(baseGoal);

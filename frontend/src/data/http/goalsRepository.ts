@@ -7,6 +7,7 @@ interface GoalResponse {
   title: string;
   description: string;
   targetAmount: string;
+  currency?: "USD" | "ARS";
   deadlineDate: string;
   icon: string;
   colorKey: GoalPlanItem["colorKey"];
@@ -49,6 +50,7 @@ const toGoalItem = (goal: GoalResponse): GoalPlanItem => ({
   title: goal.title,
   description: goal.description,
   targetAmount: toNumber(goal.targetAmount),
+  currency: goal.currency,
   deadlineDate: goal.deadlineDate,
   icon: goal.icon,
   colorKey: goal.colorKey,
@@ -76,12 +78,12 @@ const toGoalDetailItem = (goal: GoalDetailResponse): GoalDetailItem => ({
 export class HttpGoalsRepository implements GoalsRepository {
   public constructor() { ensureFeatureBackendCleanStartCutover(); }
 
-  public async list(): Promise<GoalPlanItem[]> {
-    return withCoreFinanceErrors(async () => (await coreFinanceHttpClient.get<GoalListResponse>("/api/goals")).data.goals.map(toGoalItem));
+  public async list(currency: "USD" | "ARS" = "ARS"): Promise<GoalPlanItem[]> {
+    return withCoreFinanceErrors(async () => (await coreFinanceHttpClient.get<GoalListResponse>("/api/goals", { params: { currency } })).data.goals.map(toGoalItem));
   }
 
-  public async getById(id: string): Promise<GoalDetailItem | null> {
-    try { return await withCoreFinanceErrors(async () => toGoalDetailItem((await coreFinanceHttpClient.get<GoalDetailResponse>(`/api/goals/${id}`)).data)); }
+  public async getById(id: string, currency: "USD" | "ARS" = "ARS"): Promise<GoalDetailItem | null> {
+    try { return await withCoreFinanceErrors(async () => toGoalDetailItem((await coreFinanceHttpClient.get<GoalDetailResponse>(`/api/goals/${id}`, { params: { currency } })).data)); }
     catch (error) { if (isNotFoundError(error)) return null; throw error; }
   }
 

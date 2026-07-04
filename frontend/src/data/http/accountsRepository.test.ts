@@ -47,6 +47,7 @@ describe("HttpAccountsRepository", () => {
       id: "account-1",
       name: "Cash",
       balance: 100.5,
+      currency: "USD",
       icon: "wallet",
       createdAt: "2026-06-01T00:00:00.000Z",
       updatedAt: "2026-06-01T00:00:00.000Z",
@@ -76,12 +77,12 @@ describe("HttpAccountsRepository", () => {
     httpGetMock.mockResolvedValue({ data: { accounts: [accountPayload, { ...accountPayload, id: "account-2" }] } });
 
     const repository = new HttpAccountsRepository();
-    await repository.create({ name: "Cash", balance: 100.5, icon: "wallet" });
+    await repository.create({ name: "Cash", balance: 100.5, currency: "ARS", icon: "wallet" });
     await repository.update("account-1", { name: "Updated" });
     await expect(repository.remove("account-1")).resolves.toBe(true);
     await repository.clearAll();
 
-    expect(httpPostMock).toHaveBeenCalledWith("/api/accounts", { name: "Cash", balance: 100.5, icon: "wallet" });
+    expect(httpPostMock).toHaveBeenCalledWith("/api/accounts", { name: "Cash", balance: 100.5, currency: "ARS", icon: "wallet" });
     expect(httpPatchMock).toHaveBeenCalledWith("/api/accounts/account-1", { name: "Updated" });
     expect(httpDeleteMock).toHaveBeenCalledWith("/api/accounts/account-1");
     expect(httpDeleteMock).toHaveBeenCalledWith("/api/accounts/account-2");

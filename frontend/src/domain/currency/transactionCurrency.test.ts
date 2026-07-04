@@ -3,6 +3,7 @@ import {
   DEFAULT_USD_RATE,
   getUsdArsExchangeRateState,
   getUsdRate,
+  convertCurrencyAmount,
   resetUsdArsExchangeRateStateForTests,
   setUsdArsExchangeRateState,
   toArsTransactionAmount,
@@ -36,6 +37,8 @@ describe("transactionCurrency exchange-rate state", () => {
     });
 
     expect(toArsTransactionAmount(2, "USD")).toBe(2400);
+    expect(convertCurrencyAmount(2400, "ARS", "USD")).toBe(2);
+    expect(convertCurrencyAmount(2, "USD", "ARS")).toBe(2400);
     expect(toArsTransactionAmount(2400, "ARS")).toBe(2400);
     expect(getUsdArsExchangeRateState()).toMatchObject({
       source: "BACKEND_CONFIG",

@@ -112,8 +112,8 @@ describe("feature-domain HTTP repositories", () => {
       usage: expect.objectContaining({ spentAmount: 250, remainingAmount: 250 }),
       groups: [{ categoryId: "cat-1", subcategoryId: "sub-1", label: "Food · Groceries", amount: 250, percentageBasis: 100 }],
     }));
-    expect(httpGetMock).toHaveBeenCalledWith("/api/budgets/usage", { params: { periodMonth: "2026-06" } });
-    expect(httpGetMock).toHaveBeenCalledWith("/api/budgets/budget-1/usage", { params: { periodMonth: "2026-06" } });
+    expect(httpGetMock).toHaveBeenCalledWith("/api/budgets/usage", { params: { periodMonth: "2026-06", currency: "ARS" } });
+    expect(httpGetMock).toHaveBeenCalledWith("/api/budgets/budget-1/usage", { params: { periodMonth: "2026-06", currency: "ARS" } });
   });
 
   it("maps goal, cuota, investment, and settings payloads", async () => {
@@ -177,7 +177,7 @@ describe("feature-domain HTTP repositories", () => {
       mode: "redirect_account",
       resolvedEntriesCount: 1,
     });
-    expect(httpGetMock).toHaveBeenCalledWith("/api/goals/goal-1");
+    expect(httpGetMock).toHaveBeenCalledWith("/api/goals/goal-1", { params: { currency: "ARS" } });
     expect(httpPostMock).toHaveBeenCalledWith("/api/goals/goal-1/resolve-deletion", { mode: "redirect_account", targetAccountId: "account-1" });
   });
 

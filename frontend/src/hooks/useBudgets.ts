@@ -8,6 +8,7 @@ import {
   type CreateBudgetInput,
   type UpdateBudgetPatch,
 } from "@/utils";
+import { useCurrency } from "./useCurrency";
 
 export interface UseBudgetsOptions {
   repository?: BudgetsRepository;
@@ -41,6 +42,7 @@ const getErrorMessage = (error: unknown): string => {
 };
 
 export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult => {
+  const { currency: appCurrency } = useCurrency();
   const repository = useMemo(
     () => options.repository ?? budgetsRepository,
     [options.repository],
@@ -104,7 +106,7 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
     setError(null);
 
     try {
-      const usage = await repository.listUsage(periodMonth);
+      const usage = await repository.listUsage(periodMonth, appCurrency);
       const usageBudgets = usage.budgets.map((item) => item.budget);
       if (isSharedRepository) {
         const existing = sharedBudgetsCache ?? [];
@@ -124,14 +126,14 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
     } finally {
       setIsLoading(false);
     }
-  }, [isSharedRepository, repository]);
+  }, [appCurrency, isSharedRepository, repository]);
 
   const getUsageById = useCallback(async (id: string, periodMonth?: string): Promise<BudgetUsageDetailResult | null> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const usage = await repository.getUsageById(id, periodMonth);
+      const usage = await repository.getUsageById(id, periodMonth, appCurrency);
       if (!usage) {
         return null;
       }
@@ -146,7 +148,7 @@ export const useBudgets = (options: UseBudgetsOptions = {}): UseBudgetsResult =>
     } finally {
       setIsLoading(false);
     }
-  }, [isSharedRepository, repository]);
+  }, [appCurrency, isSharedRepository, repository]);
 
   const create = useCallback(
     async (input: CreateBudgetInput): Promise<BudgetPlanItem | null> => {

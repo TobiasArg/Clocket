@@ -14,7 +14,7 @@ export const createGoalsCollectionHandler = (dependencies: { service?: GoalsServ
   return async function handler(req: NextApiRequest, res: NextApiResponse<GoalsApiResponse>): Promise<void> {
     const service = dependencies.service ?? createDefaultService();
     try {
-      if (req.method === "GET") return sendJson(res, 200, await service.listGoals());
+      if (req.method === "GET") return sendJson(res, 200, await service.listGoals(req.query));
       if (req.method === "POST") return sendJson(res, 201, await service.createGoal(req.body));
       if (req.method === "DELETE") return sendJson(res, 200, await service.clearGoals());
       requireMethod(req, res as NextApiResponse<CoreFinanceApiErrorResponse>, ["GET", "POST", "DELETE"], "INVALID_REQUEST");
@@ -30,7 +30,7 @@ export const createGoalItemHandler = (dependencies: { service?: GoalsService } =
     if (!parsedId.ok) return sendError(res as NextApiResponse<CoreFinanceApiErrorResponse>, parsedId.response);
     const service = dependencies.service ?? createDefaultService();
     try {
-      if (req.method === "GET") return sendJson(res, 200, await service.getGoal(parsedId.value));
+      if (req.method === "GET") return sendJson(res, 200, await service.getGoal(parsedId.value, req.query));
       if (req.method === "PATCH") return sendJson(res, 200, await service.updateGoal(parsedId.value, req.body));
       if (req.method === "DELETE") return sendJson(res, 200, await service.deleteGoal(parsedId.value));
       requireMethod(req, res as NextApiResponse<CoreFinanceApiErrorResponse>, ["GET", "PATCH", "DELETE"], "INVALID_REQUEST");

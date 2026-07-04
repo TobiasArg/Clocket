@@ -9,7 +9,13 @@ import { useCategories } from "./useCategories";
 import { useCuotas } from "./useCuotas";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
+import { useCurrency } from "./useCurrency";
 import { httpAnalyticsRepository, type HomeAnalyticsModel } from "@/data/http/analyticsRepository";
+import {
+  buildAccountFlowsById,
+  getDisplayedAccountBalance,
+} from "@/domain/accounts/accountBalances";
+import { buildAnalyticsVersionKey, buildExchangeRateVersionKey } from "./analyticsFreshness";
 import {
   formatCurrency,
   getCurrentMonthWindow,
@@ -111,6 +117,7 @@ export const useHomePageModel = (
   } = options;
 
   const { items: accounts } = useAccounts();
+  const { currency: appCurrency, usdArsRateState } = useCurrency();
   const { items: goalItems } = useGoals();
   const {
     items: transactionItems,
@@ -127,11 +134,50 @@ export const useHomePageModel = (
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<unknown>(null);
 
+  const accountsVersion = useMemo(() => buildAnalyticsVersionKey(accounts.map((account) => [
+    account.id,
+    account.balance,
+    account.currency,
+    account.updatedAt,
+  ])), [accounts]);
+  const categoriesVersion = useMemo(() => buildAnalyticsVersionKey(categories.map((category) => [
+    category.id,
+    category.name,
+    category.icon,
+    category.iconBg,
+    category.subcategoryCount,
+  ])), [categories]);
+  const cuotasVersion = useMemo(() => buildAnalyticsVersionKey(cuotaItems.map((cuota) => [
+    cuota.id,
+    cuota.installmentAmount,
+    cuota.paidInstallmentsCount,
+    cuota.installmentsCount,
+    cuota.updatedAt,
+  ])), [cuotaItems]);
+  const goalsVersion = useMemo(() => buildAnalyticsVersionKey(goalItems.map((goal) => [
+    goal.id,
+    goal.targetAmount,
+    goal.savedAmount,
+    goal.progressPercent,
+    goal.updatedAt,
+  ])), [goalItems]);
+  const transactionsVersion = useMemo(() => buildAnalyticsVersionKey(transactionItems.map((transaction) => [
+    transaction.id,
+    transaction.amount,
+    transaction.accountId,
+    transaction.categoryId,
+    transaction.goalId,
+    transaction.transactionType,
+    transaction.date,
+    transaction.createdAt,
+  ])), [transactionItems]);
+  const exchangeRateVersion = useMemo(() => buildExchangeRateVersionKey(usdArsRateState), [usdArsRateState]);
+
   useEffect(() => {
     let cancelled = false;
     setIsAnalyticsLoading(true);
     setAnalyticsError(null);
-    void httpAnalyticsRepository.getHome()
+    void httpAnalyticsRepository.getHome(appCurrency)
       .then((model) => {
         if (!cancelled) {
           setAnalyticsModel(model);
@@ -151,7 +197,15 @@ export const useHomePageModel = (
     return () => {
       cancelled = true;
     };
-  }, [accounts.length, categories.length, cuotaItems.length, goalItems.length, transactionItems.length]);
+  }, [
+    accountsVersion,
+    appCurrency,
+    categoriesVersion,
+    cuotasVersion,
+    goalsVersion,
+    transactionsVersion,
+    exchangeRateVersion,
+  ]);
 
   const categoryInfoById = useMemo(() => {
     const map = new Map<string, { name: string; color: string; icon: string }>();
@@ -175,35 +229,17 @@ export const useHomePageModel = (
     [cuotaItems],
   );
 
-  const transactionFlowByAccountId = useMemo(() => {
-    const map = new Map<string, { income: number; expense: number; net: number }>();
-
-    transactionItems.forEach((transaction) => {
-      const amount = parseSignedAmount(transaction.amount);
-      const current = map.get(transaction.accountId) ?? {
-        income: 0,
-        expense: 0,
-        net: 0,
-      };
-
-      if (amount > 0) {
-        current.income += amount;
-      } else if (amount < 0) {
-        current.expense += Math.abs(amount);
-      }
-
-      current.net = current.income - current.expense;
-      map.set(transaction.accountId, current);
-    });
-
-    return map;
-  }, [transactionItems]);
+  const transactionFlowByAccountId = useMemo(() => buildAccountFlowsById(transactionItems), [transactionItems]);
 
   const overallTransactionFlow = useMemo(() => {
     let income = 0;
     let expense = 0;
 
     transactionItems.forEach((transaction) => {
+      if (transaction.transactionType === "saving" || transaction.goalId) {
+        return;
+      }
+
       const amount = parseSignedAmount(transaction.amount);
       if (amount > 0) {
         income += amount;
@@ -212,12 +248,19 @@ export const useHomePageModel = (
       }
     });
 
+    const openingBalance = accounts.reduce((sum, account) => sum + getDisplayedAccountBalance(
+      account,
+      undefined,
+      appCurrency,
+      usdArsRateState.rate,
+    ), 0);
+
     return {
       income,
       expense,
-      net: income - expense,
+      net: openingBalance + income - expense,
     };
-  }, [transactionItems]);
+  }, [accounts, appCurrency, transactionItems, usdArsRateState.rate]);
 
   const recentTransactions = useMemo<HomeTransactionRow[]>(() => {
     if (transactions) {
@@ -368,18 +411,18 @@ export const useHomePageModel = (
       .map<CuotaItem>((cuota) => ({
         name: cuota.title,
         progressLabel: `${cuota.paidInstallmentsCount}/${cuota.installmentsCount} cuotas`,
-        amount: formatCurrency(cuota.installmentAmount),
+        amount: formatCurrency(cuota.installmentAmount, { currency: appCurrency }),
       }));
-  }, [cuotaItems, cuotas]);
+  }, [appCurrency, cuotaItems, cuotas]);
 
-  const displayedTotalBalance = totalBalance ?? analyticsModel?.displayedTotalBalance ?? formatCurrency(overallTransactionFlow.net);
-  const displayedIncomeValue = incomeValue ?? analyticsModel?.displayedIncomeValue ?? formatCurrency(overallTransactionFlow.income);
-  const displayedExpenseValue = expenseValue ?? analyticsModel?.displayedExpenseValue ?? formatCurrency(overallTransactionFlow.expense);
-  const displayedSpendingTotal = spendingTotal ?? analyticsModel?.displayedSpendingTotal ?? formatCurrency(monthlyBalance.expense);
+  const displayedTotalBalance = totalBalance ?? analyticsModel?.displayedTotalBalance ?? formatCurrency(overallTransactionFlow.net, { currency: appCurrency });
+  const displayedIncomeValue = incomeValue ?? analyticsModel?.displayedIncomeValue ?? formatCurrency(overallTransactionFlow.income, { currency: appCurrency });
+  const displayedExpenseValue = expenseValue ?? analyticsModel?.displayedExpenseValue ?? formatCurrency(overallTransactionFlow.expense, { currency: appCurrency });
+  const displayedSpendingTotal = spendingTotal ?? analyticsModel?.displayedSpendingTotal ?? formatCurrency(monthlyBalance.expense, { currency: appCurrency });
   const displayedSpendingCategories = spendingCategories ?? analyticsModel?.displayedSpendingCategories ?? computedSpendingCategories;
   const pendingInstallmentsLabel = analyticsModel?.pendingInstallmentsLabel ?? (isCuotasLoading && !cuotas && cuotaItems.length === 0
     ? loadingLabel
-    : formatCurrency(monthlyPendingInstallments));
+    : formatCurrency(monthlyPendingInstallments, { currency: appCurrency }));
 
   const balanceSlides = useMemo<HomeBalanceSlide[]>(() => {
     if (analyticsModel?.balanceSlides) {
@@ -398,12 +441,18 @@ export const useHomePageModel = (
 
     accounts.forEach((account) => {
       const accountFlow = transactionFlowByAccountId.get(account.id);
+      const accountBalance = getDisplayedAccountBalance(
+        account,
+        accountFlow,
+        appCurrency,
+        usdArsRateState.rate,
+      );
       slides.push({
         id: account.id,
         label: account.name,
-        balance: formatCurrency(accountFlow?.net ?? 0),
-        incomeValue: formatCurrency(accountFlow?.income ?? 0),
-        expenseValue: formatCurrency(accountFlow?.expense ?? 0),
+        balance: formatCurrency(accountBalance, { currency: appCurrency }),
+        incomeValue: formatCurrency(accountFlow?.income ?? 0, { currency: appCurrency }),
+        expenseValue: formatCurrency(accountFlow?.expense ?? 0, { currency: appCurrency }),
       });
     });
 
@@ -411,10 +460,12 @@ export const useHomePageModel = (
   }, [
     accounts,
     analyticsModel,
+    appCurrency,
     displayedExpenseValue,
     displayedIncomeValue,
     displayedTotalBalance,
     transactionFlowByAccountId,
+    usdArsRateState.rate,
   ]);
 
   const [activeBalanceSlide, setActiveBalanceSlide] = useState<number>(activeDot);

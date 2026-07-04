@@ -61,8 +61,8 @@ export interface BudgetUsageDetailResult {
 export interface BudgetsRepository {
   list: () => Promise<BudgetPlanItem[]>;
   getById: (id: string) => Promise<BudgetPlanItem | null>;
-  listUsage: (periodMonth: string) => Promise<BudgetUsageListResult>;
-  getUsageById: (id: string, periodMonth?: string) => Promise<BudgetUsageDetailResult | null>;
+  listUsage: (periodMonth: string, currency?: "USD" | "ARS") => Promise<BudgetUsageListResult>;
+  getUsageById: (id: string, periodMonth?: string, currency?: "USD" | "ARS") => Promise<BudgetUsageDetailResult | null>;
   create: (input: CreateBudgetInput) => Promise<BudgetPlanItem>;
   update: (id: string, patch: UpdateBudgetPatch) => Promise<BudgetPlanItem | null>;
   remove: (id: string) => Promise<boolean>;

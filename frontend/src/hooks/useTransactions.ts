@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCurrency } from "./useCurrency";
 import {
-  getUsdRate,
+  convertCurrencyAmount,
   TRANSACTIONS_CHANGED_EVENT,
   transactionsRepository,
   type CreateTransactionInput,
@@ -62,13 +62,12 @@ const formatSignedAmount = (value: number, currency: "ARS" | "USD"): string => {
   return `${sign}${prefix}${absolute}`;
 };
 
-const convertAmountFromArs = (amountInArs: number, currency: "ARS" | "USD"): number => {
+const convertAmountFromArs = (amountInArs: number, currency: "ARS" | "USD", usdRate: number): number => {
   if (!Number.isFinite(amountInArs)) {
     return 0;
   }
 
   if (currency === "USD") {
-    const usdRate = getUsdRate();
     if (!Number.isFinite(usdRate) || usdRate <= 0) {
       return 0;
     }
@@ -89,7 +88,7 @@ const getErrorMessage = (error: unknown): string => {
 export const useTransactions = (
   options: UseTransactionsOptions = {},
 ): UseTransactionsResult => {
-  const { currency } = useCurrency();
+  const { currency, usdArsRateState } = useCurrency();
   const repository = useMemo(
     () => options.repository ?? transactionsRepository,
     [options.repository],
@@ -108,15 +107,17 @@ export const useTransactions = (
     const unique = dedupeTransactionsById(rawItems);
 
     return unique.map((item) => {
-      const rawAmount = parseSignedAmount(item.amount);
-      const convertedAmount = convertAmountFromArs(rawAmount, currency);
+      const rawAmount = typeof item.rawAmount === "number" ? item.rawAmount : parseSignedAmount(item.amount);
+      const convertedAmount = item.currency
+        ? convertCurrencyAmount(rawAmount, item.currency, currency, usdArsRateState.rate)
+        : convertAmountFromArs(rawAmount, currency, usdArsRateState.rate);
 
       return {
         ...item,
         amount: formatSignedAmount(convertedAmount, currency),
       };
     });
-  }, [currency, rawItems]);
+  }, [currency, rawItems, usdArsRateState.rate]);
 
   const refreshTransactions = useCallback(async (showLoading: boolean, force = false) => {
     if (

@@ -3,6 +3,7 @@ import type { HomeBalanceSlide, HomeTransactionRow } from "@/hooks/useHomePageMo
 import type { StatisticsChartView, StatisticsScope, StatisticsTrendPoint } from "@/hooks/useStatisticsPageModel";
 import { TRANSACTION_EXPENSE_TEXT_CLASS, TRANSACTION_INCOME_TEXT_CLASS } from "@/constants";
 import { formatCurrency } from "@/utils/formatCurrency";
+import type { SupportedCurrency } from "@/utils/formatCurrency";
 import { coreFinanceHttpClient, withCoreFinanceErrors } from "./coreFinanceHttpClient";
 
 interface BackendMoneySummary {
@@ -107,10 +108,10 @@ const parseAmount = (value: string): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const signedAmountLabel = (value: string): string => {
+const signedAmountLabel = (value: string, currency: SupportedCurrency): string => {
   const amount = parseAmount(value);
   const sign = amount > 0 ? "+" : amount < 0 ? "-" : "";
-  return `${sign}${formatCurrency(Math.abs(amount))}`;
+  return `${sign}${formatCurrency(Math.abs(amount), { currency })}`;
 };
 
 const formatBackendDate = (value: string): string => {
@@ -152,34 +153,36 @@ const mapTrendPoint = (point: BackendTrendPoint): StatisticsTrendPoint => ({
 });
 
 export class HttpAnalyticsRepository {
-  public async getHome(): Promise<HomeAnalyticsModel> {
+  public async getHome(currency: SupportedCurrency = "ARS"): Promise<HomeAnalyticsModel> {
     return withCoreFinanceErrors(async () => {
-      const response = await coreFinanceHttpClient.get<BackendHomeAnalyticsResponse>("/api/analytics/home");
+      const response = await coreFinanceHttpClient.get<BackendHomeAnalyticsResponse>("/api/analytics/home", {
+        params: { currency },
+      });
       const data = response.data;
       return {
         balanceSlides: [
           {
             id: "total-balance",
             label: "TOTAL BALANCE",
-            balance: formatCurrency(parseAmount(data.totalBalance)),
-            incomeValue: formatCurrency(parseAmount(data.monthlyIncome)),
-            expenseValue: formatCurrency(parseAmount(data.monthlyExpense)),
+            balance: formatCurrency(parseAmount(data.totalBalance), { currency }),
+            incomeValue: formatCurrency(parseAmount(data.monthlyIncome), { currency }),
+            expenseValue: formatCurrency(parseAmount(data.monthlyExpense), { currency }),
           },
           ...data.accountSummaries.map((account) => ({
             id: account.id,
             label: account.label,
-            balance: formatCurrency(parseAmount(account.balance)),
-            incomeValue: formatCurrency(parseAmount(account.income)),
-            expenseValue: formatCurrency(parseAmount(account.expense)),
+            balance: formatCurrency(parseAmount(account.balance), { currency }),
+            incomeValue: formatCurrency(parseAmount(account.income), { currency }),
+            expenseValue: formatCurrency(parseAmount(account.expense), { currency }),
           })),
         ],
         dashboardGoals: data.dashboardGoals,
-        displayedExpenseValue: formatCurrency(parseAmount(data.monthlyExpense)),
-        displayedIncomeValue: formatCurrency(parseAmount(data.monthlyIncome)),
+        displayedExpenseValue: formatCurrency(parseAmount(data.monthlyExpense), { currency }),
+        displayedIncomeValue: formatCurrency(parseAmount(data.monthlyIncome), { currency }),
         displayedSpendingCategories: data.spendingCategories,
-        displayedSpendingTotal: formatCurrency(parseAmount(data.spendingTotal)),
-        displayedTotalBalance: formatCurrency(parseAmount(data.totalBalance)),
-        pendingInstallmentsLabel: formatCurrency(parseAmount(data.pendingInstallmentsTotal)),
+        displayedSpendingTotal: formatCurrency(parseAmount(data.spendingTotal), { currency }),
+        displayedTotalBalance: formatCurrency(parseAmount(data.totalBalance), { currency }),
+        pendingInstallmentsLabel: formatCurrency(parseAmount(data.pendingInstallmentsTotal), { currency }),
         recentTransactions: data.recentTransactions.map((transaction) => {
           const amount = parseAmount(transaction.amount);
           return {
@@ -188,23 +191,23 @@ export class HttpAnalyticsRepository {
             iconBg: transaction.iconBg,
             name: transaction.name,
             date: formatBackendDate(transaction.date),
-            amount: signedAmountLabel(transaction.amount),
+            amount: signedAmountLabel(transaction.amount, currency),
             amountColor: amount >= 0 ? TRANSACTION_INCOME_TEXT_CLASS : TRANSACTION_EXPENSE_TEXT_CLASS,
           };
         }),
         visibleCuotas: data.visibleInstallments.map((cuota) => ({
           ...cuota,
-          amount: formatCurrency(parseAmount(cuota.amount)),
+          amount: formatCurrency(parseAmount(cuota.amount), { currency }),
         })),
       };
     });
   }
 
-  public async getStatistics(scope: StatisticsScope): Promise<StatisticsAnalyticsModel> {
+  public async getStatistics(scope: StatisticsScope, currency: SupportedCurrency = "ARS"): Promise<StatisticsAnalyticsModel> {
     return withCoreFinanceErrors(async () => {
       const response = await coreFinanceHttpClient.get<BackendStatisticsAnalyticsResponse>(
         "/api/analytics/statistics",
-        { params: { scope } },
+        { params: { scope, currency } },
       );
       const data = response.data;
       const monthlyBalance = {
@@ -219,13 +222,13 @@ export class HttpAnalyticsRepository {
         categoryRows: data.categoryRows.map((row) => ({
           dotColor: row.dotColor,
           name: row.name,
-          value: `${formatCurrency(parseAmount(row.amount))} (${row.percentage}%)`,
+          value: `${formatCurrency(parseAmount(row.amount), { currency })} (${row.percentage}%)`,
         })),
         donutSegments: data.donutSegments.map((segment) => ({
           color: segment.color,
           name: segment.name,
           percentage: segment.percentage,
-          value: formatCurrency(parseAmount(segment.amount)),
+          value: formatCurrency(parseAmount(segment.amount), { currency }),
         })),
         flowByView: {
           day: data.flowByView.day.map(mapFlowBucket),
@@ -235,12 +238,12 @@ export class HttpAnalyticsRepository {
         monthlyBalance,
         monthlyGoal,
         monthlyTransactionsCount: data.monthlyTransactionsCount,
-        resolvedCategoryTotal: formatCurrency(monthlyBalance.expense),
+        resolvedCategoryTotal: formatCurrency(monthlyBalance.expense, { currency }),
         resolvedSavingsBadge: `${savingsPercent}%`,
-        resolvedSavingsGoalValue: formatCurrency(monthlyGoal),
-        resolvedSavingsValue: formatCurrency(totalGoalsSaved),
-        resolvedTotalExpenseValue: formatCurrency(monthlyBalance.expense),
-        resolvedTotalIncomeValue: formatCurrency(monthlyBalance.income),
+        resolvedSavingsGoalValue: formatCurrency(monthlyGoal, { currency }),
+        resolvedSavingsValue: formatCurrency(totalGoalsSaved, { currency }),
+        resolvedTotalExpenseValue: formatCurrency(monthlyBalance.expense, { currency }),
+        resolvedTotalIncomeValue: formatCurrency(monthlyBalance.income, { currency }),
         trendPointsByView: {
           day: data.trendPointsByView.day.map(mapTrendPoint),
           week: data.trendPointsByView.week.map(mapTrendPoint),

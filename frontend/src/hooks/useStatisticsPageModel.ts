@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CategoryBreakdown, DonutSegment, StatisticsFlowDay } from "@/types";
 import { useCategories } from "./useCategories";
+import { useCurrency } from "./useCurrency";
 import { useGoals } from "./useGoals";
 import { useTransactions } from "./useTransactions";
 import { formatCurrency, getMonthlyBalance, getTransactionDateForMonthBalance } from "@/utils";
@@ -11,6 +12,7 @@ import {
   DEFAULT_CATEGORY_FLOW_COLOR,
   resolveCssColorFromBgClass,
 } from "@/domain/categories/categoryColorResolver";
+import { buildAnalyticsVersionKey, buildExchangeRateVersionKey } from "./analyticsFreshness";
 
 export interface StatisticsTrendGoalSegment {
   amount: number;
@@ -511,11 +513,37 @@ export const useStatisticsPageModel = (
   } = options;
 
   const { items: transactions, isLoading, error } = useTransactions();
+  const { currency: appCurrency, usdArsRateState } = useCurrency();
   const { items: categoriesData } = useCategories();
   const { items: goals } = useGoals();
   const [analyticsModel, setAnalyticsModel] = useState<StatisticsAnalyticsModel | null>(null);
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<unknown>(null);
+
+  const categoriesVersion = useMemo(() => buildAnalyticsVersionKey(categoriesData.map((category) => [
+    category.id,
+    category.name,
+    category.iconBg,
+    category.subcategoryCount,
+  ])), [categoriesData]);
+  const goalsVersion = useMemo(() => buildAnalyticsVersionKey(goals.map((goal) => [
+    goal.id,
+    goal.targetAmount,
+    goal.savedAmount,
+    goal.progressPercent,
+    goal.updatedAt,
+  ])), [goals]);
+  const transactionsVersion = useMemo(() => buildAnalyticsVersionKey(transactions.map((transaction) => [
+    transaction.id,
+    transaction.amount,
+    transaction.accountId,
+    transaction.categoryId,
+    transaction.goalId,
+    transaction.transactionType,
+    transaction.date,
+    transaction.createdAt,
+  ])), [transactions]);
+  const exchangeRateVersion = useMemo(() => buildExchangeRateVersionKey(usdArsRateState), [usdArsRateState]);
   const [scope, setScopeState] = useState<StatisticsScope>(() => {
     if (typeof window === "undefined") {
       return DEFAULT_SCOPE;
@@ -537,7 +565,7 @@ export const useStatisticsPageModel = (
     let cancelled = false;
     setIsAnalyticsLoading(true);
     setAnalyticsError(null);
-    void httpAnalyticsRepository.getStatistics(scope)
+    void httpAnalyticsRepository.getStatistics(scope, appCurrency)
       .then((model) => {
         if (!cancelled) {
           setAnalyticsModel(model);
@@ -557,7 +585,14 @@ export const useStatisticsPageModel = (
     return () => {
       cancelled = true;
     };
-  }, [categoriesData.length, goals.length, scope, transactions.length]);
+  }, [
+    appCurrency,
+    categoriesVersion,
+    goalsVersion,
+    scope,
+    transactionsVersion,
+    exchangeRateVersion,
+  ]);
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -698,10 +733,10 @@ export const useStatisticsPageModel = (
         return {
           dotColor: entry.dotColor || `bg-[${DONUT_COLORS[index % DONUT_COLORS.length]}]`,
           name: entry.name,
-          value: `${formatCurrency(entry.amount)} (${percent}%)`,
+          value: `${formatCurrency(entry.amount, { currency: appCurrency })} (${percent}%)`,
         };
       });
-  }, [categoryInfoById, categoryNameById, scopedTransactions]);
+  }, [appCurrency, categoryInfoById, categoryNameById, scopedTransactions]);
 
   const categoryRows = categories ?? analyticsModel?.categoryRows ?? computedCategoryRows;
 
@@ -799,12 +834,12 @@ export const useStatisticsPageModel = (
     scope,
     scopeLabel: SCOPE_LABELS[scope],
     setScope,
-    resolvedCategoryTotal: categoryTotal ?? analyticsModel?.resolvedCategoryTotal ?? formatCurrency(monthlyBalance.expense),
+    resolvedCategoryTotal: categoryTotal ?? analyticsModel?.resolvedCategoryTotal ?? formatCurrency(monthlyBalance.expense, { currency: appCurrency }),
     resolvedSavingsBadge: savingsBadge ?? analyticsModel?.resolvedSavingsBadge ?? `${savingsPercent}%`,
-    resolvedSavingsGoalValue: savingsGoalValue ?? analyticsModel?.resolvedSavingsGoalValue ?? formatCurrency(monthlyGoal),
-    resolvedSavingsValue: savingsValue ?? analyticsModel?.resolvedSavingsValue ?? formatCurrency(totalGoalsSaved),
-    resolvedTotalExpenseValue: totalExpenseValue ?? analyticsModel?.resolvedTotalExpenseValue ?? formatCurrency(monthlyBalance.expense),
-    resolvedTotalIncomeValue: totalIncomeValue ?? analyticsModel?.resolvedTotalIncomeValue ?? formatCurrency(monthlyBalance.income),
+    resolvedSavingsGoalValue: savingsGoalValue ?? analyticsModel?.resolvedSavingsGoalValue ?? formatCurrency(monthlyGoal, { currency: appCurrency }),
+    resolvedSavingsValue: savingsValue ?? analyticsModel?.resolvedSavingsValue ?? formatCurrency(totalGoalsSaved, { currency: appCurrency }),
+    resolvedTotalExpenseValue: totalExpenseValue ?? analyticsModel?.resolvedTotalExpenseValue ?? formatCurrency(monthlyBalance.expense, { currency: appCurrency }),
+    resolvedTotalIncomeValue: totalIncomeValue ?? analyticsModel?.resolvedTotalIncomeValue ?? formatCurrency(monthlyBalance.income, { currency: appCurrency }),
     trendPoints,
     trendPointsByView: resolvedTrendPointsByView,
   };

@@ -3,13 +3,16 @@ import {
   ACCOUNT_ICON_OPTIONS,
   DEFAULT_ACCOUNT_ICON,
 } from "@/utils";
+import {
+  buildAccountFlowsById,
+  getDisplayedAccountBalance,
+  type AccountFlowSummary,
+} from "@/domain/accounts/accountBalances";
 import { useAccounts } from "./useAccounts";
+import { useCurrency } from "./useCurrency";
 import { useTransactions } from "./useTransactions";
 
-export interface AccountFlow {
-  expense: number;
-  income: number;
-}
+export type AccountFlow = AccountFlowSummary;
 
 export interface UseAccountsPageModelOptions {
   onAddClick?: () => void;
@@ -47,17 +50,12 @@ export interface UseAccountsPageModelResult {
   visibleAccounts: ReturnType<typeof useAccounts>["items"];
 }
 
-const parseSignedAmountValue = (value: string): number => {
-  const normalized = value.replace(/[^0-9+.-]/g, "");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
 export const useAccountsPageModel = (
   options: UseAccountsPageModelOptions = {},
 ): UseAccountsPageModelResult => {
   const { onAddClick } = options;
 
+  const { currency: appCurrency, usdArsRateState } = useCurrency();
   const { items, isLoading, error, create, remove } = useAccounts();
   const { items: transactions, refresh: refreshTransactions } = useTransactions();
 
@@ -79,44 +77,29 @@ export const useAccountsPageModel = (
   const isIconValid = normalizedIcon.length > 0;
   const isFormValid = isNameValid && isBalanceValid && isIconValid;
 
-  const accountFlowsById = useMemo(() => {
-    const map = new Map<string, AccountFlow>();
-
-    transactions.forEach((transaction) => {
-      const amount = parseSignedAmountValue(transaction.amount);
-      const current = map.get(transaction.accountId) ?? { income: 0, expense: 0 };
-
-      if (amount > 0) {
-        current.income += amount;
-      } else if (amount < 0) {
-        current.expense += Math.abs(amount);
-      }
-
-      map.set(transaction.accountId, current);
-    });
-
-    return map;
-  }, [transactions]);
-
-  const accountNetById = useMemo(() => {
-    const map = new Map<string, number>();
-    accountFlowsById.forEach((flow, accountId) => {
-      map.set(accountId, flow.income - flow.expense);
-    });
-    return map;
-  }, [accountFlowsById]);
+  const accountFlowsById = useMemo(() => buildAccountFlowsById(transactions), [transactions]);
 
   const totalBalance = useMemo(
-    () => Array.from(accountNetById.values()).reduce((sum, value) => sum + value, 0),
-    [accountNetById],
+    () => items.reduce((sum, account) => sum + getDisplayedAccountBalance(
+      account,
+      accountFlowsById.get(account.id),
+      appCurrency,
+      usdArsRateState.rate,
+    ), 0),
+    [accountFlowsById, appCurrency, items, usdArsRateState.rate],
   );
 
   const visibleAccounts = useMemo(
     () => items.map((account) => ({
       ...account,
-      balance: accountNetById.get(account.id) ?? 0,
+      balance: getDisplayedAccountBalance(
+        account,
+        accountFlowsById.get(account.id),
+        appCurrency,
+        usdArsRateState.rate,
+      ),
     })),
-    [accountNetById, items],
+    [accountFlowsById, appCurrency, items, usdArsRateState.rate],
   );
 
   const deleteConfirmAccount = useMemo(
@@ -167,6 +150,7 @@ export const useAccountsPageModel = (
     const created = await create({
       name: normalizedName,
       balance: balanceValue,
+      currency: appCurrency,
       icon: normalizedIcon,
     });
 
@@ -175,7 +159,7 @@ export const useAccountsPageModel = (
     }
 
     handleCloseEditor();
-  }, [isFormValid, normalizedName, balanceValue, normalizedIcon, create, handleCloseEditor]);
+  }, [appCurrency, isFormValid, normalizedName, balanceValue, normalizedIcon, create, handleCloseEditor]);
 
   const requestDeleteAccount = useCallback((id: string): void => {
     if (!id || pendingDeleteAccountId) {

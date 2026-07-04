@@ -5,6 +5,13 @@ import type { CategoriesRepository } from "../categories/categoriesRepository";
 import type { GoalRecord, GoalsRepository } from "../goals/goalsRepository";
 import type { InstallmentPlanRecord, InstallmentPlansRepository } from "../installments/installmentPlansRepository";
 import type { TransactionRecord, TransactionsRepository } from "../transactions/transactionsRepository";
+import { getUsdArsExchangeRate } from "../exchange-rates/exchangeRateService";
+import {
+  convertToDisplayCurrency,
+  parseDisplayCurrency,
+  type MoneyConversionContext,
+} from "../exchange-rates/moneyConversion";
+import type { ExchangeRateSuccessResponse } from "../exchange-rates/exchangeRateContracts";
 import type {
   AnalyticsChartView,
   AnalyticsFlowBucketResponse,
@@ -39,6 +46,11 @@ const isGoalSavingTransaction = (transaction: TransactionRecord): boolean => (
   transaction.transactionType === "saving" || Boolean(transaction.goalId)
 );
 const isExpenseTransaction = (transaction: TransactionRecord): boolean => toNumber(transaction.amount) < 0;
+const getDisplayAmount = (
+  amount: string | number,
+  currency: "USD" | "ARS",
+  context: MoneyConversionContext | null,
+): number => convertToDisplayCurrency(amount, currency, context);
 
 const toDateOnly = (date: Date): string => date.toISOString().slice(0, 10);
 const buildMonthKey = (date: Date): string => `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -95,11 +107,11 @@ const resolveCategory = (
   };
 };
 
-const buildMoneySummary = (transactions: TransactionRecord[]) => {
+const buildMoneySummary = (transactions: TransactionRecord[], conversionContext: MoneyConversionContext | null) => {
   let income = 0;
   let expense = 0;
   transactions.forEach((transaction) => {
-    const amount = toNumber(transaction.amount);
+    const amount = getDisplayAmount(transaction.amount, transaction.currency, conversionContext);
     if (amount > 0) income += amount;
     if (amount < 0) expense += Math.abs(amount);
   });
@@ -132,6 +144,7 @@ const buildFlowBuckets = (
   categories: Map<string, CategoryLookupEntry>,
   view: AnalyticsChartView,
   now: Date,
+  conversionContext: MoneyConversionContext | null,
 ): AnalyticsFlowBucketResponse[] => buildTrendBuckets(view, now).map((bucket) => {
   const income = new Map<string, { amount: number; category: string; color: string }>();
   const expense = new Map<string, { amount: number; category: string; color: string }>();
@@ -142,7 +155,7 @@ const buildFlowBuckets = (
     if (isGoalSavingTransaction(transaction)) return;
     const date = parseTransactionDate(transaction);
     if (!date || !within(date, bucket)) return;
-    const amount = toNumber(transaction.amount);
+    const amount = getDisplayAmount(transaction.amount, transaction.currency, conversionContext);
     if (amount === 0) return;
     const resolved = resolveCategory(transaction, categories, amount > 0 ? "Ingreso" : "Uncategorized");
     const target = amount > 0 ? income : expense;
@@ -178,15 +191,16 @@ const buildGoalTrend = (
   goals: GoalRecord[],
   view: AnalyticsChartView,
   now: Date,
+  conversionContext: MoneyConversionContext | null,
 ): AnalyticsTrendPointResponse[] => {
   const buckets = buildTrendBuckets(view, now);
   const firstStart = buckets[0]?.start;
   const goalMetaById = new Map(goals.map((goal) => [goal.id, goal]));
-  const totalGoalAmount = goals.reduce((sum, goal) => sum + Math.max(0, toNumber(goal.targetAmount)), 0);
+  const totalGoalAmount = goals.reduce((sum, goal) => sum + Math.max(0, getDisplayAmount(goal.targetAmount, goal.currency, conversionContext)), 0);
   let cumulativeSaved = firstStart
     ? savingsTransactions.reduce((sum, transaction) => {
         const date = parseTransactionDate(transaction);
-        const amount = toNumber(transaction.amount);
+        const amount = getDisplayAmount(transaction.amount, transaction.currency, conversionContext);
         return date && date < firstStart && amount < 0 ? sum + Math.abs(amount) : sum;
       }, 0)
     : 0;
@@ -196,7 +210,7 @@ const buildGoalTrend = (
     let bucketSaved = 0;
     savingsTransactions.forEach((transaction) => {
       const date = parseTransactionDate(transaction);
-      const amount = toNumber(transaction.amount);
+      const amount = getDisplayAmount(transaction.amount, transaction.currency, conversionContext);
       if (!date || !within(date, bucket) || amount >= 0) return;
       const absolute = Math.abs(amount);
       const goalId = transaction.goalId || null;
@@ -256,6 +270,7 @@ export const createAnalyticsService = ({
   goalsRepository,
   installmentPlansRepository,
   transactionsRepository,
+  exchangeRateProvider = getUsdArsExchangeRate,
   now = () => new Date(),
 }: {
   accountsRepository: Pick<AccountsRepository, "listActive">;
@@ -263,6 +278,7 @@ export const createAnalyticsService = ({
   goalsRepository: Pick<GoalsRepository, "listActive">;
   installmentPlansRepository: Pick<InstallmentPlansRepository, "listActive">;
   transactionsRepository: Pick<TransactionsRepository, "listActive">;
+  exchangeRateProvider?: () => ExchangeRateSuccessResponse;
   now?: () => Date;
 }): AnalyticsService => {
   const loadInputs = async () => {
@@ -277,8 +293,12 @@ export const createAnalyticsService = ({
   };
 
   return {
-    async getHomeAnalytics() {
+    async getHomeAnalytics(query = {}) {
       const currentNow = now();
+      const displayCurrency = parseDisplayCurrency(query);
+      const conversionContext = displayCurrency
+        ? { currency: displayCurrency, exchangeRate: exchangeRateProvider() }
+        : null;
       const { start, end, periodMonth } = getMonthWindow(currentNow);
       const { accounts, categories, goals, installments, transactions } = await loadInputs();
       const categoryLookup = buildCategoryLookup(categories);
@@ -287,8 +307,12 @@ export const createAnalyticsService = ({
         return date ? within(date, { start, end }) : false;
       });
       const regularMonthlyTransactions = monthlyTransactions.filter((transaction) => !isGoalSavingTransaction(transaction));
-      const monthlySummary = buildMoneySummary(regularMonthlyTransactions);
-      const overallSummary = buildMoneySummary(transactions.filter((transaction) => !isGoalSavingTransaction(transaction)));
+      const monthlySummary = buildMoneySummary(regularMonthlyTransactions, conversionContext);
+      const overallTransactions = transactions.filter((transaction) => !isGoalSavingTransaction(transaction));
+      const overallSummary = buildMoneySummary(overallTransactions, conversionContext);
+      const openingBalanceTotal = accounts.reduce((sum, account) => (
+        sum + getDisplayAmount(account.balance, account.currency, conversionContext)
+      ), 0);
 
       const categoryTotals = new Map<string, { amount: number; label: string; color: string }>();
       regularMonthlyTransactions.forEach((transaction) => {
@@ -296,7 +320,7 @@ export const createAnalyticsService = ({
         const resolved = resolveCategory(transaction, categoryLookup);
         const current = categoryTotals.get(resolved.key);
         categoryTotals.set(resolved.key, {
-          amount: (current?.amount ?? 0) + Math.abs(toNumber(transaction.amount)),
+          amount: (current?.amount ?? 0) + Math.abs(getDisplayAmount(transaction.amount, transaction.currency, conversionContext)),
           label: current?.label ?? resolved.label,
           color: current?.color ?? resolved.tailwindColor,
         });
@@ -306,14 +330,14 @@ export const createAnalyticsService = ({
       const savedByGoalId = new Map<string, number>();
       transactions.forEach((transaction) => {
         if (!transaction.goalId) return;
-        const amount = toNumber(transaction.amount);
+        const amount = getDisplayAmount(transaction.amount, transaction.currency, conversionContext);
         if (amount < 0) savedByGoalId.set(transaction.goalId, (savedByGoalId.get(transaction.goalId) ?? 0) + Math.abs(amount));
       });
 
       const activeInstallments = installments.filter((plan) => isInstallmentActiveInMonth(plan, currentNow));
       return {
         periodMonth,
-        totalBalance: toCurrencyString(overallSummary.net),
+        totalBalance: toCurrencyString(openingBalanceTotal + overallSummary.net),
         monthlyIncome: toCurrencyString(monthlySummary.income),
         monthlyExpense: toCurrencyString(monthlySummary.expense),
         spendingTotal: toCurrencyString(monthlySummary.expense),
@@ -321,7 +345,7 @@ export const createAnalyticsService = ({
           ? Array.from(categoryTotals.values()).sort((a, b) => b.amount - a.amount).slice(0, 4).map((item) => ({ label: item.label, percentage: Math.max(1, Math.round((item.amount / spendingTotal) * 100)), color: item.color }))
           : [],
         recentTransactions: [...transactions].sort((a, b) => (parseTransactionDate(b)?.getTime() ?? 0) - (parseTransactionDate(a)?.getTime() ?? 0)).slice(0, 3).map((transaction) => {
-          const amount = toNumber(transaction.amount);
+          const amount = getDisplayAmount(transaction.amount, transaction.currency, conversionContext);
           const resolved = resolveCategory(transaction, categoryLookup, amount > 0 ? "Ingreso" : "Uncategorized");
           return { key: transaction.id, icon: transaction.uiIcon ?? resolved.icon, iconBg: transaction.uiIconBg ?? resolved.tailwindColor, name: transaction.name, date: transaction.date, amount: toCurrencyString(amount) };
         }),
@@ -329,21 +353,26 @@ export const createAnalyticsService = ({
           id: goal.id,
           icon: goal.icon,
           name: goal.title,
-          progressPercent: clampPercent(((savedByGoalId.get(goal.id) ?? 0) / Math.max(1, toNumber(goal.targetAmount))) * 100),
+          progressPercent: clampPercent(((savedByGoalId.get(goal.id) ?? 0) / Math.max(1, getDisplayAmount(goal.targetAmount, goal.currency, conversionContext))) * 100),
           colorKey: goal.colorKey,
         })).sort((a, b) => b.progressPercent - a.progressPercent).slice(0, 8),
         accountSummaries: accounts.map((account: AccountRecord) => {
-          const summary = buildMoneySummary(transactions.filter((transaction) => transaction.accountId === account.id && !isGoalSavingTransaction(transaction)));
-          return { id: account.id, label: account.name, balance: toCurrencyString(summary.net), income: toCurrencyString(summary.income), expense: toCurrencyString(summary.expense) };
+          const summary = buildMoneySummary(transactions.filter((transaction) => transaction.accountId === account.id && !isGoalSavingTransaction(transaction)), conversionContext);
+          const openingBalance = getDisplayAmount(account.balance, account.currency, conversionContext);
+          return { id: account.id, label: account.name, balance: toCurrencyString(openingBalance + summary.net), income: toCurrencyString(summary.income), expense: toCurrencyString(summary.expense) };
         }),
-        pendingInstallmentsTotal: toCurrencyString(activeInstallments.reduce((sum, plan) => sum + toNumber(plan.installmentAmount), 0)),
-        visibleInstallments: activeInstallments.slice(0, 3).map((plan) => ({ name: plan.title, progressLabel: `${plan.paidInstallmentsCount}/${plan.installmentsCount} cuotas`, amount: plan.installmentAmount })),
+        pendingInstallmentsTotal: toCurrencyString(activeInstallments.reduce((sum, plan) => sum + getDisplayAmount(plan.installmentAmount, plan.currency, conversionContext), 0)),
+        visibleInstallments: activeInstallments.slice(0, 3).map((plan) => ({ name: plan.title, progressLabel: `${plan.paidInstallmentsCount}/${plan.installmentsCount} cuotas`, amount: toCurrencyString(getDisplayAmount(plan.installmentAmount, plan.currency, conversionContext)) })),
       };
     },
 
     async getStatisticsAnalytics(query = {}) {
       const scope = parseScope(query);
       validateOptionalView(query);
+      const displayCurrency = parseDisplayCurrency(query);
+      const conversionContext = displayCurrency
+        ? { currency: displayCurrency, exchangeRate: exchangeRateProvider() }
+        : null;
       const currentNow = now();
       const { start, end, periodMonth } = getMonthWindow(currentNow);
       const range = scope === "month" ? { start, end } : null;
@@ -359,23 +388,23 @@ export const createAnalyticsService = ({
         const date = parseTransactionDate(transaction);
         return date ? within(date, range) : false;
       });
-      const monthlyBalance = buildMoneySummary(scopedRegular);
+      const monthlyBalance = buildMoneySummary(scopedRegular, conversionContext);
       const expenseGroups = new Map<string, { amount: number; label: string; cssColor: string }>();
       scopedRegular.forEach((transaction) => {
         if (!isExpenseTransaction(transaction)) return;
         const resolved = resolveCategory(transaction, categoryLookup);
         const current = expenseGroups.get(resolved.key);
-        expenseGroups.set(resolved.key, { amount: (current?.amount ?? 0) + Math.abs(toNumber(transaction.amount)), label: current?.label ?? resolved.label, cssColor: current?.cssColor ?? resolved.cssColor });
+        expenseGroups.set(resolved.key, { amount: (current?.amount ?? 0) + Math.abs(getDisplayAmount(transaction.amount, transaction.currency, conversionContext)), label: current?.label ?? resolved.label, cssColor: current?.cssColor ?? resolved.cssColor });
       });
       const totalExpense = Array.from(expenseGroups.values()).reduce((sum, entry) => sum + entry.amount, 0);
       const categoryRows = totalExpense > 0
         ? Array.from(expenseGroups.values()).sort((a, b) => b.amount - a.amount).slice(0, 4).map((entry, index) => ({ dotColor: `bg-[${entry.cssColor || DONUT_COLORS[index % DONUT_COLORS.length]}]`, name: entry.label, amount: toCurrencyString(entry.amount), percentage: clampPercent((entry.amount / totalExpense) * 100) }))
         : [];
       const totalGoalsSaved = scopedSavings.reduce((sum, transaction) => {
-        const amount = toNumber(transaction.amount);
+        const amount = getDisplayAmount(transaction.amount, transaction.currency, conversionContext);
         return amount < 0 ? sum + Math.abs(amount) : sum;
       }, 0);
-      const monthlyGoal = goals.reduce((sum, goal) => sum + Math.max(0, toNumber(goal.targetAmount)), 0);
+      const monthlyGoal = goals.reduce((sum, goal) => sum + Math.max(0, getDisplayAmount(goal.targetAmount, goal.currency, conversionContext)), 0);
       return {
         scope,
         periodMonth,
@@ -386,14 +415,14 @@ export const createAnalyticsService = ({
         categoryRows,
         donutSegments: categoryRows.map((row, index) => ({ color: cssColorFromTailwindBg(row.dotColor, DONUT_COLORS[index % DONUT_COLORS.length]), name: row.name, amount: row.amount, percentage: row.percentage })),
         flowByView: {
-          day: buildFlowBuckets(scopedRegular, categoryLookup, "day", currentNow),
-          week: buildFlowBuckets(scopedRegular, categoryLookup, "week", currentNow),
-          month: buildFlowBuckets(scopedRegular, categoryLookup, "month", currentNow),
+          day: buildFlowBuckets(scopedRegular, categoryLookup, "day", currentNow, conversionContext),
+          week: buildFlowBuckets(scopedRegular, categoryLookup, "week", currentNow, conversionContext),
+          month: buildFlowBuckets(scopedRegular, categoryLookup, "month", currentNow, conversionContext),
         },
         trendPointsByView: {
-          day: buildGoalTrend(scopedSavings, goals, "day", currentNow),
-          week: buildGoalTrend(scopedSavings, goals, "week", currentNow),
-          month: buildGoalTrend(scopedSavings, goals, "month", currentNow),
+          day: buildGoalTrend(scopedSavings, goals, "day", currentNow, conversionContext),
+          week: buildGoalTrend(scopedSavings, goals, "week", currentNow, conversionContext),
+          month: buildGoalTrend(scopedSavings, goals, "month", currentNow, conversionContext),
         },
       };
     },

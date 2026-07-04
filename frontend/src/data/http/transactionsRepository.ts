@@ -221,7 +221,8 @@ export class HttpTransactionsRepository implements TransactionsRepository {
   private toTransactionItem(transaction: TransactionResponse, lookup: CategoryLookup): TransactionItem {
     const category = transaction.categoryId ? lookup.categoryById.get(transaction.categoryId) : undefined;
     const subcategory = transaction.subcategoryId ? lookup.subcategoryById.get(transaction.subcategoryId) : undefined;
-    const amount = toArsTransactionAmount(Number(transaction.amount), transaction.currency);
+    const rawAmount = Number(transaction.amount);
+    const amount = toArsTransactionAmount(rawAmount, transaction.currency);
     const isIncome = amount > 0;
 
     return {
@@ -241,6 +242,8 @@ export class HttpTransactionsRepository implements TransactionsRepository {
       name: transaction.name,
       category: transaction.categoryName ?? category?.name ?? "Sin categoría",
       amount: formatRawSignedAmount(amount),
+      rawAmount,
+      currency: transaction.currency,
       amountColor: isIncome ? TRANSACTION_INCOME_TEXT_CLASS : TRANSACTION_EXPENSE_TEXT_CLASS,
       meta: buildMeta(transaction),
     };

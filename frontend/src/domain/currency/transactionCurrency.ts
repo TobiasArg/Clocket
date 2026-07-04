@@ -59,6 +59,28 @@ export const resetUsdArsExchangeRateStateForTests = (): UsdArsExchangeRateState 
 
 export const getUsdRate = (): number => usdArsRateState.rate;
 
+export const convertCurrencyAmount = (
+  amount: number,
+  sourceCurrency: TransactionInputCurrency,
+  targetCurrency: TransactionInputCurrency,
+  usdRate: number = getUsdRate(),
+): number => {
+  if (!Number.isFinite(amount)) {
+    return 0;
+  }
+
+  const normalizedRate = normalizeUsdRate(usdRate);
+  if (sourceCurrency === targetCurrency) {
+    return amount;
+  }
+
+  if (sourceCurrency === "USD" && targetCurrency === "ARS") {
+    return amount * normalizedRate;
+  }
+
+  return amount / normalizedRate;
+};
+
 export const toArsTransactionAmount = (
   amount: number,
   currency: TransactionInputCurrency,
@@ -69,7 +91,7 @@ export const toArsTransactionAmount = (
   }
 
   if (currency === "USD") {
-    return amount * normalizeUsdRate(usdRate);
+    return convertCurrencyAmount(amount, "USD", "ARS", usdRate);
   }
 
   return amount;

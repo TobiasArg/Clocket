@@ -114,6 +114,7 @@ export interface GoalPlan {
   title: string;
   description: string;
   targetAmount: number;
+  currency?: "USD" | "ARS";
   deadlineDate: string;
   icon: string;
   colorKey: GoalColorKey;
@@ -334,6 +335,7 @@ export interface Account {
   id: string;
   name: string;
   balance: number;
+  currency?: "USD" | "ARS";
   icon: string;
   createdAt: string;
   updatedAt: string;

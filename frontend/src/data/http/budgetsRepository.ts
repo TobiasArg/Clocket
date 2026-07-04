@@ -162,10 +162,10 @@ export class HttpBudgetsRepository implements BudgetsRepository {
     }
   }
 
-  public async listUsage(periodMonth: string): Promise<BudgetUsageListResult> {
+  public async listUsage(periodMonth: string, currency: "USD" | "ARS" = "ARS"): Promise<BudgetUsageListResult> {
     return withCoreFinanceErrors(async () => {
       const [response, resolveNames] = await Promise.all([
-        coreFinanceHttpClient.get<BudgetUsageListResponse>("/api/budgets/usage", { params: { periodMonth } }),
+        coreFinanceHttpClient.get<BudgetUsageListResponse>("/api/budgets/usage", { params: { periodMonth, currency } }),
         buildSubcategoryNameResolver(),
       ]);
       return {
@@ -176,12 +176,12 @@ export class HttpBudgetsRepository implements BudgetsRepository {
     });
   }
 
-  public async getUsageById(id: string, periodMonth?: string): Promise<BudgetUsageDetailResult | null> {
+  public async getUsageById(id: string, periodMonth?: string, currency: "USD" | "ARS" = "ARS"): Promise<BudgetUsageDetailResult | null> {
     try {
       return await withCoreFinanceErrors(async () => {
         const [response, resolveNames] = await Promise.all([
           coreFinanceHttpClient.get<BudgetUsageDetailResponse>(`/api/budgets/${id}/usage`, {
-            params: periodMonth ? { periodMonth } : {},
+            params: { ...(periodMonth ? { periodMonth } : {}), currency },
           }),
           buildSubcategoryNameResolver(),
         ]);

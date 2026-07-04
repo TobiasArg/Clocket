@@ -15,6 +15,7 @@ export {
   DEFAULT_USD_RATE,
   getUsdArsExchangeRateState,
   getUsdRate,
+  convertCurrencyAmount,
   normalizeUsdRate,
   resetUsdArsExchangeRateStateForTests,
   setUsdArsExchangeRateState,

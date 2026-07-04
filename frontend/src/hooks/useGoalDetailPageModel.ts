@@ -7,8 +7,7 @@ import {
   formatCurrency,
   GOAL_COLOR_OPTIONS,
   GOAL_ICON_OPTIONS,
-  toArsTransactionAmount,
-  getUsdRate,
+  convertCurrencyAmount,
   type TransactionInputCurrency,
 } from "@/utils";
 import { TRANSACTIONS_CHANGED_EVENT } from "@/domain/transactions/repository";
@@ -100,23 +99,6 @@ const formatAmountInput = (value: number): string => {
   return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(2);
 };
 
-const convertArsToCurrency = (amountArs: number, currency: TransactionInputCurrency): number => {
-  if (!Number.isFinite(amountArs) || amountArs <= 0) {
-    return 0;
-  }
-
-  if (currency === "USD") {
-    const rate = getUsdRate();
-    if (!Number.isFinite(rate) || rate <= 0) {
-      return amountArs;
-    }
-
-    return amountArs / rate;
-  }
-
-  return amountArs;
-};
-
 const dispatchTransactionsChanged = (): void => {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(TRANSACTIONS_CHANGED_EVENT));
@@ -150,13 +132,13 @@ export const useGoalDetailPageModel = (
     setIsDetailLoading(true);
     setDetailError(null);
     try {
-      setGoalDetail(await goalsRepository.getById(goalId));
+      setGoalDetail(await goalsRepository.getById(goalId, appCurrency));
     } catch (error) {
       setDetailError(error instanceof Error ? error.message : "We couldn't load this goal.");
     } finally {
       setIsDetailLoading(false);
     }
-  }, [goalId]);
+  }, [appCurrency, goalId]);
 
   useEffect(() => {
     void loadGoalDetail();
@@ -201,11 +183,11 @@ export const useGoalDetailPageModel = (
     return [...(goalDetail?.entries ?? [])]
       .map((entry) => ({
         id: entry.id,
-        amountLabel: formatCurrency(Math.abs(entry.amount)),
+        amountLabel: formatCurrency(Math.abs(entry.amount), { currency: appCurrency }),
         date: formatEntryDate(entry.date),
         note: entry.name,
       }));
-  }, [goalDetail]);
+  }, [appCurrency, goalDetail]);
 
   const visibleGoalsForRedirect = useMemo(
     () => goals.filter((item) => item.id !== goalId),
@@ -232,7 +214,7 @@ export const useGoalDetailPageModel = (
     }
 
     const editCurrency = appCurrency;
-    const displayTarget = convertArsToCurrency(goal.targetAmount, editCurrency);
+    const displayTarget = goal.targetAmount;
     setTitleInput(goal.title);
     setDescriptionInput(goal.description);
     setTargetAmountInput(formatAmountInput(displayTarget));
@@ -255,8 +237,7 @@ export const useGoalDetailPageModel = (
 
     const currentValue = Number(targetAmountInput);
     if (Number.isFinite(currentValue) && currentValue > 0) {
-      const amountInArs = toArsTransactionAmount(currentValue, selectedCurrency);
-      const converted = convertArsToCurrency(amountInArs, value);
+      const converted = convertCurrencyAmount(currentValue, selectedCurrency, value);
       setTargetAmountInput(formatAmountInput(converted));
     }
 
@@ -273,11 +254,11 @@ export const useGoalDetailPageModel = (
       return;
     }
 
-    const normalizedTargetAmount = toArsTransactionAmount(targetAmountValue, selectedCurrency);
     const updated = await updateGoal(goal.id, {
       title: normalizedTitle,
       description: normalizedDescription,
-      targetAmount: normalizedTargetAmount,
+      targetAmount: targetAmountValue,
+      currency: selectedCurrency,
       deadlineDate: deadlineDateInput,
       icon: selectedIcon,
       colorKey: selectedColorKey,
