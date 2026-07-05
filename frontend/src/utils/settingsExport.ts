@@ -122,6 +122,27 @@ export class SettingsExportError extends Error {
   }
 }
 
+const SETTINGS_EXPORT_DOMAIN_LABELS: Record<SettingsExportDomain, string> = {
+  settings: "Configuración",
+  accounts: "Cuentas",
+  categories: "Categorías",
+  budgets: "Presupuestos",
+  goals: "Metas",
+  cuotas: "Cuotas",
+  transactions: "Transacciones",
+  investmentPositions: "Inversiones",
+  investmentRefs: "Referencias de inversiones",
+};
+
+export const formatSettingsExportErrorMessage = (error: unknown): string => {
+  if (error instanceof SettingsExportError) {
+    const domainLabel = SETTINGS_EXPORT_DOMAIN_LABELS[error.domain];
+    return `No pudimos leer ${domainLabel} para generar el backup. No se descargó ningún archivo; intenta nuevamente.`;
+  }
+
+  return "No pudimos generar el backup JSON. No se descargó ningún archivo; intenta nuevamente.";
+};
+
 type LegacySettingsSecurity = AppSettingsItem["security"] & {
   pinHash?: unknown;
 };

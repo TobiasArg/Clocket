@@ -7,7 +7,7 @@ export {
 export type { FormatCurrencyOptions, SupportedCurrency } from "./formatCurrency";
 export { navigateToPath } from "./navigation";
 export { getPercentWidthClass } from "./percentWidthClass";
-export { buildExportSnapshot, buildTransactionsCsv, downloadJsonExport, downloadTransactionsCsvExport } from "./settingsExport";
+export { buildExportSnapshot, buildTransactionsCsv, downloadJsonExport, downloadTransactionsCsvExport, formatSettingsExportErrorMessage } from "./settingsExport";
 export { hashPin, isValidPin, verifyPin } from "./securityPin";
 export { APP_SETTINGS_STORAGE_KEY, applyTheme, getStoredTheme, initializeThemeFromStorage, resolveStoredTheme } from "./theme";
 

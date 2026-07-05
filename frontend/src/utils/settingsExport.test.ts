@@ -14,6 +14,7 @@ import {
   buildExportSnapshot,
   buildTransactionsCsv,
   defaultSettingsExportRepositories,
+  formatSettingsExportErrorMessage,
   SETTINGS_EXPORT_REQUIRED_DOMAINS,
   SettingsExportError,
 } from "./settingsExport";
@@ -266,6 +267,18 @@ describe("settingsExport", () => {
       cause,
     });
     await expect(buildExportSnapshot(repositories)).rejects.toBeInstanceOf(SettingsExportError);
+  });
+
+  it("formats domain-aware export failures without leaking technical causes", () => {
+    const error = new SettingsExportError("budgets", new Error("database password leaked in stack"));
+
+    expect(formatSettingsExportErrorMessage(error)).toBe(
+      "No pudimos leer Presupuestos para generar el backup. No se descargó ningún archivo; intenta nuevamente.",
+    );
+    expect(formatSettingsExportErrorMessage(error)).not.toContain("database password");
+    expect(formatSettingsExportErrorMessage(new Error("network failed"))).toBe(
+      "No pudimos generar el backup JSON. No se descargó ningún archivo; intenta nuevamente.",
+    );
   });
 
   it("builds CSV with headers and transaction rows", () => {

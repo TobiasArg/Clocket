@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   downloadJsonExport,
   downloadTransactionsCsvExport,
+  formatSettingsExportErrorMessage,
 } from "@/utils";
 import { SettingsModalShell } from "../SettingsModalShell";
 
@@ -38,8 +39,8 @@ export function ExportDataPopup({
     try {
       await downloadJsonExport();
       onExportSuccess?.("Backup JSON descargado");
-    } catch {
-      setError("No pudimos generar el backup JSON.");
+    } catch (error) {
+      setError(formatSettingsExportErrorMessage(error));
     } finally {
       setIsExportingJson(false);
     }
