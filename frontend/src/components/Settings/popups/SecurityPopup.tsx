@@ -1,21 +1,20 @@
 import { useEffect, useState } from "react";
-import { hashPin, isValidPin, verifyPin } from "@/utils";
+import { hashPin, isValidPin } from "@/utils";
 import { SettingsModalShell } from "../SettingsModalShell";
 
 export interface SecurityPopupProps {
-  pinHash: string | null;
+  hasPin: boolean;
   isOpen: boolean;
   onClose: () => void;
   onSavePinHash: (pinHash: string | null) => Promise<void>;
 }
 
 export function SecurityPopup({
-  pinHash,
+  hasPin,
   isOpen,
   onClose,
   onSavePinHash,
 }: SecurityPopupProps) {
-  const [currentPin, setCurrentPin] = useState("");
   const [nextPin, setNextPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +25,6 @@ export function SecurityPopup({
       return;
     }
 
-    setCurrentPin("");
     setNextPin("");
     setConfirmPin("");
     setError(null);
@@ -49,14 +47,6 @@ export function SecurityPopup({
     setIsSaving(true);
 
     try {
-      if (pinHash) {
-        const isCurrentValid = await verifyPin(currentPin, pinHash);
-        if (!isCurrentValid) {
-          setError("PIN actual inválido.");
-          return;
-        }
-      }
-
       const nextHash = await hashPin(nextPin);
       await onSavePinHash(nextHash);
     } catch {
@@ -67,7 +57,7 @@ export function SecurityPopup({
   };
 
   const handleRemove = async (): Promise<void> => {
-    if (!pinHash) {
+    if (!hasPin) {
       return;
     }
 
@@ -75,12 +65,6 @@ export function SecurityPopup({
     setIsSaving(true);
 
     try {
-      const isCurrentValid = await verifyPin(currentPin, pinHash);
-      if (!isCurrentValid) {
-        setError("PIN actual inválido.");
-        return;
-      }
-
       await onSavePinHash(null);
     } catch {
       setError("No pudimos desactivar el PIN.");
@@ -94,34 +78,22 @@ export function SecurityPopup({
       isOpen={isOpen}
       onClose={onClose}
       title="Seguridad"
-      subtitle={pinHash ? "PIN activo para proteger acciones sensibles." : "Activa un PIN para reforzar seguridad."}
+      subtitle={hasPin ? "PIN local activo para controles de esta app." : "Activa un PIN local para controles de esta app."}
     >
       <div className="flex flex-col gap-3">
         <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Estado</span>
-          <p className={`mt-1 text-sm font-semibold ${pinHash ? "text-[#166534]" : "text-[var(--text-secondary)]"}`}>
-            {pinHash ? "PIN activo" : "PIN inactivo"}
+          <p className={`mt-1 text-sm font-semibold ${hasPin ? "text-[#166534]" : "text-[var(--text-secondary)]"}`}>
+            {hasPin ? "PIN local activo" : "PIN local inactivo"}
+          </p>
+          <p className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
+            No reemplaza autenticación de cuenta ni cifrado de backups.
           </p>
         </div>
 
-        {pinHash && (
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">PIN actual</span>
-            <input
-              type="password"
-              inputMode="numeric"
-              value={currentPin}
-              onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]"
-              placeholder="••••"
-              maxLength={4}
-            />
-          </label>
-        )}
-
         <label className="flex flex-col gap-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
-            {pinHash ? "Nuevo PIN" : "PIN"}
+            {hasPin ? "Nuevo PIN" : "PIN"}
           </span>
           <input
             type="password"
@@ -152,7 +124,7 @@ export function SecurityPopup({
         )}
 
         <div className="mt-1 flex items-center justify-end gap-2">
-          {pinHash && (
+          {hasPin && (
             <button
               type="button"
               disabled={isSaving}
@@ -172,7 +144,7 @@ export function SecurityPopup({
             }}
             className="rounded-xl bg-[var(--text-primary)] px-3 py-2 text-xs font-semibold text-[var(--panel-bg)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? "Guardando..." : pinHash ? "Actualizar PIN" : "Activar PIN"}
+            {isSaving ? "Guardando..." : hasPin ? "Actualizar PIN" : "Activar PIN"}
           </button>
         </div>
       </div>

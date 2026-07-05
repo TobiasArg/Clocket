@@ -23,6 +23,11 @@ interface AppSettingsStorageV2 {
   settings: AppSettingsItem;
 }
 
+type LegacySecuritySettings = {
+  hasPin?: unknown;
+  pinHash?: unknown;
+};
+
 const DEFAULT_SETTINGS: AppSettingsItem = {
   currency: "USD",
   language: "es",
@@ -34,7 +39,7 @@ const DEFAULT_SETTINGS: AppSettingsItem = {
     avatarIcon: "user",
   },
   security: {
-    pinHash: null,
+    hasPin: false,
   },
 };
 
@@ -71,8 +76,8 @@ const isSecurity = (value: unknown): value is AppSettingsItem["security"] => {
     return false;
   }
 
-  const security = value as Partial<AppSettingsItem["security"]>;
-  return security.pinHash === null || typeof security.pinHash === "string";
+  const security = value as LegacySecuritySettings;
+  return typeof security.hasPin === "boolean" || security.pinHash === null || typeof security.pinHash === "string";
 };
 
 const isAppSettingsV2 = (value: unknown): value is AppSettingsItem => {
@@ -133,11 +138,11 @@ const normalizePartialSettings = (
   settings: Partial<Omit<AppSettingsItem, "currency" | "profile" | "security">> & {
     currency?: AppSettingsItem["currency"] | "EUR";
     profile?: Partial<AppSettingsItem["profile"]>;
-    security?: Partial<AppSettingsItem["security"]>;
+    security?: Partial<AppSettingsItem["security"]> & { pinHash?: string | null };
   },
 ): AppSettingsItem => {
   const profile: Partial<AppSettingsItem["profile"]> = settings.profile ?? {};
-  const security: Partial<AppSettingsItem["security"]> = settings.security ?? {};
+  const security = settings.security ?? {};
   const currency = (settings as { currency?: string }).currency;
 
   return {
@@ -160,7 +165,7 @@ const normalizePartialSettings = (
       ),
     },
     security: {
-      pinHash: typeof security.pinHash === "string" ? security.pinHash : null,
+      hasPin: typeof security.hasPin === "boolean" ? security.hasPin : typeof security.pinHash === "string" && security.pinHash.length > 0,
     },
   };
 };
@@ -179,7 +184,9 @@ const mergeSettings = (
   const nextSecurity = patch.security
     ? {
         ...current.security,
-        ...patch.security,
+        hasPin: "pinHash" in patch.security
+          ? typeof patch.security.pinHash === "string" && patch.security.pinHash.length > 0
+          : current.security.hasPin,
       }
     : current.security;
 

@@ -325,7 +325,7 @@ export interface AppSettings {
     avatarIcon: string;
   };
   security: {
-    pinHash: string | null;
+    hasPin: boolean;
   };
 }
 

@@ -121,7 +121,7 @@ describe("feature-domain HTTP repositories", () => {
       if (url === "/api/goals") return Promise.resolve({ data: { goals: [{ id: "goal-1", title: "Trip", description: "Save", targetAmount: "500.00", deadlineDate: "2026-12-01", icon: "plane", colorKey: "sky", categoryId: "cat-goal", savedAmount: "125.00", progressPercent: 25, entryCount: 2, createdAt: "now", updatedAt: "now" }] } });
       if (url === "/api/installments") return Promise.resolve({ data: { installmentPlans: [{ id: "plan-1", title: "Laptop", description: null, totalAmount: "1200.00", installmentsCount: 12, installmentAmount: "100.00", startMonth: "2026-06", paidInstallmentsCount: 2, categoryId: null, subcategoryId: null, createdAt: "now", updatedAt: "now" }] } });
       if (url === "/api/investments/positions") return Promise.resolve({ data: { positions: [{ id: "pos-1", assetType: "stock", ticker: "AAPL", usd_gastado: "100.00", buy_price: "10.0000000000", amount: "10.0000000000", createdAt: "now" }] } });
-      if (url === "/api/settings") return Promise.resolve({ data: { currency: "USD", language: "es", notificationsEnabled: true, theme: "light", profile: { name: "Usuario", email: "usuario@email.com", avatarIcon: "user" }, security: { pinHash: null }, updatedAt: "now" } });
+      if (url === "/api/settings") return Promise.resolve({ data: { currency: "USD", language: "es", notificationsEnabled: true, theme: "light", profile: { name: "Usuario", email: "usuario@email.com", avatarIcon: "user" }, security: { hasPin: false }, updatedAt: "now" } });
       return Promise.resolve({ data: { categories: [] } });
     });
 

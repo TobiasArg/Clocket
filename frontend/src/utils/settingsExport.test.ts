@@ -34,7 +34,7 @@ const createExportRepositories = (): SettingsExportRepositories => ({
       notificationsEnabled: true,
       theme: "light",
       profile: { name: "Usuario", email: "usuario@email.com", avatarIcon: "user" },
-      security: { pinHash: null },
+      security: { hasPin: false },
     }),
     update: vi.fn(),
     reset: vi.fn(),
@@ -165,6 +165,7 @@ describe("settingsExport", () => {
       userOwnership: "out_of_scope",
     });
     expect(snapshot.data.settings).toHaveProperty("currency", "USD");
+    expect(snapshot.data.settings.security).toEqual({ hasPin: false });
     expect(snapshot.data.accounts).toHaveLength(1);
     expect(snapshot.data.budgets).toHaveLength(1);
     expect(snapshot.data.goals).toHaveLength(1);
@@ -172,6 +173,25 @@ describe("settingsExport", () => {
     expect(snapshot.data.transactions).toHaveLength(1);
     expect(snapshot.data.investments.positions).toHaveLength(1);
     expect(snapshot.data.investments.refs).toHaveProperty("stock:AAPL");
+  });
+
+  it("redacts PIN verifier material from JSON backup settings", async () => {
+    const repositories = createExportRepositories();
+    vi.mocked(repositories.appSettingsRepository.get).mockResolvedValue({
+      currency: "USD",
+      language: "es",
+      notificationsEnabled: true,
+      theme: "light",
+      profile: { name: "Usuario", email: "usuario@email.com", avatarIcon: "user" },
+      security: { pinHash: "legacy-secret-pin-hash" },
+    } as unknown as Awaited<ReturnType<typeof repositories.appSettingsRepository.get>>);
+
+    const snapshot = await buildExportSnapshot(repositories);
+    const payload = JSON.stringify(snapshot);
+
+    expect(snapshot.data.settings.security).toEqual({ hasPin: true });
+    expect(payload).not.toContain("pinHash");
+    expect(payload).not.toContain("legacy-secret-pin-hash");
   });
 
   it("keeps checksum stable for identical payloads and changes it when data changes", async () => {

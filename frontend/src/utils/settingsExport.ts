@@ -9,7 +9,7 @@ import {
   httpTransactionsRepository,
 } from "@/data/http";
 import type { AccountsRepository } from "@/domain/accounts/repository";
-import type { AppSettingsRepository } from "@/domain/app-settings/repository";
+import type { AppSettingsItem, AppSettingsRepository } from "@/domain/app-settings/repository";
 import type { BudgetsRepository } from "@/domain/budgets/repository";
 import type { CategoriesRepository } from "@/domain/categories/repository";
 import type { CuotasRepository } from "@/domain/cuotas/repository";
@@ -121,6 +121,22 @@ export class SettingsExportError extends Error {
     this.name = "SettingsExportError";
   }
 }
+
+type LegacySettingsSecurity = AppSettingsItem["security"] & {
+  pinHash?: unknown;
+};
+
+export const redactSettingsForExport = (settings: AppSettingsItem): AppSettingsItem => {
+  const security = settings.security as LegacySettingsSecurity;
+  const hasPin = typeof security.hasPin === "boolean"
+    ? security.hasPin
+    : typeof security.pinHash === "string" && security.pinHash.length > 0;
+
+  return {
+    ...settings,
+    security: { hasPin },
+  };
+};
 
 const escapeCsvValue = (value: string): string => `"${value.replaceAll("\"", "\"\"")}"`;
 
@@ -263,6 +279,8 @@ export const buildExportSnapshot = async (
     readRequiredDomain("investmentRefs", () => investmentsRepository.getRefsMap()),
   ]);
 
+  const redactedSettings = redactSettingsForExport(settings);
+
   const snapshotWithoutIntegrity: SettingsExportSnapshotWithoutIntegrity = {
     complete: true,
     exportedAt: new Date().toISOString(),
@@ -290,7 +308,7 @@ export const buildExportSnapshot = async (
       userOwnership: "out_of_scope",
     },
     data: {
-      settings,
+      settings: redactedSettings,
       accounts,
       categories,
       budgets,

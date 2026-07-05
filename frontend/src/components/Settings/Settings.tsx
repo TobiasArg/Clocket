@@ -43,7 +43,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     avatarIcon: "user",
   },
   security: {
-    pinHash: null,
+    hasPin: false,
   },
 };
 
@@ -92,7 +92,7 @@ const getSectionsFromSettings = (settings: AppSettings): SettingsSection[] => {
         {
           icon: "lock",
           name: "Seguridad",
-          description: settings.security.pinHash ? "PIN activo" : "PIN inactivo",
+          description: settings.security.hasPin ? "PIN local activo" : "PIN local inactivo",
         },
       ],
     },
@@ -345,7 +345,7 @@ export function Settings({
 
       <SecurityPopup
         isOpen={openPopup === "security"}
-        pinHash={resolvedSettings.security.pinHash}
+        hasPin={resolvedSettings.security.hasPin}
         onClose={closePopup}
         onSavePinHash={async (pinHash) => {
           await updateSettings({ security: { pinHash } });

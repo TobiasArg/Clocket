@@ -73,7 +73,7 @@ describe("localStorage repositories smoke", () => {
     expect(defaults.currency).toBe("USD");
     expect(defaults.theme).toBe("light");
     expect(defaults.profile.name).toBe("Usuario");
-    expect(defaults.security.pinHash).toBeNull();
+    expect(defaults.security.hasPin).toBe(false);
 
     const updated = await repository.update({
       currency: "ARS",
@@ -94,7 +94,7 @@ describe("localStorage repositories smoke", () => {
     expect(updated.notificationsEnabled).toBe(false);
     expect(updated.theme).toBe("dark");
     expect(updated.profile.name).toBe("Maria");
-    expect(updated.security.pinHash).toBe("pin_hash");
+    expect(updated.security.hasPin).toBe(true);
 
     const reset = await repository.reset();
     expect(reset.currency).toBe("USD");
@@ -102,7 +102,7 @@ describe("localStorage repositories smoke", () => {
     expect(reset.notificationsEnabled).toBe(true);
     expect(reset.theme).toBe("light");
     expect(reset.profile.name).toBe("Usuario");
-    expect(reset.security.pinHash).toBeNull();
+    expect(reset.security.hasPin).toBe(false);
   });
 
   it("accounts repository removes related transactions on account delete", async () => {

@@ -48,7 +48,7 @@ describe("LocalStorageAppSettingsRepository", () => {
     expect(settings.currency).toBe("USD");
     expect(settings.theme).toBe("light");
     expect(settings.profile.name).toBe("Usuario");
-    expect(settings.security.pinHash).toBeNull();
+    expect(settings.security.hasPin).toBe(false);
   });
 
   it("migrates legacy v1 payload to v2", async () => {
@@ -74,6 +74,28 @@ describe("LocalStorageAppSettingsRepository", () => {
     expect(raw).toContain("\"version\":2");
   });
 
+  it("normalizes legacy v2 PIN hashes to safe metadata", async () => {
+    const storageKey = "clocket.settings.test.legacy-pin";
+    window.localStorage.setItem(storageKey, JSON.stringify({
+      version: 2,
+      settings: {
+        currency: "USD",
+        language: "es",
+        notificationsEnabled: true,
+        theme: "light",
+        profile: { name: "Usuario", email: "usuario@email.com", avatarIcon: "user" },
+        security: { pinHash: "legacy-pin-hash" },
+      },
+    }));
+
+    const repository = new LocalStorageAppSettingsRepository(storageKey);
+    const settings = await repository.get();
+
+    expect(settings.security).toEqual({ hasPin: true });
+    expect(JSON.stringify(settings)).not.toContain("pinHash");
+    expect(JSON.stringify(settings)).not.toContain("legacy-pin-hash");
+  });
+
   it("supports deep partial update for profile and security", async () => {
     const repository = new LocalStorageAppSettingsRepository("clocket.settings.test.merge");
 
@@ -90,7 +112,7 @@ describe("LocalStorageAppSettingsRepository", () => {
 
     expect(settings.profile.name).toBe("Tobias");
     expect(settings.profile.email).toBe("usuario@email.com");
-    expect(settings.security.pinHash).toBe("abc123");
+    expect(settings.security.hasPin).toBe(true);
   });
 
   it("resets to defaults", async () => {
@@ -112,6 +134,6 @@ describe("LocalStorageAppSettingsRepository", () => {
 
     expect(settings.theme).toBe("light");
     expect(settings.profile.name).toBe("Usuario");
-    expect(settings.security.pinHash).toBeNull();
+    expect(settings.security.hasPin).toBe(false);
   });
 });
