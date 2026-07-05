@@ -9,6 +9,11 @@ export interface AppSettingsService {
   resetSettings: () => Promise<AppSettingsResponse>;
 }
 
+interface ParsedSettingsUpdate {
+  patch: UpdateAppSettingsInput;
+  currentPinHash?: string | null;
+}
+
 const readObject = (value: unknown, key: string): Record<string, unknown> | undefined => {
   if (value === undefined) return undefined;
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -24,10 +29,11 @@ const readOptionalString = (body: Record<string, unknown>, key: string): string 
 };
 
 export const createAppSettingsService = ({ repository }: { repository: AppSettingsRepository }): AppSettingsService => {
-  const parseUpdate = (body: unknown): UpdateAppSettingsInput => {
+  const parseUpdate = (body: unknown): ParsedSettingsUpdate => {
     const parsedBody = parseJsonObjectBody(body);
     if (!parsedBody.ok) throw new CoreFinanceApiError(parsedBody.response.error, parsedBody.response);
     const patch: UpdateAppSettingsInput = {};
+    let currentPinHash: string | null | undefined;
 
     if ("currency" in parsedBody.value) {
       if (!isValidCurrency(parsedBody.value.currency)) throw new CoreFinanceApiError("Field 'currency' must be 'USD' or 'ARS'.", { code: "INVALID_REQUEST", status: 400 });
@@ -58,8 +64,28 @@ export const createAppSettingsService = ({ repository }: { repository: AppSettin
       if (security.pinHash !== null && typeof security.pinHash !== "string") throw new CoreFinanceApiError("Field 'security.pinHash' must be a string or null.", { code: "INVALID_REQUEST", status: 400 });
       patch.security = { pinHash: security.pinHash };
     }
+    if (security && "currentPinHash" in security) {
+      if (security.currentPinHash !== null && typeof security.currentPinHash !== "string") throw new CoreFinanceApiError("Field 'security.currentPinHash' must be a string or null.", { code: "INVALID_REQUEST", status: 400 });
+      currentPinHash = security.currentPinHash;
+    }
 
-    return patch;
+    return { patch, currentPinHash };
+  };
+
+  const assertPinWriteAllowed = async ({ patch, currentPinHash }: ParsedSettingsUpdate): Promise<void> => {
+    if (!patch.security || !("pinHash" in patch.security)) {
+      return;
+    }
+
+    const currentSettings = await repository.get();
+    const storedPinHash = currentSettings.security.pinHash;
+    if (!storedPinHash) {
+      return;
+    }
+
+    if (!currentPinHash || currentPinHash !== storedPinHash) {
+      throw new CoreFinanceApiError("Current PIN is required to update security settings.", { code: "INVALID_REQUEST", status: 400 });
+    }
   };
 
   return {
@@ -67,7 +93,9 @@ export const createAppSettingsService = ({ repository }: { repository: AppSettin
       return toAppSettingsResponse(await repository.get());
     },
     async updateSettings(body) {
-      return toAppSettingsResponse(await repository.update(parseUpdate(body)));
+      const parsedUpdate = parseUpdate(body);
+      await assertPinWriteAllowed(parsedUpdate);
+      return toAppSettingsResponse(await repository.update(parsedUpdate.patch));
     },
     async resetSettings() {
       return toAppSettingsResponse(await repository.reset());

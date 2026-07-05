@@ -6,7 +6,7 @@ export interface SecurityPopupProps {
   hasPin: boolean;
   isOpen: boolean;
   onClose: () => void;
-  onSavePinHash: (pinHash: string | null) => Promise<void>;
+  onSavePinHash: (pinHash: string | null, currentPinHash?: string | null) => Promise<void>;
 }
 
 export function SecurityPopup({
@@ -15,6 +15,7 @@ export function SecurityPopup({
   onClose,
   onSavePinHash,
 }: SecurityPopupProps) {
+  const [currentPin, setCurrentPin] = useState("");
   const [nextPin, setNextPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +26,7 @@ export function SecurityPopup({
       return;
     }
 
+    setCurrentPin("");
     setNextPin("");
     setConfirmPin("");
     setError(null);
@@ -39,6 +41,11 @@ export function SecurityPopup({
       return;
     }
 
+    if (hasPin && !isValidPin(currentPin)) {
+      setError("Ingresa el PIN actual de 4 dígitos.");
+      return;
+    }
+
     if (nextPin !== confirmPin) {
       setError("La confirmación no coincide.");
       return;
@@ -48,7 +55,8 @@ export function SecurityPopup({
 
     try {
       const nextHash = await hashPin(nextPin);
-      await onSavePinHash(nextHash);
+      const currentHash = hasPin ? await hashPin(currentPin) : undefined;
+      await onSavePinHash(nextHash, currentHash);
     } catch {
       setError("No pudimos guardar el PIN.");
     } finally {
@@ -62,10 +70,15 @@ export function SecurityPopup({
     }
 
     setError(null);
+    if (!isValidPin(currentPin)) {
+      setError("Ingresa el PIN actual de 4 dígitos.");
+      return;
+    }
+
     setIsSaving(true);
 
     try {
-      await onSavePinHash(null);
+      await onSavePinHash(null, await hashPin(currentPin));
     } catch {
       setError("No pudimos desactivar el PIN.");
     } finally {
@@ -90,6 +103,21 @@ export function SecurityPopup({
             No reemplaza autenticación de cuenta ni cifrado de backups.
           </p>
         </div>
+
+        {hasPin && (
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">PIN actual</span>
+            <input
+              type="password"
+              inputMode="numeric"
+              value={currentPin}
+              onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--panel-bg)] px-3 py-2 text-sm font-semibold tracking-[0.3em] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]"
+              placeholder="••••"
+              maxLength={4}
+            />
+          </label>
+        )}
 
         <label className="flex flex-col gap-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">

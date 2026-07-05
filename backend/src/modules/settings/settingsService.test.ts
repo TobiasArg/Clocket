@@ -39,7 +39,7 @@ describe("app settings service", () => {
     const service = createAppSettingsService({ repository });
 
     await expect(service.getSettings()).resolves.toEqual(redactedSettings);
-    await expect(service.updateSettings({ currency: "ARS", profile: { name: "Ana" }, security: { pinHash: null } })).resolves.toMatchObject({ currency: "ARS" });
+    await expect(service.updateSettings({ currency: "ARS", profile: { name: "Ana" }, security: { pinHash: null, currentPinHash: "stored-pin-hash" } })).resolves.toMatchObject({ currency: "ARS" });
     await expect(service.resetSettings()).resolves.toEqual(redactedResetSettings);
 
     expect(repository.update).toHaveBeenCalledWith({ currency: "ARS", profile: { name: "Ana" }, security: { pinHash: null } });
@@ -55,10 +55,33 @@ describe("app settings service", () => {
     expect(JSON.stringify(response)).not.toContain("stored-pin-hash");
   });
 
+  it("requires the current PIN hash before replacing or removing an existing PIN", async () => {
+    const repository = createRepository();
+    const service = createAppSettingsService({ repository });
+
+    await expect(service.updateSettings({ security: { pinHash: "new-pin-hash" } })).rejects.toMatchObject({ code: "INVALID_REQUEST", status: 400 });
+    await expect(service.updateSettings({ security: { pinHash: "new-pin-hash", currentPinHash: "wrong-pin-hash" } })).rejects.toMatchObject({ code: "INVALID_REQUEST", status: 400 });
+    await expect(service.updateSettings({ security: { pinHash: "new-pin-hash", currentPinHash: "stored-pin-hash" } })).resolves.toMatchObject({ security: { hasPin: true } });
+
+    expect(repository.update).toHaveBeenCalledTimes(1);
+    expect(repository.update).toHaveBeenCalledWith({ security: { pinHash: "new-pin-hash" } });
+  });
+
+  it("allows setting a first PIN without a current PIN hash", async () => {
+    const repository = createRepository();
+    vi.mocked(repository.get).mockResolvedValue(resetSettings);
+    const service = createAppSettingsService({ repository });
+
+    await expect(service.updateSettings({ security: { pinHash: "first-pin-hash" } })).resolves.toMatchObject({ security: { hasPin: true } });
+
+    expect(repository.update).toHaveBeenCalledWith({ security: { pinHash: "first-pin-hash" } });
+  });
+
   it("rejects invalid settings payloads", async () => {
     const service = createAppSettingsService({ repository: createRepository() });
 
     await expect(service.updateSettings({ currency: "EUR" })).rejects.toMatchObject({ code: "INVALID_REQUEST", status: 400 });
     await expect(service.updateSettings({ security: { pinHash: 123 } })).rejects.toMatchObject({ code: "INVALID_REQUEST", status: 400 });
+    await expect(service.updateSettings({ security: { currentPinHash: 123 } })).rejects.toMatchObject({ code: "INVALID_REQUEST", status: 400 });
   });
 });

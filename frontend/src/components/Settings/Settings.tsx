@@ -347,8 +347,8 @@ export function Settings({
         isOpen={openPopup === "security"}
         hasPin={resolvedSettings.security.hasPin}
         onClose={closePopup}
-        onSavePinHash={async (pinHash) => {
-          await updateSettings({ security: { pinHash } });
+        onSavePinHash={async (pinHash, currentPinHash) => {
+          await updateSettings({ security: { pinHash, currentPinHash } });
         }}
       />
     </div>

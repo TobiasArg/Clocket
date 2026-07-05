@@ -10,6 +10,7 @@ export interface UpdateAppSettingsPatch {
   profile?: Partial<AppSettings["profile"]>;
   security?: {
     pinHash?: string | null;
+    currentPinHash?: string | null;
   };
 }
 
