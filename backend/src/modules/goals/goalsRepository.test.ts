@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Prisma, type PrismaClient } from "../../generated/prisma/client";
-import { createGoalsRepository } from "./goalsRepository";
+import { GoalsRepositoryError, createGoalsRepository } from "./goalsRepository";
 
 const goalId = "00000000-0000-4000-8000-000000000901";
 const categoryId = "00000000-0000-4000-8000-000000000101";
@@ -36,10 +36,13 @@ const createTransactionClientMock = () => ({
   },
   goal: {
     findFirst: vi.fn(),
+    findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
   },
   transaction: {
+    count: vi.fn(),
     updateMany: vi.fn(),
   },
 });
@@ -513,17 +516,59 @@ describe("createGoalsRepository", () => {
   });
 
   it("soft deletes active goals", async () => {
-    const { prisma } = createPrismaMock();
-    prisma.goal.findFirst.mockResolvedValue({ id: goalId });
-    prisma.goal.update.mockResolvedValue({
+    const { prisma, tx } = createPrismaMock();
+    tx.goal.findFirst.mockResolvedValue({ id: goalId });
+    tx.transaction.count.mockResolvedValue(0);
+    tx.goal.update.mockResolvedValue({
       ...baseGoal,
       deletedAt: new Date("2026-06-02T12:00:00.000Z"),
     });
     const repository = createGoalsRepository(prisma as unknown as PrismaClient);
 
     await expect(repository.softDelete(goalId)).resolves.toBe(true);
-    expect(prisma.goal.update).toHaveBeenCalledWith({
+    expect(tx.transaction.count).toHaveBeenCalledWith({
+      where: { goalId, deletedAt: null },
+    });
+    expect(tx.goal.update).toHaveBeenCalledWith({
       where: { id: goalId },
+      data: { deletedAt: expect.any(Date) as Date },
+    });
+  });
+
+  it("rejects direct goal deletion when active linked entries exist", async () => {
+    const { prisma, tx } = createPrismaMock();
+    tx.goal.findFirst.mockResolvedValue({ id: goalId });
+    tx.transaction.count.mockResolvedValue(1);
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.softDelete(goalId)).rejects.toMatchObject({ code: "GOAL_IN_USE" });
+    expect(tx.goal.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects bulk goal deletion when active linked entries exist", async () => {
+    const { prisma, tx } = createPrismaMock();
+    tx.goal.findMany.mockResolvedValue([{ id: goalId }]);
+    tx.transaction.count.mockResolvedValue(1);
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.softDeleteAll()).rejects.toBeInstanceOf(GoalsRepositoryError);
+    await expect(repository.softDeleteAll()).rejects.toMatchObject({ code: "GOAL_IN_USE" });
+    expect(tx.goal.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("bulk soft deletes active goals when no linked entries exist", async () => {
+    const { prisma, tx } = createPrismaMock();
+    tx.goal.findMany.mockResolvedValue([{ id: goalId }]);
+    tx.transaction.count.mockResolvedValue(0);
+    tx.goal.updateMany.mockResolvedValue({ count: 1 });
+    const repository = createGoalsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.softDeleteAll()).resolves.toBe(1);
+    expect(tx.transaction.count).toHaveBeenCalledWith({
+      where: { goalId: { in: [goalId] }, deletedAt: null },
+    });
+    expect(tx.goal.updateMany).toHaveBeenCalledWith({
+      where: { deletedAt: null },
       data: { deletedAt: expect.any(Date) as Date },
     });
   });

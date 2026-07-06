@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAccountsService } from "./accountsService";
-import type { AccountRecord, AccountsRepository } from "./accountsRepository";
+import { AccountsRepositoryError, type AccountRecord, type AccountsRepository } from "./accountsRepository";
 
 const account = (overrides: Partial<AccountRecord> = {}): AccountRecord => ({
   id: "account-1",
@@ -60,6 +60,19 @@ describe("accounts service", () => {
     await expect(service.deleteAccount("missing")).rejects.toMatchObject({
       code: "NOT_FOUND",
       status: 404,
+    });
+  });
+
+  it("maps account in-use delete conflicts to structured 409 errors", async () => {
+    const repository = createRepository();
+    vi.mocked(repository.softDelete).mockRejectedValue(new AccountsRepositoryError(
+      "ACCOUNT_IN_USE",
+      "Account has active transactions.",
+    ));
+
+    await expect(createAccountsService({ repository }).deleteAccount("account-1")).rejects.toMatchObject({
+      code: "ACCOUNT_IN_USE",
+      status: 409,
     });
   });
 });

@@ -27,6 +27,18 @@ export interface UpdateAccountInput {
   icon?: string;
 }
 
+export type AccountsRepositoryErrorCode = "ACCOUNT_IN_USE";
+
+export class AccountsRepositoryError extends Error {
+  public readonly code: AccountsRepositoryErrorCode;
+
+  public constructor(code: AccountsRepositoryErrorCode, message: string) {
+    super(message);
+    this.name = "AccountsRepositoryError";
+    this.code = code;
+  }
+}
+
 type AccountModel = NonNullable<Awaited<ReturnType<PrismaClient["account"]["findUnique"]>>>;
 
 export interface AccountsRepository {
@@ -115,23 +127,39 @@ export const createAccountsRepository = (prisma: PrismaClient): AccountsReposito
   },
 
   async softDelete(id) {
-    const existing = await prisma.account.findFirst({
-      where: {
-        id,
-        deletedAt: null,
-      },
-      select: { id: true },
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.account.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        return false;
+      }
+
+      const activeTransactionCount = await tx.transaction.count({
+        where: {
+          accountId: id,
+          deletedAt: null,
+        },
+      });
+
+      if (activeTransactionCount > 0) {
+        throw new AccountsRepositoryError(
+          "ACCOUNT_IN_USE",
+          "Account has active transactions and cannot be deleted without resolving them first.",
+        );
+      }
+
+      await tx.account.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      return true;
     });
-
-    if (!existing) {
-      return false;
-    }
-
-    await prisma.account.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    return true;
   },
 });

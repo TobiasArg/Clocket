@@ -12,7 +12,7 @@ import {
   type AccountResponse,
   type DeleteAccountResponse,
 } from "./accountsContracts";
-import type { AccountsRepository, CreateAccountInput, UpdateAccountInput } from "./accountsRepository";
+import { AccountsRepositoryError, type AccountsRepository, type CreateAccountInput, type UpdateAccountInput } from "./accountsRepository";
 
 export interface AccountsService {
   listAccounts: () => Promise<AccountListResponse>;
@@ -27,6 +27,17 @@ export const createAccountsService = ({
 }: {
   repository: AccountsRepository;
 }): AccountsService => {
+  const run = async <T>(operation: () => Promise<T>): Promise<T> => {
+    try {
+      return await operation();
+    } catch (error) {
+      if (error instanceof AccountsRepositoryError) {
+        throw new CoreFinanceApiError(error.message, { code: error.code, status: 409 });
+      }
+      throw error;
+    }
+  };
+
   const parseCreate = (body: unknown): CreateAccountInput => {
     const parsedBody = parseJsonObjectBody(body);
     if (!parsedBody.ok) throw new CoreFinanceApiError(parsedBody.response.error, parsedBody.response);
@@ -112,7 +123,7 @@ export const createAccountsService = ({
       return toAccountResponse(requireFound(await repository.update(id, parseUpdate(body)), "Account", id));
     },
     async deleteAccount(id) {
-      if (!await repository.softDelete(id)) {
+      if (!await run(() => repository.softDelete(id))) {
         throw new CoreFinanceApiError(`Account '${id}' was not found.`, {
           code: "NOT_FOUND",
           status: 404,

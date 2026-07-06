@@ -18,6 +18,7 @@ export type GoalsRepositoryErrorCode =
   | "MISSING_CATEGORY"
   | "MISSING_GOAL"
   | "MISSING_SUBCATEGORY"
+  | "GOAL_IN_USE"
   | "INVALID_REQUEST";
 
 export class GoalsRepositoryError extends Error {
@@ -747,30 +748,69 @@ export const createGoalsRepository = (prisma: PrismaClient): GoalsRepository => 
   },
 
   async softDelete(id) {
-    const existing = await prisma.goal.findFirst({
-      where: {
-        id,
-        deletedAt: null,
-      },
-      select: { id: true },
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.goal.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        return false;
+      }
+
+      const activeEntryCount = await tx.transaction.count({
+        where: {
+          goalId: id,
+          deletedAt: null,
+        },
+      });
+
+      if (activeEntryCount > 0) {
+        throw new GoalsRepositoryError(
+          "GOAL_IN_USE",
+          "Goal has active linked transactions and requires an explicit deletion resolution.",
+        );
+      }
+
+      await tx.goal.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      return true;
     });
-
-    if (!existing) {
-      return false;
-    }
-
-    await prisma.goal.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    return true;
   },
 
   async softDeleteAll() {
-    const result = await prisma.goal.updateMany({
-      where: { deletedAt: null },
-      data: { deletedAt: new Date() },
+    const result = await prisma.$transaction(async (tx) => {
+      const activeGoals = await tx.goal.findMany({
+        where: { deletedAt: null },
+        select: { id: true },
+      });
+      const activeGoalIds = activeGoals.map((goal) => goal.id);
+      const activeEntryCount = activeGoalIds.length > 0
+        ? await tx.transaction.count({
+            where: {
+              goalId: { in: activeGoalIds },
+              deletedAt: null,
+            },
+          })
+        : 0;
+
+      if (activeEntryCount > 0) {
+        throw new GoalsRepositoryError(
+          "GOAL_IN_USE",
+          "Goals with active linked transactions require explicit deletion resolution before bulk delete.",
+        );
+      }
+
+      return tx.goal.updateMany({
+        where: { deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
     });
 
     return result.count;

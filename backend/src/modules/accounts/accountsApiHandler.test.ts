@@ -71,4 +71,21 @@ describe("accounts API handlers", () => {
     expect(methodResponse.statusCode).toBe(405);
     expect(methodResponse.headers.get("Allow")).toBe("GET, PATCH, DELETE");
   });
+
+  it("returns structured conflicts for protected account deletes", async () => {
+    const service = createService();
+    vi.mocked(service.deleteAccount).mockRejectedValue(new CoreFinanceApiError("Account has active transactions.", {
+      code: "ACCOUNT_IN_USE",
+      status: 409,
+    }));
+    const response = createMockResponse();
+
+    await createAccountItemHandler({ service })(
+      createMockRequest({ method: "DELETE", query: { id: "account-1" } }),
+      response,
+    );
+
+    expect(response.statusCode).toBe(409);
+    expect(response.payload).toMatchObject({ code: "ACCOUNT_IN_USE", retryable: false });
+  });
 });

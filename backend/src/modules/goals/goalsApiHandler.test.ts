@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createMockRequest, createMockResponse } from "../../api/testUtils";
-import { createGoalDeletionResolutionHandler } from "./goalsApiHandler";
+import { CoreFinanceApiError } from "../core-finance/coreFinanceApiErrors";
+import { createGoalDeletionResolutionHandler, createGoalItemHandler, createGoalsCollectionHandler } from "./goalsApiHandler";
 import type { GoalsService } from "./goalsService";
 
 const goalResponse = {
@@ -57,5 +58,36 @@ describe("goals API handlers", () => {
     expect(response.statusCode).toBe(405);
     expect(response.payload).toMatchObject({ code: "INVALID_REQUEST" });
     expect(service.resolveGoalDeletion).not.toHaveBeenCalled();
+  });
+
+  it("returns structured conflicts for protected direct goal deletes", async () => {
+    const service = createService();
+    vi.mocked(service.deleteGoal).mockRejectedValue(new CoreFinanceApiError("Goal has active linked transactions.", {
+      code: "GOAL_IN_USE",
+      status: 409,
+    }));
+    const response = createMockResponse();
+
+    await createGoalItemHandler({ service })(
+      createMockRequest({ method: "DELETE", query: { id: "goal-1" } }),
+      response,
+    );
+
+    expect(response.statusCode).toBe(409);
+    expect(response.payload).toMatchObject({ code: "GOAL_IN_USE", retryable: false });
+  });
+
+  it("returns structured conflicts for protected bulk goal deletes", async () => {
+    const service = createService();
+    vi.mocked(service.clearGoals).mockRejectedValue(new CoreFinanceApiError("Goals require explicit deletion resolution.", {
+      code: "GOAL_IN_USE",
+      status: 409,
+    }));
+    const response = createMockResponse();
+
+    await createGoalsCollectionHandler({ service })(createMockRequest({ method: "DELETE" }), response);
+
+    expect(response.statusCode).toBe(409);
+    expect(response.payload).toMatchObject({ code: "GOAL_IN_USE" });
   });
 });

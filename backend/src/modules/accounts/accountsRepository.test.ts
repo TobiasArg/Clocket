@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Prisma, type PrismaClient } from "../../generated/prisma/client";
-import { createAccountsRepository } from "./accountsRepository";
+import { AccountsRepositoryError, createAccountsRepository } from "./accountsRepository";
 
 const baseAccount = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -13,19 +13,35 @@ const baseAccount = {
   deletedAt: null,
 };
 
-const createPrismaMock = () => ({
-  account: {
-    findMany: vi.fn(),
-    findFirst: vi.fn(),
-    findUnique: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-  },
-});
+const createPrismaMock = () => {
+  const tx = {
+    account: {
+      findFirst: vi.fn(),
+      update: vi.fn(),
+    },
+    transaction: {
+      count: vi.fn(),
+    },
+  };
+
+  return {
+    tx,
+    prisma: {
+      account: {
+        findMany: vi.fn(),
+        findFirst: vi.fn(),
+        findUnique: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    },
+  };
+};
 
 describe("createAccountsRepository", () => {
   it("lists active accounts and serializes Decimal balances", async () => {
-    const prisma = createPrismaMock();
+    const { prisma } = createPrismaMock();
     prisma.account.findMany.mockResolvedValue([baseAccount]);
     const repository = createAccountsRepository(prisma as unknown as PrismaClient);
 
@@ -46,7 +62,7 @@ describe("createAccountsRepository", () => {
   });
 
   it("creates accounts with trimmed display fields and default currency", async () => {
-    const prisma = createPrismaMock();
+    const { prisma } = createPrismaMock();
     prisma.account.create.mockResolvedValue({
       ...baseAccount,
       name: "Savings",
@@ -76,7 +92,7 @@ describe("createAccountsRepository", () => {
   });
 
   it("returns null when updating a missing or deleted account", async () => {
-    const prisma = createPrismaMock();
+    const { prisma } = createPrismaMock();
     prisma.account.findFirst.mockResolvedValue(null);
     const repository = createAccountsRepository(prisma as unknown as PrismaClient);
 
@@ -85,7 +101,7 @@ describe("createAccountsRepository", () => {
   });
 
   it("updates active accounts", async () => {
-    const prisma = createPrismaMock();
+    const { prisma } = createPrismaMock();
     prisma.account.findFirst.mockResolvedValue({ id: baseAccount.id });
     prisma.account.update.mockResolvedValue({
       ...baseAccount,
@@ -113,18 +129,33 @@ describe("createAccountsRepository", () => {
   });
 
   it("soft deletes active accounts", async () => {
-    const prisma = createPrismaMock();
-    prisma.account.findFirst.mockResolvedValue({ id: baseAccount.id });
-    prisma.account.update.mockResolvedValue({
+    const { prisma, tx } = createPrismaMock();
+    tx.account.findFirst.mockResolvedValue({ id: baseAccount.id });
+    tx.transaction.count.mockResolvedValue(0);
+    tx.account.update.mockResolvedValue({
       ...baseAccount,
       deletedAt: new Date("2026-05-31T12:00:00.000Z"),
     });
     const repository = createAccountsRepository(prisma as unknown as PrismaClient);
 
     await expect(repository.softDelete(baseAccount.id)).resolves.toBe(true);
-    expect(prisma.account.update).toHaveBeenCalledWith({
+    expect(tx.transaction.count).toHaveBeenCalledWith({
+      where: { accountId: baseAccount.id, deletedAt: null },
+    });
+    expect(tx.account.update).toHaveBeenCalledWith({
       where: { id: baseAccount.id },
       data: { deletedAt: expect.any(Date) as Date },
     });
+  });
+
+  it("rejects deleting accounts with active transactions", async () => {
+    const { prisma, tx } = createPrismaMock();
+    tx.account.findFirst.mockResolvedValue({ id: baseAccount.id });
+    tx.transaction.count.mockResolvedValue(1);
+    const repository = createAccountsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.softDelete(baseAccount.id)).rejects.toBeInstanceOf(AccountsRepositoryError);
+    await expect(repository.softDelete(baseAccount.id)).rejects.toMatchObject({ code: "ACCOUNT_IN_USE" });
+    expect(tx.account.update).not.toHaveBeenCalled();
   });
 });

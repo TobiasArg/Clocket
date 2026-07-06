@@ -44,7 +44,10 @@ export const createGoalsService = ({
       return await operation();
     } catch (error) {
       if (error instanceof GoalsRepositoryError) {
-        throw new CoreFinanceApiError(error.message, { code: error.code, status: 400 });
+        throw new CoreFinanceApiError(error.message, {
+          code: error.code,
+          status: error.code === "GOAL_IN_USE" ? 409 : 400,
+        });
       }
       throw error;
     }
@@ -176,11 +179,11 @@ export const createGoalsService = ({
       return requireFound(await run(() => repository.resolveDeletion(id, parseResolveDeletion(body))), id);
     },
     async deleteGoal(id) {
-      if (!await repository.softDelete(id)) throw new CoreFinanceApiError(`Goal '${id}' was not found.`, { code: "NOT_FOUND", status: 404 });
+      if (!await run(() => repository.softDelete(id))) throw new CoreFinanceApiError(`Goal '${id}' was not found.`, { code: "NOT_FOUND", status: 404 });
       return { deleted: true };
     },
     async clearGoals() {
-      return { deletedCount: await repository.softDeleteAll() };
+      return { deletedCount: await run(() => repository.softDeleteAll()) };
     },
   };
 };
