@@ -88,6 +88,21 @@ describe("transactions service", () => {
     })).rejects.toMatchObject({ code: "MISSING_ACCOUNT" });
   });
 
+  it("rejects zero, overflow, and excess-scale amounts before persistence", async () => {
+    const repository = createRepository();
+    const service = createTransactionsService({ repository });
+
+    for (const amount of ["0", "10.123", "10000000000000000.00"]) {
+      await expect(service.createTransaction({
+        accountId: "account-1",
+        name: "Invalid",
+        amount,
+        date: "2026-06-01",
+      })).rejects.toMatchObject({ code: "INVALID_REQUEST", status: 400 });
+    }
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
   it("returns not found for missing transactions", async () => {
     const repository = createRepository();
     vi.mocked(repository.getById).mockResolvedValue(null);

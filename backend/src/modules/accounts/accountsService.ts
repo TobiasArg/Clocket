@@ -14,6 +14,8 @@ import {
 } from "./accountsContracts";
 import { AccountsRepositoryError, type AccountsRepository, type CreateAccountInput, type UpdateAccountInput } from "./accountsRepository";
 
+const MONEY_DECIMAL = { precision: 18, scale: 2 } as const;
+
 export interface AccountsService {
   listAccounts: () => Promise<AccountListResponse>;
   getAccount: (id: string) => Promise<AccountResponse>;
@@ -46,7 +48,7 @@ export const createAccountsService = ({
     if (!name.ok) throw new CoreFinanceApiError(name.response.error, name.response);
     const icon = readRequiredString(parsedBody.value, "icon");
     if (!icon.ok) throw new CoreFinanceApiError(icon.response.error, icon.response);
-    const balance = readDecimalInput(parsedBody.value, "balance", false);
+    const balance = readDecimalInput(parsedBody.value, "balance", false, MONEY_DECIMAL);
     if (!balance.ok) throw new CoreFinanceApiError(balance.response.error, balance.response);
 
     const currency = parsedBody.value.currency;
@@ -81,7 +83,7 @@ export const createAccountsService = ({
       patch.icon = icon.value;
     }
     if ("balance" in parsedBody.value) {
-      const balance = readDecimalInput(parsedBody.value, "balance", true);
+      const balance = readDecimalInput(parsedBody.value, "balance", true, MONEY_DECIMAL);
       if (!balance.ok) throw new CoreFinanceApiError(balance.response.error, balance.response);
       patch.balance = balance.value;
     }

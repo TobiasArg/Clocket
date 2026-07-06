@@ -89,15 +89,24 @@ export const readDecimalInput = (
   body: Record<string, unknown>,
   key: string,
   required: boolean,
+  options: {
+    positive?: boolean;
+    allowZero?: boolean;
+    precision?: number;
+    scale?: number;
+  } = {},
 ): ApiResult<string | number | undefined, CoreFinanceApiErrorCode> => {
   const value = body[key];
   if (value === undefined && !required) {
     return { ok: true, value: undefined };
   }
 
-  const isValid = typeof value === "number"
-    ? Number.isFinite(value)
-    : typeof value === "string" && value.trim().length > 0 && Number.isFinite(Number(value));
+  const normalized = typeof value === "number"
+    ? String(value)
+    : typeof value === "string"
+      ? value.trim()
+      : "";
+  const isValid = normalized.length > 0 && /^-?\d+(\.\d+)?$/.test(normalized) && Number.isFinite(Number(normalized));
 
   if (!isValid) {
     return {
@@ -108,6 +117,46 @@ export const readDecimalInput = (
         status: 400,
       }),
     };
+  }
+
+  const numericValue = Number(normalized);
+  if (options.positive && (options.allowZero ? numericValue < 0 : numericValue <= 0)) {
+    return {
+      ok: false,
+      response: createCoreFinanceApiErrorResponse({
+        error: `Field '${key}' must be ${options.allowZero ? "zero or greater" : "greater than zero"}.`,
+        code: "INVALID_REQUEST",
+        status: 400,
+      }),
+    };
+  }
+
+  const unsigned = normalized.startsWith("-") ? normalized.slice(1) : normalized;
+  const [integerPart = "", fractionPart = ""] = unsigned.split(".");
+  if (options.scale !== undefined && fractionPart.length > options.scale) {
+    return {
+      ok: false,
+      response: createCoreFinanceApiErrorResponse({
+        error: `Field '${key}' supports at most ${options.scale} decimal places.`,
+        code: "INVALID_REQUEST",
+        status: 400,
+      }),
+    };
+  }
+
+  if (options.precision !== undefined) {
+    const significantIntegerDigits = integerPart.replace(/^0+(?=\d)/, "").length;
+    const digitCount = significantIntegerDigits + fractionPart.length;
+    if (digitCount > options.precision) {
+      return {
+        ok: false,
+        response: createCoreFinanceApiErrorResponse({
+          error: `Field '${key}' exceeds the supported decimal range.`,
+          code: "INVALID_REQUEST",
+          status: 400,
+        }),
+      };
+    }
   }
 
   return { ok: true, value: value as string | number };

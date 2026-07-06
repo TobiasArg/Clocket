@@ -6,6 +6,8 @@ import type { ExchangeRateSuccessResponse } from "../exchange-rates/exchangeRate
 import { toGoalDetailResponse, toGoalProgressResponse, toGoalResponse, type ClearGoalsResponse, type DeleteGoalResponse, type GoalDetailResponse, type GoalListResponse, type GoalResponse, type ResolveGoalDeletionResponse } from "./goalsContracts";
 import { GoalsRepositoryError, type CreateGoalInput, type GoalColorKey, type GoalsRepository, type ResolveGoalDeletionInput, type UpdateGoalInput } from "./goalsRepository";
 
+const MONEY_DECIMAL = { precision: 18, scale: 2, positive: true } as const;
+
 export interface GoalsService {
   listGoals: (query?: Record<string, string | string[] | undefined>) => Promise<GoalListResponse>;
   getGoal: (id: string, query?: Record<string, string | string[] | undefined>) => Promise<GoalDetailResponse>;
@@ -60,7 +62,7 @@ export const createGoalsService = ({
     if (!title.ok) throw new CoreFinanceApiError(title.response.error, title.response);
     const description = readRequiredString(parsedBody.value, "description");
     if (!description.ok) throw new CoreFinanceApiError(description.response.error, description.response);
-    const targetAmount = readDecimalInput(parsedBody.value, "targetAmount", true);
+    const targetAmount = readDecimalInput(parsedBody.value, "targetAmount", true, MONEY_DECIMAL);
     if (!targetAmount.ok || targetAmount.value === undefined) throw new CoreFinanceApiError(targetAmount.ok ? "Goal targetAmount is required." : targetAmount.response.error, targetAmount.ok ? { code: "INVALID_REQUEST", status: 400 } : targetAmount.response);
     const deadlineDate = readDateOnlyInput(parsedBody.value, "deadlineDate", true);
     if (!deadlineDate.ok || deadlineDate.value === undefined) throw new CoreFinanceApiError(deadlineDate.ok ? "Goal deadlineDate is required." : deadlineDate.response.error, deadlineDate.ok ? { code: "INVALID_REQUEST", status: 400 } : deadlineDate.response);
@@ -97,7 +99,7 @@ export const createGoalsService = ({
       patch.description = description.value;
     }
     if ("targetAmount" in parsedBody.value) {
-      const targetAmount = readDecimalInput(parsedBody.value, "targetAmount", true);
+      const targetAmount = readDecimalInput(parsedBody.value, "targetAmount", true, MONEY_DECIMAL);
       if (!targetAmount.ok || targetAmount.value === undefined) throw new CoreFinanceApiError(targetAmount.ok ? "Goal targetAmount is required." : targetAmount.response.error, targetAmount.ok ? { code: "INVALID_REQUEST", status: 400 } : targetAmount.response);
       patch.targetAmount = targetAmount.value;
     }

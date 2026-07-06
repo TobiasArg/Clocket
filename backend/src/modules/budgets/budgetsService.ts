@@ -10,6 +10,8 @@ import {
 import { toBudgetResponse, type BudgetListResponse, type BudgetResponse, type ClearBudgetsResponse, type DeleteBudgetResponse } from "./budgetsContracts";
 import { BudgetsRepositoryError, type BudgetScopeMode, type BudgetScopeRuleInput, type BudgetsRepository, type CreateBudgetInput, type UpdateBudgetInput } from "./budgetsRepository";
 
+const MONEY_DECIMAL = { precision: 18, scale: 2, positive: true } as const;
+
 export interface BudgetsService {
   listBudgets: (query?: Record<string, string | string[] | undefined>) => Promise<BudgetListResponse>;
   getBudget: (id: string) => Promise<BudgetResponse>;
@@ -74,7 +76,7 @@ export const createBudgetsService = ({ repository }: { repository: BudgetsReposi
     if (!parsedBody.ok) throw new CoreFinanceApiError(parsedBody.response.error, parsedBody.response);
     const name = readRequiredString(parsedBody.value, "name");
     if (!name.ok) throw new CoreFinanceApiError(name.response.error, name.response);
-    const limitAmount = readDecimalInput(parsedBody.value, "limitAmount", true);
+    const limitAmount = readDecimalInput(parsedBody.value, "limitAmount", true, MONEY_DECIMAL);
     if (!limitAmount.ok || limitAmount.value === undefined) throw new CoreFinanceApiError(limitAmount.ok ? "Budget limitAmount is required." : limitAmount.response.error, limitAmount.ok ? { code: "INVALID_REQUEST", status: 400 } : limitAmount.response);
     const periodMonth = readYearMonthInput(parsedBody.value, "periodMonth", true);
     if (!periodMonth.ok || periodMonth.value === undefined) throw new CoreFinanceApiError(periodMonth.ok ? "Budget periodMonth is required." : periodMonth.response.error, periodMonth.ok ? { code: "INVALID_REQUEST", status: 400 } : periodMonth.response);
@@ -100,7 +102,7 @@ export const createBudgetsService = ({ repository }: { repository: BudgetsReposi
       patch.name = name.value;
     }
     if ("limitAmount" in parsedBody.value) {
-      const limitAmount = readDecimalInput(parsedBody.value, "limitAmount", true);
+      const limitAmount = readDecimalInput(parsedBody.value, "limitAmount", true, MONEY_DECIMAL);
       if (!limitAmount.ok || limitAmount.value === undefined) throw new CoreFinanceApiError(limitAmount.ok ? "Budget limitAmount is required." : limitAmount.response.error, limitAmount.ok ? { code: "INVALID_REQUEST", status: 400 } : limitAmount.response);
       patch.limitAmount = limitAmount.value;
     }
@@ -133,6 +135,10 @@ export const createBudgetsService = ({ repository }: { repository: BudgetsReposi
   return {
     async listBudgets(query = {}) {
       const month = typeof query.periodMonth === "string" ? query.periodMonth : typeof query.month === "string" ? query.month : undefined;
+      if (month !== undefined) {
+        const periodMonth = readYearMonthInput({ periodMonth: month }, "periodMonth", true);
+        if (!periodMonth.ok) throw new CoreFinanceApiError(periodMonth.response.error, periodMonth.response);
+      }
       const budgets = await run(() => repository.listActive(month));
       return { budgets: budgets.map(toBudgetResponse) };
     },

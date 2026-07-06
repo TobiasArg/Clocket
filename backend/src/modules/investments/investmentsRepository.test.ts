@@ -291,4 +291,44 @@ describe("createInvestmentsRepository", () => {
       },
     }));
   });
+
+  it("reads asset refs without creating missing asset or ref records", async () => {
+    const { prisma } = createPrismaMock();
+    const refs = {
+      id: "00000000-0000-4000-8000-000000060001",
+      assetId,
+      dailyRefPrice: new Prisma.Decimal("100.0000000000"),
+      dailyRefTimestamp: new Date("2026-06-01T10:00:00.000Z"),
+      monthRefPrice: new Prisma.Decimal("100.0000000000"),
+      monthRefTimestamp: new Date("2026-06-01T10:00:00.000Z"),
+      updatedAt: new Date("2026-06-01T10:00:00.000Z"),
+      asset: baseAsset,
+    };
+    prisma.investmentAsset.findUnique.mockResolvedValue({ id: assetId });
+    prisma.investmentAssetRef.findUnique.mockResolvedValue(refs);
+    const repository = createInvestmentsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.getRefsByAsset("stock", "aapl")).resolves.toMatchObject({
+      assetId,
+      ticker: "AAPL",
+      dailyRefPrice: "100.0000000000",
+    });
+
+    expect(prisma.investmentAsset.findUnique).toHaveBeenCalledWith({
+      where: { assetType_ticker: { assetType: "STOCK", ticker: "AAPL" } },
+      select: { id: true },
+    });
+    expect(prisma.investmentAsset.upsert).not.toHaveBeenCalled();
+    expect(prisma.investmentAssetRef.create).not.toHaveBeenCalled();
+  });
+
+  it("returns null for missing read-only asset refs", async () => {
+    const { prisma } = createPrismaMock();
+    prisma.investmentAsset.findUnique.mockResolvedValue(null);
+    const repository = createInvestmentsRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.getRefsByAsset("stock", "MSFT")).resolves.toBeNull();
+    expect(prisma.investmentAssetRef.findUnique).not.toHaveBeenCalled();
+    expect(prisma.investmentAsset.upsert).not.toHaveBeenCalled();
+  });
 });

@@ -3,6 +3,8 @@ import { isValidCurrency, parseJsonObjectBody, readDecimalInput, readIntegerInpu
 import { toInstallmentPlanResponse, type ClearInstallmentPlansResponse, type DeleteInstallmentPlanResponse, type InstallmentPlanListResponse, type InstallmentPlanResponse } from "./installmentPlansContracts";
 import { InstallmentPlansRepositoryError, type CreateInstallmentPlanInput, type InstallmentPlansRepository, type UpdateInstallmentPlanInput } from "./installmentPlansRepository";
 
+const MONEY_DECIMAL = { precision: 18, scale: 2, positive: true } as const;
+
 export interface InstallmentPlansService {
   listInstallmentPlans: () => Promise<InstallmentPlanListResponse>;
   getInstallmentPlan: (id: string) => Promise<InstallmentPlanResponse>;
@@ -65,7 +67,7 @@ export const createInstallmentPlansService = ({ repository }: { repository: Inst
     if (!parsedBody.ok) throw new CoreFinanceApiError(parsedBody.response.error, parsedBody.response);
     const title = readRequiredString(parsedBody.value, "title");
     if (!title.ok) throw new CoreFinanceApiError(title.response.error, title.response);
-    const totalAmount = readDecimalInput(parsedBody.value, "totalAmount", true);
+    const totalAmount = readDecimalInput(parsedBody.value, "totalAmount", true, MONEY_DECIMAL);
     if (!totalAmount.ok) throw new CoreFinanceApiError(totalAmount.response.error, totalAmount.response);
     const installmentsCount = readIntegerInput(parsedBody.value, "installmentsCount", true);
     if (!installmentsCount.ok || installmentsCount.value === undefined) throw new CoreFinanceApiError(installmentsCount.ok ? "Installments count is required." : installmentsCount.response.error, installmentsCount.ok ? { code: "INVALID_REQUEST", status: 400 } : installmentsCount.response);
@@ -73,7 +75,7 @@ export const createInstallmentPlansService = ({ repository }: { repository: Inst
     if (!startMonth.ok || startMonth.value === undefined) throw new CoreFinanceApiError(startMonth.ok ? "Start month is required." : startMonth.response.error, startMonth.ok ? { code: "INVALID_REQUEST", status: 400 } : startMonth.response);
     const paidInstallmentsCount = readIntegerInput(parsedBody.value, "paidInstallmentsCount", false);
     if (!paidInstallmentsCount.ok) throw new CoreFinanceApiError(paidInstallmentsCount.response.error, paidInstallmentsCount.response);
-    const installmentAmount = readDecimalInput(parsedBody.value, "installmentAmount", false);
+    const installmentAmount = readDecimalInput(parsedBody.value, "installmentAmount", false, MONEY_DECIMAL);
     if (!installmentAmount.ok) throw new CoreFinanceApiError(installmentAmount.response.error, installmentAmount.response);
     assertInstallmentCounts(installmentsCount.value, paidInstallmentsCount.value);
     const generatedTransactionAccountId = readNullable(parsedBody.value, "generatedTransactionAccountId") ?? undefined;
@@ -106,12 +108,12 @@ export const createInstallmentPlansService = ({ repository }: { repository: Inst
     }
     if ("description" in parsedBody.value) patch.description = readNullable(parsedBody.value, "description");
     if ("totalAmount" in parsedBody.value) {
-      const totalAmount = readDecimalInput(parsedBody.value, "totalAmount", true);
+      const totalAmount = readDecimalInput(parsedBody.value, "totalAmount", true, MONEY_DECIMAL);
       if (!totalAmount.ok) throw new CoreFinanceApiError(totalAmount.response.error, totalAmount.response);
       patch.totalAmount = assertPositive(totalAmount.value, "totalAmount");
     }
     if ("installmentAmount" in parsedBody.value) {
-      const installmentAmount = readDecimalInput(parsedBody.value, "installmentAmount", true);
+      const installmentAmount = readDecimalInput(parsedBody.value, "installmentAmount", true, MONEY_DECIMAL);
       if (!installmentAmount.ok) throw new CoreFinanceApiError(installmentAmount.response.error, installmentAmount.response);
       patch.installmentAmount = assertPositive(installmentAmount.value, "installmentAmount");
     }

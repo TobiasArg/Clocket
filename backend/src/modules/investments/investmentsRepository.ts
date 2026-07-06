@@ -5,6 +5,7 @@ import {
   type PrismaClient,
   type SnapshotSource,
 } from "../../generated/prisma/client";
+import { isValidTicker as isValidMarketTicker } from "../market/marketQuoteContracts";
 
 type DecimalInput = string | number | Prisma.Decimal;
 
@@ -148,6 +149,10 @@ export interface InvestmentsRepository {
     assetType: InvestmentAssetRecordType,
     ticker: string,
   ) => Promise<InvestmentAssetRefsRecord>;
+  getRefsByAsset: (
+    assetType: InvestmentAssetRecordType,
+    ticker: string,
+  ) => Promise<InvestmentAssetRefsRecord | null>;
   updateDailyRefIfNeeded: (
     assetType: InvestmentAssetRecordType,
     ticker: string,
@@ -235,8 +240,8 @@ const normalizeAssetType = (value: InvestmentAssetRecordType): InvestmentAssetRe
 
 const normalizeTicker = (value: string): string => {
   const normalized = value.trim().toUpperCase();
-  if (!normalized) {
-    throw new InvestmentsRepositoryError("INVALID_TICKER", "Ticker is required.");
+  if (!isValidMarketTicker(normalized)) {
+    throw new InvestmentsRepositoryError("INVALID_TICKER", "Ticker must start with a letter and contain only letters, numbers, dots, or hyphens.");
   }
   return normalized;
 };
@@ -719,6 +724,25 @@ export const createInvestmentsRepository = (prisma: PrismaClient): InvestmentsRe
       const asset = await getOrCreateAsset(tx, { assetType, ticker });
       return toRefsRecord(await getOrInitRefsForAsset(tx, asset));
     });
+  },
+
+  async getRefsByAsset(assetType, ticker) {
+    const asset = await prisma.investmentAsset.findUnique({
+      where: {
+        assetType_ticker: {
+          assetType: ASSET_TO_PRISMA[normalizeAssetType(assetType)],
+          ticker: normalizeTicker(ticker),
+        },
+      },
+      select: { id: true },
+    });
+    if (!asset) return null;
+
+    const refs = await prisma.investmentAssetRef.findUnique({
+      where: { assetId: asset.id },
+      include: refsWithAsset,
+    });
+    return refs ? toRefsRecord(refs) : null;
   },
 
   async updateDailyRefIfNeeded(assetType, ticker, currentPrice, timestamp) {

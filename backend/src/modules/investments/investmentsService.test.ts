@@ -55,6 +55,7 @@ const createRepository = (): InvestmentsRepository => ({
   listSnapshotsByAsset: vi.fn().mockResolvedValue([]),
   getLatestSnapshotByAsset: vi.fn().mockResolvedValue(null),
   getOrInitRefs: vi.fn().mockResolvedValue(refs),
+  getRefsByAsset: vi.fn().mockResolvedValue(refs),
   updateDailyRefIfNeeded: vi.fn().mockResolvedValue(refs),
   updateMonthRefIfNeeded: vi.fn().mockResolvedValue(refs),
   getRefsMap: vi.fn().mockResolvedValue({ "stock:AAPL": refs }),
@@ -75,5 +76,28 @@ describe("investments service", () => {
 
     await expect(service.getRefs()).resolves.toEqual({ refs: { "stock:AAPL": refs } });
     await expect(service.listEntriesByAsset({ assetType: "bond", ticker: "AAPL" })).rejects.toMatchObject({ code: "INVALID_ASSET_TYPE" });
+  });
+
+  it("reads refs without initializing missing assets", async () => {
+    const repository = createRepository();
+    await expect(createInvestmentsService({ repository }).getRefs({ assetType: "stock", ticker: "aapl" })).resolves.toEqual(refs);
+
+    expect(repository.getRefsByAsset).toHaveBeenCalledWith("stock", "AAPL");
+    expect(repository.getOrInitRefs).not.toHaveBeenCalled();
+  });
+
+  it("returns controlled errors for invalid tickers and missing refs", async () => {
+    const repository = createRepository();
+    vi.mocked(repository.getRefsByAsset).mockResolvedValue(null);
+    const service = createInvestmentsService({ repository });
+
+    await expect(service.addEntry({ assetType: "stock", ticker: "***", entryType: "ingreso", usd_gastado: 100, buy_price: 10 })).rejects.toMatchObject({
+      code: "INVALID_TICKER",
+      status: 400,
+    });
+    await expect(service.getRefs({ assetType: "stock", ticker: "MSFT" })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      status: 404,
+    });
   });
 });

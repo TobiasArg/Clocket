@@ -90,6 +90,7 @@ const createRepository = (): InvestmentsRepository => ({
   listSnapshotsByAsset: vi.fn().mockResolvedValue([snapshot, refreshedSnapshot]),
   getLatestSnapshotByAsset: vi.fn().mockResolvedValue(null),
   getOrInitRefs: vi.fn().mockResolvedValue(refs),
+  getRefsByAsset: vi.fn().mockResolvedValue(refs),
   updateDailyRefIfNeeded: vi.fn().mockResolvedValue(refs),
   updateMonthRefIfNeeded: vi.fn().mockResolvedValue(refs),
   getRefsMap: vi.fn().mockResolvedValue({ "stock:AAPL": refs }),

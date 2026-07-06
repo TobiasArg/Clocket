@@ -22,6 +22,8 @@ import type {
   UpdateTransactionInput,
 } from "./transactionsRepository";
 
+const MONEY_DECIMAL = { precision: 18, scale: 2 } as const;
+
 export interface TransactionsService {
   listTransactions: (query?: Record<string, string | string[] | undefined>) => Promise<TransactionListResponse>;
   getTransaction: (id: string) => Promise<TransactionResponse>;
@@ -90,12 +92,18 @@ export const createTransactionsService = ({
     if (!accountId.ok) throw new CoreFinanceApiError(accountId.response.error, accountId.response);
     const name = readRequiredString(parsedBody.value, "name");
     if (!name.ok) throw new CoreFinanceApiError(name.response.error, name.response);
-    const amount = readDecimalInput(parsedBody.value, "amount", true);
+    const amount = readDecimalInput(parsedBody.value, "amount", true, MONEY_DECIMAL);
     if (!amount.ok) throw new CoreFinanceApiError(amount.response.error, amount.response);
     const date = readDateOnlyInput(parsedBody.value, "date", true);
     if (!date.ok) throw new CoreFinanceApiError(date.response.error, date.response);
     if (amount.value === undefined || date.value === undefined) {
       throw new CoreFinanceApiError("Transaction amount and date are required.", {
+        code: "INVALID_REQUEST",
+        status: 400,
+      });
+    }
+    if (Number(amount.value) === 0) {
+      throw new CoreFinanceApiError("Transaction amount must be different from zero.", {
         code: "INVALID_REQUEST",
         status: 400,
       });
@@ -163,8 +171,14 @@ export const createTransactionsService = ({
       patch.name = name.value;
     }
     if ("amount" in parsedBody.value) {
-      const amount = readDecimalInput(parsedBody.value, "amount", true);
+      const amount = readDecimalInput(parsedBody.value, "amount", true, MONEY_DECIMAL);
       if (!amount.ok) throw new CoreFinanceApiError(amount.response.error, amount.response);
+      if (amount.value !== undefined && Number(amount.value) === 0) {
+        throw new CoreFinanceApiError("Transaction amount must be different from zero.", {
+          code: "INVALID_REQUEST",
+          status: 400,
+        });
+      }
       patch.amount = amount.value;
     }
     if ("currency" in parsedBody.value) {
