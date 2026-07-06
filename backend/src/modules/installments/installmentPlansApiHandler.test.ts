@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createMockRequest, createMockResponse } from "../../api/testUtils";
 import { CoreFinanceApiError } from "../core-finance/coreFinanceApiErrors";
-import { createMarkInstallmentPaidHandler, createReconcileDueInstallmentsHandler } from "./installmentPlansApiHandler";
+import { createInstallmentPlanItemHandler, createMarkInstallmentPaidHandler, createReconcileDueInstallmentsHandler } from "./installmentPlansApiHandler";
 import type { InstallmentLedgerEffectsService } from "./installmentLedgerEffectsService";
+import type { InstallmentPlansService } from "./installmentPlansService";
 
 const planResponse = {
   id: "plan-1",
@@ -39,6 +40,15 @@ const createService = (): InstallmentLedgerEffectsService => ({
       effects: [{ planId: "plan-1", installmentIndex: 2, status: "created" }],
     }],
   }),
+});
+
+const createPlansService = (): InstallmentPlansService => ({
+  listInstallmentPlans: vi.fn().mockResolvedValue({ installmentPlans: [planResponse] }),
+  getInstallmentPlan: vi.fn().mockResolvedValue(planResponse),
+  createInstallmentPlan: vi.fn().mockResolvedValue(planResponse),
+  updateInstallmentPlan: vi.fn().mockResolvedValue(planResponse),
+  deleteInstallmentPlan: vi.fn().mockResolvedValue({ deleted: true }),
+  clearInstallmentPlans: vi.fn().mockResolvedValue({ deletedCount: 1 }),
 });
 
 describe("installment ledger effect API handlers", () => {
@@ -83,5 +93,22 @@ describe("installment ledger effect API handlers", () => {
     expect(missingResponse.payload).toMatchObject({ code: "NOT_FOUND" });
     expect(methodResponse.statusCode).toBe(405);
     expect(methodResponse.headers.get("Allow")).toBe("POST");
+  });
+
+  it("returns structured validation errors for direct paid-count updates", async () => {
+    const service = createPlansService();
+    vi.mocked(service.updateInstallmentPlan).mockRejectedValue(new CoreFinanceApiError(
+      "Paid installments count can only be changed through installment ledger effect endpoints.",
+      { code: "INVALID_REQUEST", status: 400 },
+    ));
+    const response = createMockResponse();
+
+    await createInstallmentPlanItemHandler({ service })(
+      createMockRequest({ method: "PATCH", query: { id: "plan-1" }, body: { paidInstallmentsCount: 2 } }),
+      response,
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(response.payload).toMatchObject({ code: "INVALID_REQUEST", retryable: false });
   });
 });

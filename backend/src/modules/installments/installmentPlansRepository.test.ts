@@ -205,18 +205,19 @@ describe("createInstallmentPlansRepository", () => {
 
   it("marks the next due installment paid and creates the generated ledger transaction transactionally", async () => {
     const { prisma, tx } = createPrismaMock();
-    tx.installmentPlan.findFirst.mockResolvedValue({
-      ...basePlan,
-      paidInstallmentsCount: 1,
-    });
+    tx.installmentPlan.findFirst
+      .mockResolvedValueOnce({
+        ...basePlan,
+        paidInstallmentsCount: 1,
+      })
+      .mockResolvedValueOnce({
+        ...basePlan,
+        paidInstallmentsCount: 2,
+        updatedAt: new Date("2026-07-15T12:00:00.000Z"),
+      });
     tx.account.findFirst.mockResolvedValue({ id: accountId });
-    tx.transaction.findFirst.mockResolvedValue(null);
-    tx.transaction.create.mockResolvedValue({ id: "transaction-1" });
-    tx.installmentPlan.update.mockResolvedValue({
-      ...basePlan,
-      paidInstallmentsCount: 2,
-      updatedAt: new Date("2026-07-15T12:00:00.000Z"),
-    });
+    tx.transaction.createMany.mockResolvedValue({ count: 1 });
+    tx.installmentPlan.updateMany.mockResolvedValue({ count: 1 });
     const repository = createInstallmentPlansRepository(prisma as unknown as PrismaClient);
 
     await expect(repository.markNextDuePaid(planId, new Date("2026-07-15T12:00:00.000Z"))).resolves.toMatchObject({
@@ -226,16 +227,37 @@ describe("createInstallmentPlansRepository", () => {
       plan: { paidInstallmentsCount: 2 },
       effects: [{ planId, installmentIndex: 2, status: "created" }],
     });
-    expect(tx.installmentPlan.update).toHaveBeenCalledWith({
-      where: { id: planId },
+    expect(tx.installmentPlan.updateMany).toHaveBeenCalledWith({
+      where: { id: planId, deletedAt: null, paidInstallmentsCount: { lt: 2 } },
       data: { paidInstallmentsCount: 2 },
     });
-    expect(tx.transaction.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+    expect(tx.transaction.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({
+        accountId,
+        installmentPlanId: planId,
         amount: new Prisma.Decimal("-100.00"),
         date: new Date("2026-07-01T00:00:00.000Z"),
         cuotaInstallmentIndex: 2,
-      }),
+      })],
+      skipDuplicates: true,
+    });
+  });
+
+  it("treats duplicate installment ledger inserts as already existing", async () => {
+    const { prisma, tx } = createPrismaMock();
+    tx.installmentPlan.findFirst
+      .mockResolvedValueOnce({ ...basePlan, paidInstallmentsCount: 1 })
+      .mockResolvedValueOnce({ ...basePlan, paidInstallmentsCount: 2 });
+    tx.account.findFirst.mockResolvedValue({ id: accountId });
+    tx.transaction.createMany.mockResolvedValue({ count: 0 });
+    tx.installmentPlan.updateMany.mockResolvedValue({ count: 0 });
+    const repository = createInstallmentPlansRepository(prisma as unknown as PrismaClient);
+
+    await expect(repository.markNextDuePaid(planId, new Date("2026-07-15T12:00:00.000Z"))).resolves.toMatchObject({
+      status: "paid",
+      installmentIndex: 2,
+      plan: { paidInstallmentsCount: 2 },
+      effects: [{ planId, installmentIndex: 2, status: "already_exists" }],
     });
   });
 
@@ -255,8 +277,8 @@ describe("createInstallmentPlansRepository", () => {
       effects: [],
     });
     expect(tx.account.findFirst).not.toHaveBeenCalled();
-    expect(tx.transaction.create).not.toHaveBeenCalled();
-    expect(tx.installmentPlan.update).not.toHaveBeenCalled();
+    expect(tx.transaction.createMany).not.toHaveBeenCalled();
+    expect(tx.installmentPlan.updateMany).not.toHaveBeenCalled();
   });
 
   it("reconciles elapsed installments without duplicating existing generated transactions", async () => {
@@ -268,12 +290,12 @@ describe("createInstallmentPlansRepository", () => {
       startMonth: new Date("2026-06-01T00:00:00.000Z"),
     }]);
     tx.account.findFirst.mockResolvedValue({ id: accountId });
-    tx.transaction.findFirst
-      .mockResolvedValueOnce({ id: "existing-installment-1" })
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(null);
-    tx.transaction.create.mockResolvedValue({ id: "created-installment" });
-    tx.installmentPlan.update.mockResolvedValue({
+    tx.transaction.createMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 1 });
+    tx.installmentPlan.updateMany.mockResolvedValue({ count: 1 });
+    tx.installmentPlan.findFirst.mockResolvedValue({
       ...basePlan,
       installmentsCount: 4,
       paidInstallmentsCount: 3,
@@ -290,9 +312,9 @@ describe("createInstallmentPlansRepository", () => {
         { installmentIndex: 3, status: "created" },
       ],
     }]);
-    expect(tx.transaction.create).toHaveBeenCalledTimes(2);
-    expect(tx.installmentPlan.update).toHaveBeenCalledWith({
-      where: { id: planId },
+    expect(tx.transaction.createMany).toHaveBeenCalledTimes(3);
+    expect(tx.installmentPlan.updateMany).toHaveBeenCalledWith({
+      where: { id: planId, deletedAt: null, paidInstallmentsCount: { lt: 3 } },
       data: { paidInstallmentsCount: 3 },
     });
   });

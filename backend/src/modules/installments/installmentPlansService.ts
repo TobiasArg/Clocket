@@ -31,6 +31,18 @@ const assertInstallmentCounts = (installmentsCount?: number, paidInstallmentsCou
   }
 };
 
+const assertPaidCountHasLedgerMaterialization = (
+  paidInstallmentsCount: number | undefined,
+  generatedTransactionAccountId: string | undefined,
+): void => {
+  if ((paidInstallmentsCount ?? 0) > 0 && !generatedTransactionAccountId) {
+    throw new CoreFinanceApiError(
+      "Paid installments require a generated transaction account so ledger effects are materialized.",
+      { code: "INVALID_REQUEST", status: 400 },
+    );
+  }
+};
+
 export const createInstallmentPlansService = ({ repository }: { repository: InstallmentPlansRepository }): InstallmentPlansService => {
   const requireFound = <T>(record: T | null, id: string): T => {
     if (!record) throw new CoreFinanceApiError(`Installment plan '${id}' was not found.`, { code: "NOT_FOUND", status: 404 });
@@ -64,6 +76,8 @@ export const createInstallmentPlansService = ({ repository }: { repository: Inst
     const installmentAmount = readDecimalInput(parsedBody.value, "installmentAmount", false);
     if (!installmentAmount.ok) throw new CoreFinanceApiError(installmentAmount.response.error, installmentAmount.response);
     assertInstallmentCounts(installmentsCount.value, paidInstallmentsCount.value);
+    const generatedTransactionAccountId = readNullable(parsedBody.value, "generatedTransactionAccountId") ?? undefined;
+    assertPaidCountHasLedgerMaterialization(paidInstallmentsCount.value, generatedTransactionAccountId);
     if (parsedBody.value.currency !== undefined && !isValidCurrency(parsedBody.value.currency)) throw new CoreFinanceApiError("Field 'currency' must be 'USD' or 'ARS'.", { code: "INVALID_REQUEST", status: 400 });
     return {
       title: title.value,
@@ -77,7 +91,7 @@ export const createInstallmentPlansService = ({ repository }: { repository: Inst
       categoryId: readNullable(parsedBody.value, "categoryId"),
       subcategoryId: readNullable(parsedBody.value, "subcategoryId"),
       subcategoryName: readNullable(parsedBody.value, "subcategoryName"),
-      generatedTransactionAccountId: readNullable(parsedBody.value, "generatedTransactionAccountId") ?? undefined,
+      generatedTransactionAccountId,
     };
   };
 
@@ -107,9 +121,10 @@ export const createInstallmentPlansService = ({ repository }: { repository: Inst
       patch.installmentsCount = count.value;
     }
     if ("paidInstallmentsCount" in parsedBody.value) {
-      const paid = readIntegerInput(parsedBody.value, "paidInstallmentsCount", true);
-      if (!paid.ok || paid.value === undefined) throw new CoreFinanceApiError(paid.ok ? "Paid installments count is required." : paid.response.error, paid.ok ? { code: "INVALID_REQUEST", status: 400 } : paid.response);
-      patch.paidInstallmentsCount = paid.value;
+      throw new CoreFinanceApiError(
+        "Paid installments count can only be changed through installment ledger effect endpoints.",
+        { code: "INVALID_REQUEST", status: 400 },
+      );
     }
     assertInstallmentCounts(patch.installmentsCount, patch.paidInstallmentsCount);
     if ("startMonth" in parsedBody.value) {

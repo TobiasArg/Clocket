@@ -342,11 +342,11 @@ const buildGeneratedTransactionForIndex = (
   plan: InstallmentPlanModel,
   accountId: string,
   installmentIndex: number,
-): Prisma.TransactionCreateInput => ({
-  account: { connect: { id: accountId } },
-  ...(plan.categoryId ? { category: { connect: { id: plan.categoryId } } } : {}),
-  ...(plan.subcategoryId ? { subcategory: { connect: { id: plan.subcategoryId } } } : {}),
-  installmentPlan: { connect: { id: plan.id } },
+): Prisma.TransactionCreateManyInput => ({
+  accountId,
+  categoryId: plan.categoryId,
+  subcategoryId: plan.subcategoryId,
+  installmentPlanId: plan.id,
   transactionType: "REGULAR",
   name: plan.title,
   amount: plan.installmentAmount.negated(),
@@ -364,24 +364,16 @@ const ensureGeneratedTransactionForIndex = async (
   accountId: string,
   installmentIndex: number,
 ): Promise<GeneratedInstallmentLedgerEffectRecord> => {
-  const existing = await tx.transaction.findFirst({
-    where: {
-      installmentPlanId: plan.id,
-      cuotaInstallmentIndex: installmentIndex,
-      deletedAt: null,
-    },
-    select: { id: true },
+  const result = await tx.transaction.createMany({
+    data: [buildGeneratedTransactionForIndex(plan, accountId, installmentIndex)],
+    skipDuplicates: true,
   });
 
-  if (existing) {
-    return { planId: plan.id, installmentIndex, status: "already_exists" };
-  }
-
-  await tx.transaction.create({
-    data: buildGeneratedTransactionForIndex(plan, accountId, installmentIndex),
-  });
-
-  return { planId: plan.id, installmentIndex, status: "created" };
+  return {
+    planId: plan.id,
+    installmentIndex,
+    status: result.count === 1 ? "created" : "already_exists",
+  };
 };
 
 const reconcileGeneratedTransactions = async (
@@ -576,10 +568,15 @@ export const createInstallmentPlansRepository = (prisma: PrismaClient): Installm
       }
 
       const effects = await reconcileGeneratedTransactions(tx, plan, installmentIndex);
-      const updatedPlan = await tx.installmentPlan.update({
-        where: { id: plan.id },
+      await tx.installmentPlan.updateMany({
+        where: {
+          id: plan.id,
+          deletedAt: null,
+          paidInstallmentsCount: { lt: installmentIndex },
+        },
         data: { paidInstallmentsCount: installmentIndex },
       });
+      const updatedPlan = await tx.installmentPlan.findFirst({ where: { id: plan.id, deletedAt: null } }) ?? plan;
 
       return {
         plan: updatedPlan,
@@ -627,12 +624,17 @@ export const createInstallmentPlansRepository = (prisma: PrismaClient): Installm
           plan,
           targetPaidInstallmentsCount,
         );
-        const updatedPlan = targetPaidInstallmentsCount > plan.paidInstallmentsCount
-          ? await tx.installmentPlan.update({
-              where: { id: plan.id },
-              data: { paidInstallmentsCount: targetPaidInstallmentsCount },
-            })
-          : plan;
+        if (targetPaidInstallmentsCount > plan.paidInstallmentsCount) {
+          await tx.installmentPlan.updateMany({
+            where: {
+              id: plan.id,
+              deletedAt: null,
+              paidInstallmentsCount: { lt: targetPaidInstallmentsCount },
+            },
+            data: { paidInstallmentsCount: targetPaidInstallmentsCount },
+          });
+        }
+        const updatedPlan = await tx.installmentPlan.findFirst({ where: { id: plan.id, deletedAt: null } }) ?? plan;
 
         reconciled.push({
           plan: updatedPlan,
