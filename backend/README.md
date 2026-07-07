@@ -5,12 +5,11 @@ Backend scaffold using Next.js (API routes).
 Quick start:
 
 ```bash
-cd backend
-npm install
-npm run dev
+npm --prefix backend install
+npm --prefix backend run dev
 ```
 
-The dev server runs on port 3001 (configured in package scripts).
+The backend dev script runs `prisma generate` and starts the API server on port `3001`. From the repository root, `npm run dev:backend` also starts local PostgreSQL and applies existing migrations before calling this script.
 
 ## Market Quotes API
 
@@ -37,17 +36,29 @@ npm run build
 
 ## PostgreSQL + Prisma foundation
 
-The persistence schema targets Prisma ORM + PostgreSQL. Start the local database with:
+The persistence schema targets Prisma ORM + PostgreSQL. From the repository root, start the local database with:
 
 ```bash
-docker compose up -d postgres
+npm run db:up
 ```
 
 Then validate and generate Prisma artifacts:
 
 ```bash
-npm run prisma:validate
-npm run prisma:generate
+npm --prefix backend run prisma:validate
+npm --prefix backend run prisma:generate
+```
+
+To create new migrations intentionally, use:
+
+```bash
+npm run db:migrate:dev
+```
+
+For the full containerized development stack, run from the repository root:
+
+```bash
+npm run docker:up
 ```
 
 Database-backed smoke tests are opt-in so normal unit tests do not require a running PostgreSQL instance:

@@ -3,7 +3,8 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "next dev -p 3001",
+        "dev": "prisma generate && next dev -p 3001",
+        "dev:docker": "prisma generate && next dev -H 0.0.0.0 -p 3001",
         "build": "prisma generate && next build",
         "start": "next start -p 3001",
         "test": "prisma generate && vitest run",

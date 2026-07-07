@@ -1,0 +1,17 @@
+{
+  "name": "clocket-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run db:up && npm run db:migrate && npm --prefix frontend exec concurrently -- -k -n backend,frontend -c cyan,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm run db:up && npm run db:migrate && npm --prefix backend run dev",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose stop postgres",
+    "db:migrate": "DATABASE_URL=\"postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public\" DIRECT_URL=\"postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public\" npm --prefix backend exec prisma migrate deploy",
+    "db:migrate:dev": "DATABASE_URL=\"postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public\" DIRECT_URL=\"postgresql://clocket:clocket@127.0.0.1:5433/clocket_dev?schema=public\" npm --prefix backend run prisma:migrate:dev",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:migrate": "docker compose exec backend npm run prisma:migrate:dev"
+  }
+}

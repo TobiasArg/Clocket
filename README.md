@@ -1,38 +1,94 @@
 # Clocket App — Monorepo
 
-Estructura inicial con dos proyectos:
+Monorepo de finanzas personales con dos aplicaciones:
 
-- `frontend` — Vite + React (puerto 5173)
-- `backend` — Next.js con API routes (puerto 3001)
+- `frontend` — Vite + React + TypeScript, puerto `5173`.
+- `backend` — Next.js API Routes + Prisma/PostgreSQL, puerto `3001`.
 
-Este repositorio ahora tiene un único `README.md` raíz con las instrucciones de ejecución. Se han eliminado los `README.md` duplicados en las carpetas `frontend` y `backend`.
+## Desarrollo nativo
 
-Instrucciones rápidas:
+Cada entorno se levanta por separado. `npm --prefix frontend run dev` ya no inicia el backend.
 
-## Backend
+### Instalar dependencias
 
 ```bash
-cd backend
-npm install
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+### Base de datos local
+
+```bash
+npm run db:up
+npm run db:migrate
+```
+
+`db:up` levanta PostgreSQL desde `compose.yaml` en `127.0.0.1:5433`. `db:migrate` aplica migraciones existentes con `prisma migrate deploy`.
+
+### Levantar apps separadas
+
+```bash
+npm run dev:backend
+npm run dev:frontend
+```
+
+`dev:backend` levanta PostgreSQL local si hace falta, aplica migraciones existentes y luego inicia Next.js en `3001`. El script propio del backend solo genera Prisma Client e inicia Next.
+
+También se puede ejecutar desde cada carpeta:
+
+```bash
+npm --prefix backend run dev
+npm --prefix frontend run dev
+```
+
+### Levantar ambas apps desde raíz
+
+```bash
 npm run dev
 ```
 
-El servidor de desarrollo de Next.js se ejecuta en el puerto 3001 (según los scripts).
+Este comando solo orquesta procesos; el frontend y backend siguen teniendo scripts independientes.
 
-## Frontend
+## Desarrollo con Docker
+
+Levanta PostgreSQL, aplica migraciones existentes, backend y frontend:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+npm run docker:up
 ```
 
-El frontend corre con Vite en el puerto 5173 por defecto. Por defecto el `App.jsx` hace fetch a `http://localhost:3001/api/hello`.
+Servicios publicados:
 
-Notas:
+- Frontend: `http://127.0.0.1:5173`
+- Backend: `http://127.0.0.1:3001`
+- PostgreSQL: `127.0.0.1:5433`
 
-- Si prefieres mantener READMEs separados, puedo restaurarlos; actualmente fueron combinados en el README raíz para reducir duplicación.
-- También consolidé las reglas de `.gitignore` en la raíz y eliminé los `.gitignore` en las subcarpetas.
+Para crear/aplicar nuevas migraciones durante desarrollo:
+
+```bash
+npm run docker:migrate
+```
+
+Para apagar el stack:
+
+```bash
+npm run docker:down
+```
+
+## Variables de entorno
+
+- Backend: copiar `backend/.env.example` a `backend/.env` para desarrollo nativo.
+- Frontend: `VITE_API_PROXY_TARGET` es opcional y por defecto apunta a `http://127.0.0.1:3001`.
+- Los scripts raíz `db:*`, `dev` y `dev:backend` fuerzan la `DATABASE_URL` local para evitar aplicar migraciones accidentalmente sobre una DB remota configurada en `backend/.env`.
+- Docker sobreescribe `DATABASE_URL`, `DIRECT_URL` y `VITE_API_PROXY_TARGET` para usar la red interna de Compose. No se versionan API keys en Compose.
+
+## Validación
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+npm --prefix backend run build
+```
 
 ## Flujo global seguro para agentes Codex
 

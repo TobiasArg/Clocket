@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n backend,frontend -c cyan,green \"npm --prefix ../backend run dev\" \"vite\"",
+    "dev": "vite",
     "dev:ui": "vite",
     "build": "vite build",
     "build:ci": "vite build && npm run bundle:check",
