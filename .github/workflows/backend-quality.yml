@@ -1,0 +1,44 @@
+name: Backend Quality
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-quality.yml"
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-quality.yml"
+
+jobs:
+  backend-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm --prefix backend ci
+
+      - name: Run backend tests
+        run: npm --prefix backend test
+
+      - name: Typecheck backend
+        run: npm --prefix backend run typecheck
+
+      - name: Validate Prisma schema
+        run: npm --prefix backend run prisma:validate
+
+      - name: Build backend
+        run: npm --prefix backend run build

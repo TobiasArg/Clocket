@@ -71,9 +71,12 @@ Toda PR debe incluir:
 
 ## 6. CI Alignment
 
-Regla minima actual:
+Gates actuales:
 
-- `frontend-bundle-check.yml` corre en PRs y pushes a `main`/`dev` cuando hay cambios en `frontend/**`.
+- `frontend-bundle-check.yml` corre en PRs y pushes a `main`/`dev` cuando hay cambios en `frontend/**`; valida tests, typecheck, lint, build y bundle budget.
+- `backend-quality.yml` corre en PRs y pushes a `main`/`dev` cuando hay cambios en `backend/**`; valida tests, typecheck, Prisma schema y build.
+- `openspec-validation.yml` corre en PRs y pushes a `main`/`dev` cuando hay cambios en `openspec/**`; valida cambios activos y specs canonicas en modo strict.
+- `backend-db-smoke.yml` corre en PRs y pushes a `main`/`dev` para cambios sensibles de persistencia (`backend/prisma/**`, `backend/src/persistence/**`, package files de backend) y tambien admite `workflow_dispatch`; valida smoke PostgreSQL con `RUN_DB_TESTS=1`.
 
 La validacion local no reemplaza CI; ambas son obligatorias.
 

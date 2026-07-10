@@ -23,6 +23,15 @@ The repository has local scripts for frontend and backend validation, but CI onl
 3. **DB smoke is isolated.** PostgreSQL smoke uses GitHub Actions service containers and `RUN_DB_TESTS=1`, not developer-local Docker assumptions.
 4. **Bundle budget expands separately.** The existing budget remains, but this change may extend it to total JS/CSS/chunk budgets if practical.
 
+## Workflow path filters
+
+| Workflow | Trigger paths | Safety rationale |
+| --- | --- | --- |
+| `frontend-bundle-check.yml` | `frontend/**`, workflow file | Frontend tests, typecheck, lint, build, and bundle budget only depend on frontend package/source/config inputs. |
+| `backend-quality.yml` | `backend/**`, workflow file | Backend unit tests, typecheck, Prisma validation, and build only depend on backend package/source/config inputs. |
+| `openspec-validation.yml` | `openspec/**`, workflow file | OpenSpec strict validation is required when change/spec artifacts or the workflow itself change. |
+| `backend-db-smoke.yml` | `backend/prisma/**`, `backend/src/persistence/**`, backend package lock/manifest, workflow file | PostgreSQL smoke is targeted to persistence-sensitive inputs: Prisma schema/migrations, DB client/config/tests, and dependency changes. Manual `workflow_dispatch` remains available for explicit verification outside these paths. |
+
 ## Risks / Trade-offs
 
 - CI runtime will increase → use dependency caching and path filters carefully.
