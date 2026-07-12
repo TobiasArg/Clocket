@@ -45,6 +45,8 @@ export { CategoryItem } from "./CategoryItem/CategoryItem";
 export type { CategoryItemProps } from "./CategoryItem/CategoryItem";
 export { Divider } from "./Divider/Divider";
 export type { DividerProps } from "./Divider/Divider";
+export { ConfirmDialog } from "./ConfirmDialog/ConfirmDialog";
+export type { ConfirmDialogProps } from "./ConfirmDialog/ConfirmDialog";
 export { Dot } from "./Dot/Dot";
 export type { DotProps } from "./Dot/Dot";
 export { ExpandableListItem } from "./ExpandableListItem/ExpandableListItem";

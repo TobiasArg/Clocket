@@ -76,6 +76,7 @@ export type {
   UsePullToRefreshOptions,
   UsePullToRefreshResult,
 } from "./usePullToRefresh";
+export { useDialogFocusLifecycle } from "./useDialogFocusLifecycle";
 export { useMorePageModel } from "./useMorePageModel";
 export type {
   UseMorePageModelOptions,

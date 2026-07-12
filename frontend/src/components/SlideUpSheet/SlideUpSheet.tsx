@@ -2,6 +2,7 @@ import { memo } from "react";
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   type CSSProperties,
@@ -9,6 +10,7 @@ import {
   type ReactNode,
   type TouchEvent as ReactTouchEvent,
 } from "react";
+import { useDialogFocusLifecycle } from "@/hooks/useDialogFocusLifecycle";
 
 const DEFAULT_MAX_DRAG_UP_DISTANCE = 220;
 const DEFAULT_CLOSE_THRESHOLD_RATIO = 0.5;
@@ -43,7 +45,7 @@ export const SlideUpSheet = memo(function SlideUpSheet({
   onRequestClose,
   onSubmit,
   backdropAriaLabel = "Cerrar panel",
-  handleAriaLabel = "Desliza hacia arriba para cerrar",
+  handleAriaLabel = "Cerrar panel",
   maxDragUpDistance = DEFAULT_MAX_DRAG_UP_DISTANCE,
   closeThresholdRatio = DEFAULT_CLOSE_THRESHOLD_RATIO,
   closeAnimationMs = DEFAULT_CLOSE_ANIMATION_MS,
@@ -60,6 +62,7 @@ export const SlideUpSheet = memo(function SlideUpSheet({
   const [isEntered, setIsEntered] = useState<boolean>(false);
 
   const panelRef = useRef<HTMLDivElement | HTMLFormElement | null>(null);
+  const titleId = useId();
   const gestureStartYRef = useRef<number | null>(null);
   const pointerIdRef = useRef<number | null>(null);
   const dragOffsetRef = useRef<number>(0);
@@ -232,26 +235,24 @@ export const SlideUpSheet = memo(function SlideUpSheet({
       setIsEntered(true);
     });
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        triggerClose();
-      }
-    };
-
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       clearCloseTimeout();
       window.cancelAnimationFrame(frameId);
-      window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       gestureStartYRef.current = null;
       pointerIdRef.current = null;
       isClosingRef.current = false;
     };
   }, [clearCloseTimeout, isOpen, setDragOffsetStyle, triggerClose]);
+
+  useDialogFocusLifecycle({
+    containerRef: panelRef,
+    isOpen,
+    onDismiss: triggerClose,
+  });
 
   if (!isOpen) {
     return null;
@@ -275,7 +276,9 @@ export const SlideUpSheet = memo(function SlideUpSheet({
   const content = (
     <>
       <div className={headerClassName}>
-        <span className="text-[11px] font-semibold tracking-[1px] text-[var(--text-secondary)]">{title}</span>
+        <h2 id={titleId} className="text-[11px] font-semibold tracking-[1px] text-[var(--text-secondary)]">
+          {title}
+        </h2>
       </div>
 
       <div className={bodyClassName}>{children}</div>
@@ -296,6 +299,7 @@ export const SlideUpSheet = memo(function SlideUpSheet({
         onTouchMove={!supportsPointerEvents ? handleTouchMove : undefined}
         onTouchEnd={!supportsPointerEvents ? finishGesture : undefined}
         onTouchCancel={!supportsPointerEvents ? finishGesture : undefined}
+        onClick={triggerClose}
         className={handleClassName}
         aria-label={handleAriaLabel}
       >
@@ -333,6 +337,10 @@ export const SlideUpSheet = memo(function SlideUpSheet({
             }}
             className={panelClassName}
             style={panelStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
           >
             {content}
           </form>
@@ -343,6 +351,10 @@ export const SlideUpSheet = memo(function SlideUpSheet({
             }}
             className={panelClassName}
             style={panelStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
           >
             {content}
           </div>
