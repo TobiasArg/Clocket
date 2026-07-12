@@ -38,9 +38,9 @@ export const PageHeader = memo(function PageHeader({
             <PhosphorIcon name="arrow-left" className="text-[var(--text-primary)]" />
           </button>
         ) : null}
-        <span className="block truncate font-['Outfit'] text-2xl font-bold text-[var(--text-primary)]">
+        <h1 className="block truncate font-['Outfit'] text-2xl font-bold text-[var(--text-primary)]">
           {title}
-        </span>
+        </h1>
       </div>
       {onActionClick && (
         <button

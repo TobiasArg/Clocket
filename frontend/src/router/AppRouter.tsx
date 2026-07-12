@@ -81,9 +81,9 @@ interface AppRouterProps {
   navigateTo: (path: AppPath) => void;
 }
 
-function RouterFallback({ label = "Cargando..." }: { label?: string }) {
+function RouterFallback({ label = "Cargando…" }: { label?: string }) {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-white px-5">
+    <div className="flex h-full w-full items-center justify-center bg-white px-5" role="status" aria-live="polite">
       <span className="text-sm font-medium text-[#71717A]">{label}</span>
     </div>
   );
@@ -228,7 +228,7 @@ export function AppRouter({ currentPath, navigateTo }: AppRouterProps) {
       );
     case "/statistics":
       return (
-        <Suspense fallback={<RouterFallback label="Cargando estadísticas..." />}>
+        <Suspense fallback={<RouterFallback label="Cargando estadísticas…" />}>
           <StatisticsLazy avatarInitials={avatarInitials} />
         </Suspense>
       );

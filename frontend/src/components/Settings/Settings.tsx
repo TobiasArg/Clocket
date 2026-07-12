@@ -112,9 +112,9 @@ const getItemKey = (sectionIndex: number, itemIndex: number): SettingsItemKey | 
 export function Settings({
   headerTitle = "Settings",
   sections,
-  loadingLabel = "Cargando configuración...",
+  loadingLabel = "Cargando configuración…",
   errorLabel = "No pudimos cargar configuración. Intenta nuevamente.",
-  savedLabel = "Guardado",
+  savedLabel = "Cambios guardados",
   onBackClick,
   onItemClick,
 }: SettingsProps) {
@@ -227,19 +227,19 @@ export function Settings({
       <div className="flex-1 overflow-auto">
         <div className="flex flex-col gap-6 px-5 py-2">
           {statusMessage && (
-            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-2">
+            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-2" role="status" aria-live="polite">
               <span className="text-xs font-medium text-[var(--text-secondary)]">{statusMessage}</span>
             </div>
           )}
 
           {isLoading && !settings && (
-            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4" role="status" aria-live="polite">
               <span className="text-sm font-medium text-[var(--text-secondary)]">{loadingLabel}</span>
             </div>
           )}
 
           {!isLoading && error && (
-            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4">
+            <div className="clocket-glass-card rounded-2xl bg-[var(--surface-muted)] px-4 py-4" role="alert">
               <span className="text-sm font-medium text-[var(--text-secondary)]">{errorLabel}</span>
             </div>
           )}

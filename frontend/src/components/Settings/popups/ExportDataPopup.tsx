@@ -38,7 +38,7 @@ export function ExportDataPopup({
 
     try {
       await downloadJsonExport();
-      onExportSuccess?.("Backup JSON descargado");
+      onExportSuccess?.("Backup JSON descargado correctamente");
     } catch (error) {
       setError(formatSettingsExportErrorMessage(error));
     } finally {
@@ -52,9 +52,9 @@ export function ExportDataPopup({
 
     try {
       await downloadTransactionsCsvExport();
-      onExportSuccess?.("CSV de transacciones descargado");
+      onExportSuccess?.("CSV de transacciones descargado correctamente");
     } catch {
-      setError("No pudimos generar el CSV.");
+      setError("No pudimos generar el CSV. Intenta exportar nuevamente.");
     } finally {
       setIsExportingCsv(false);
     }
@@ -80,7 +80,7 @@ export function ExportDataPopup({
             <span className="text-sm font-semibold">Backup JSON</span>
             <span className="text-xs font-medium text-white/80">Incluye configuración y datos clave</span>
           </span>
-          <span className="text-xs font-semibold">{isExportingJson ? "Generando..." : "Descargar"}</span>
+          <span className="text-xs font-semibold">{isExportingJson ? "Generando…" : "Descargar"}</span>
         </button>
 
         <button
@@ -95,11 +95,17 @@ export function ExportDataPopup({
             <span className="text-sm font-semibold">CSV transacciones</span>
             <span className="text-xs font-medium text-[var(--text-secondary)]">Formato listo para análisis externo</span>
           </span>
-          <span className="text-xs font-semibold">{isExportingCsv ? "Generando..." : "Descargar"}</span>
+          <span className="text-xs font-semibold">{isExportingCsv ? "Generando…" : "Descargar"}</span>
         </button>
 
+        {isBusy && (
+          <span className="rounded-lg bg-[var(--surface-muted)] px-2.5 py-2 text-xs font-semibold text-[var(--text-secondary)]" role="status" aria-live="polite">
+            Preparando exportación…
+          </span>
+        )}
+
         {error && (
-          <span className="rounded-lg bg-[#FEF2F2] px-2.5 py-2 text-xs font-semibold text-[#B91C1C]">{error}</span>
+          <span className="rounded-lg bg-[#FEF2F2] px-2.5 py-2 text-xs font-semibold text-[#B91C1C]" role="alert">{error}</span>
         )}
 
         <div className="mt-1 flex items-center justify-end">

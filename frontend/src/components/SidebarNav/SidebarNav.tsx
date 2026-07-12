@@ -42,7 +42,7 @@ export function SidebarNav({
           <span className="text-[22px] font-extrabold text-[var(--text-primary)] font-['Outfit']">{logoName}</span>
         </div>
 
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-2" aria-label="Navegación principal">
           {navItems.map((item, i) => {
             const isActive = item.to ? isPathActive(item.to) : Boolean(item.active);
             const rowClassName = `flex items-center gap-3.5 px-4 py-3.5 rounded-[14px] text-left ${
@@ -60,6 +60,7 @@ export function SidebarNav({
                     onNavItemClick?.(i);
                   }}
                   className={rowClassName}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <PhosphorIcon
                     name={item.icon}
@@ -79,6 +80,7 @@ export function SidebarNav({
                 key={item.label}
                 onClick={() => onNavItemClick?.(i)}
                 className={rowClassName}
+                aria-current={isActive ? "page" : undefined}
               >
                 <PhosphorIcon
                   name={item.icon}
@@ -110,6 +112,7 @@ export function SidebarNav({
                         onNavItemClick?.(navItems.length + i);
                       }}
                       className={rowClassName}
+                      aria-current={isActive ? "page" : undefined}
                     >
                       <PhosphorIcon
                         name={item.icon}
@@ -129,6 +132,7 @@ export function SidebarNav({
                     key={item.label}
                     onClick={() => onNavItemClick?.(navItems.length + i)}
                     className={rowClassName}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     <PhosphorIcon
                       name={item.icon}

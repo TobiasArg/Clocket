@@ -81,7 +81,7 @@ export function Transactions({
   quickAddAmountErrorLabel = "Ingresa un monto mayor a 0.",
   quickAddDescriptionErrorLabel = "Puedes dejarlo vacío.",
   quickAddAccountErrorLabel = "Selecciona una cuenta.",
-  savedLabel = "Guardado",
+  savedLabel = "Cambios guardados",
   monthlyBalanceTitle = "Balance mensual",
   monthlyNetLabel = "Neto",
   monthlyIncomeLabel = "Ingresos",
@@ -174,7 +174,7 @@ export function Transactions({
         <div className={`h-full overflow-auto px-5 py-2 ${isEditorOpen ? "pointer-events-none" : ""}`}>
           <div className="flex flex-col gap-6">
             {showSaved && (
-              <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-2">
+              <div className="rounded-2xl bg-[var(--surface-muted)] px-4 py-2" role="status" aria-live="polite">
                 <span className="text-xs font-medium text-[var(--text-secondary)]">{savedLabel}</span>
               </div>
             )}

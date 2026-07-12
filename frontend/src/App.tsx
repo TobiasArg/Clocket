@@ -17,9 +17,12 @@ export function App() {
     <ErrorBoundary>
       <div className={rootClass}>
         <div className={shellClass}>
-          <div className="app-router-host">
+          <a href="#main-content" className="skip-link">
+            Saltar al contenido principal
+          </a>
+          <main id="main-content" className="app-router-host" tabIndex={-1}>
             <AppRouter currentPath={currentPath} navigateTo={navigateTo} />
-          </div>
+          </main>
         </div>
       </div>
     </ErrorBoundary>

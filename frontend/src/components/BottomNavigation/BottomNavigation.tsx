@@ -26,7 +26,7 @@ export const BottomNavigation = memo(function BottomNavigation({
   };
 
   return (
-    <div className="border-t border-[var(--surface-border)] bg-[var(--panel-bg)] pb-[env(safe-area-inset-bottom)]">
+    <nav className="border-t border-[var(--surface-border)] bg-[var(--panel-bg)] pb-[env(safe-area-inset-bottom)]" aria-label="Navegación principal">
       <div className="flex items-center h-[80px] px-4">
         {items.map((item, i) => {
           const isActive = item.to ? isPathActive(item.to) : Boolean(item.active);
@@ -45,6 +45,7 @@ export const BottomNavigation = memo(function BottomNavigation({
                 }}
                 className={baseClassName}
                 aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
               >
                 <PhosphorIcon
                   name={item.icon}
@@ -71,6 +72,7 @@ export const BottomNavigation = memo(function BottomNavigation({
               onClick={() => onItemClick?.(i)}
               className={baseClassName}
               aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
             >
               <PhosphorIcon
                 name={item.icon}
@@ -90,6 +92,6 @@ export const BottomNavigation = memo(function BottomNavigation({
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 });

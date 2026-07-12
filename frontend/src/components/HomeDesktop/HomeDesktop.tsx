@@ -144,7 +144,7 @@ export function HomeDesktop({
         onNavItemClick={onNavItemClick}
       />
 
-      <main className="flex-1 overflow-auto px-12 py-10">
+      <div className="flex-1 overflow-auto px-12 py-10">
         <div className="flex flex-col gap-10 max-w-[1100px]">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -400,7 +400,7 @@ export function HomeDesktop({
             </CardSection>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
