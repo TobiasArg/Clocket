@@ -349,6 +349,9 @@ export interface UseInvestmentsPageModelResult {
   isDetailOpen: boolean;
   isEntriesLoading: boolean;
   deletingEntryId: string | null;
+  isEntryDeleteConfirmOpen: boolean;
+  pendingDeleteEntryId: string | null;
+  pendingDeleteEntryLabel: string | null;
   isDeleteConfirmOpen: boolean;
   pendingDeletePositionId: string | null;
   isDeleteSubmitting: boolean;
@@ -383,7 +386,9 @@ export interface UseInvestmentsPageModelResult {
   handleOpenDetail: (id: string) => void;
   handleCloseDetail: () => void;
   handleCloseEditor: () => void;
-  handleDeleteEntry: (entryId: string) => Promise<void>;
+  handleDeleteEntry: (entryId: string) => void;
+  handleCancelDeleteEntry: () => void;
+  handleConfirmDeleteEntry: () => Promise<void>;
   handleRequestDelete: (id: string) => void;
   handleCancelDelete: () => void;
   handleConfirmDelete: () => Promise<void>;
@@ -476,6 +481,7 @@ export const useInvestmentsPageModel = (
   const [selectedEntries, setSelectedEntries] = useState<PositionEntryRow[]>([]);
   const [isEntriesLoading, setIsEntriesLoading] = useState<boolean>(false);
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
+  const [pendingDeleteEntryId, setPendingDeleteEntryId] = useState<string | null>(null);
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
   const [pendingDeletePositionId, setPendingDeletePositionId] = useState<string | null>(null);
@@ -863,19 +869,45 @@ export const useInvestmentsPageModel = (
     resetEditor();
   };
 
+  const pendingDeleteEntryLabel = useMemo(() => {
+    if (!pendingDeleteEntryId) {
+      return null;
+    }
+
+    const entry = selectedEntries.find((item) => item.id === pendingDeleteEntryId);
+    if (!entry) {
+      return null;
+    }
+
+    return `${entry.entryTypeLabel} · ${entry.createdAtLabel}`;
+  }, [pendingDeleteEntryId, selectedEntries]);
+
   const handleDeleteEntry = useCallback(
-    async (entryId: string): Promise<void> => {
+    (entryId: string): void => {
       if (!selectedPositionId || deletingEntryId) {
         return;
       }
 
-      const confirmed = window.confirm(
-        "¿Eliminar esta entrada? Esta acción recalculará la posición.",
-      );
-      if (!confirmed) {
+      setPendingDeleteEntryId(entryId);
+    },
+    [deletingEntryId, selectedPositionId],
+  );
+
+  const handleCancelDeleteEntry = useCallback((): void => {
+    if (deletingEntryId) {
+      return;
+    }
+
+    setPendingDeleteEntryId(null);
+  }, [deletingEntryId]);
+
+  const handleConfirmDeleteEntry = useCallback(
+    async (): Promise<void> => {
+      if (!selectedPositionId || !pendingDeleteEntryId || deletingEntryId) {
         return;
       }
 
+      const entryId = pendingDeleteEntryId;
       setDeletingEntryId(entryId);
       try {
         const removed = await deleteEntry(entryId);
@@ -894,9 +926,10 @@ export const useInvestmentsPageModel = (
         });
       } finally {
         setDeletingEntryId(null);
+        setPendingDeleteEntryId(null);
       }
     },
-    [deleteEntry, deletingEntryId, loadEntriesForPosition, selectedPositionId],
+    [deleteEntry, deletingEntryId, loadEntriesForPosition, pendingDeleteEntryId, selectedPositionId],
   );
 
   const handleRequestDelete = (id: string) => {
@@ -1037,6 +1070,9 @@ export const useInvestmentsPageModel = (
     isDetailOpen,
     isEntriesLoading,
     deletingEntryId,
+    isEntryDeleteConfirmOpen: pendingDeleteEntryId !== null,
+    pendingDeleteEntryId,
+    pendingDeleteEntryLabel,
     isDeleteConfirmOpen,
     pendingDeletePositionId,
     isDeleteSubmitting,
@@ -1072,6 +1108,8 @@ export const useInvestmentsPageModel = (
     handleCloseDetail,
     handleCloseEditor,
     handleDeleteEntry,
+    handleCancelDeleteEntry,
+    handleConfirmDeleteEntry,
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,

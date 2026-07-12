@@ -321,21 +321,41 @@ export const TransactionSwipeDeleteRow = memo(function TransactionSwipeDeleteRow
               </span>
               {isDeleting ? (
                 <span className="text-[10px] font-semibold text-[var(--text-secondary)]">
-                  {`${deleteActionLabel}...`}
+                  {`${deleteActionLabel}…`}
                 </span>
               ) : (
-                <div className="flex items-center gap-1 text-[10px] font-medium text-[var(--text-secondary)]">
-                  <PhosphorIcon
-                    name="pencil-simple"
-                    size="text-[10px]"
-                    className="text-[var(--text-secondary)]"
-                  />
-                  <span>{editActionLabel}</span>
+                <div className="mt-1 flex items-center justify-end gap-1">
+                  {onSelect && (
+                    <button
+                      type="button"
+                      onClick={handleRowClick}
+                      disabled={isInteractionLocked}
+                      className="inline-flex items-center gap-1 rounded-lg border border-[var(--surface-border)] px-2 py-1 text-[10px] font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label={`${editActionLabel} transacción ${transaction.name}`}
+                    >
+                      <PhosphorIcon
+                        name="pencil-simple"
+                        size="text-[10px]"
+                        className="text-[var(--text-secondary)]"
+                      />
+                      <span>{editActionLabel}</span>
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(transaction.id)}
+                      disabled={isInteractionLocked}
+                      className="rounded-lg border border-[#FECACA] px-2 py-1 text-[10px] font-semibold text-[#B91C1C] transition-colors hover:bg-[#FEF2F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DC2626] disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label={`${deleteActionLabel} transacción ${transaction.name}`}
+                    >
+                      {deleteActionLabel}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           }
-          onClick={handleRowClick}
           showBorder={showBorder}
           className="w-full"
           padding="py-3.5"

@@ -310,7 +310,7 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
           titleClassName="text-base font-semibold text-[var(--text-primary)] font-['Outfit']"
           subtitleClassName="text-xs font-medium text-[var(--text-secondary)]"
           right={
-            <div className="flex flex-col items-end gap-0.5">
+            <div className="flex flex-col items-end gap-1">
               <span className={`text-base font-bold font-['Outfit'] ${balanceColorClass}`}>
                 {formattedBalance}
               </span>
@@ -319,8 +319,19 @@ export const AccountSwipeDeleteRow = memo(function AccountSwipeDeleteRow({
               </span>
               {isDeleting && (
                 <span className="text-[10px] font-semibold text-[var(--text-secondary)]">
-                  {`${deleteActionLabel}...`}
+                  {`${deleteActionLabel}…`}
                 </span>
+              )}
+              {!isDeleting && onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(account.id)}
+                  disabled={isInteractionLocked}
+                  className="mt-1 rounded-lg border border-[#FECACA] px-2 py-1 text-[10px] font-semibold text-[#B91C1C] transition-colors hover:bg-[#FEF2F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DC2626] disabled:cursor-not-allowed disabled:opacity-60"
+                  aria-label={`${deleteActionLabel} cuenta ${account.name}`}
+                >
+                  {deleteActionLabel}
+                </button>
               )}
             </div>
           }

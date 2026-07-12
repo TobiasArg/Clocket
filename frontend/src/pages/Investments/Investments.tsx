@@ -39,6 +39,8 @@ export function Investments({
     isDetailOpen,
     isEntriesLoading,
     deletingEntryId,
+    isEntryDeleteConfirmOpen,
+    pendingDeleteEntryLabel,
     isDeleteConfirmOpen,
     pendingDeletePositionId,
     isDeleteSubmitting,
@@ -71,6 +73,8 @@ export function Investments({
     handleCloseEditor,
     handleOpenDetail,
     handleDeleteEntry,
+    handleCancelDeleteEntry,
+    handleConfirmDeleteEntry,
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,
@@ -88,7 +92,8 @@ export function Investments({
   } = useInvestmentsPageModel();
 
   const handleSubmitVoid = useCallback(() => { void handleSubmit(); }, [handleSubmit]);
-  const handleDeleteEntryVoid = useCallback((entryId: string) => { void handleDeleteEntry(entryId); }, [handleDeleteEntry]);
+  const handleDeleteEntryVoid = useCallback((entryId: string) => { handleDeleteEntry(entryId); }, [handleDeleteEntry]);
+  const handleConfirmDeleteEntryVoid = useCallback(() => { void handleConfirmDeleteEntry(); }, [handleConfirmDeleteEntry]);
   const handleConfirmDeleteVoid = useCallback(() => { void handleConfirmDelete(); }, [handleConfirmDelete]);
 
   const pendingDeleteTicker = pendingDeletePositionId
@@ -214,6 +219,16 @@ export function Investments({
         ticker={pendingDeleteTicker}
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDeleteVoid}
+      />
+
+      <InvestmentDeleteConfirmDialog
+        isOpen={isEntryDeleteConfirmOpen}
+        isLoading={Boolean(deletingEntryId)}
+        titleLabel="Eliminar entrada"
+        messageLabel="Esta acción eliminará la entrada seleccionada y recalculará la posición."
+        ticker={pendingDeleteEntryLabel ?? undefined}
+        onCancel={handleCancelDeleteEntry}
+        onConfirm={handleConfirmDeleteEntryVoid}
       />
     </div>
   );
