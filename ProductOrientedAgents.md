@@ -45,7 +45,6 @@ La experiencia debe sentirse:
 - limpia
 - moderna
 - confiable
-- calmada
 - liviana
 
 Evitar:
