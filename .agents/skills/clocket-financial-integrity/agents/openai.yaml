@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clocket Financial Integrity"
+  short_description: "Protect money, persistence, and financial invariants"
+  default_prompt: "Use $clocket-financial-integrity to safely implement this financial-domain change."
