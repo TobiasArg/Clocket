@@ -90,6 +90,21 @@ npm --prefix frontend run build
 npm --prefix backend run build
 ```
 
+## Herramientas de asistentes
+
+Las skills compartidas del proyecto viven en `.agents/skills/` y se versionan
+junto con el código. Kiro las consume mediante enlaces en `.kiro/skills/`;
+Codex y OpenCode mantienen sus adaptadores OpenSpec en `.codex/` y `.opencode/`.
+
+Para preparar OpenCode en una clonación nueva:
+
+```bash
+npm --prefix .opencode ci
+```
+
+No se versionan dependencias instaladas, caches ni configuración personal de
+asistentes. La política de mantenimiento completa está en `AGENTS.md`.
+
 ## Flujo global seguro para agentes Codex
 
 Inicio de tarea (crea rama `codex/<english-kebab>` y worktree aislado):

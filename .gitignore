@@ -17,6 +17,6 @@ frontend/.env.local
 .DS_Store
 
 # Local agent/skill tooling artifacts
-.agents/
-.kiro/
+# Skills and Kiro adapters are versioned because they are part of the
+# repository's reproducible agent workflow. Keep only generated state out.
 skills-lock.json

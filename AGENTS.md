@@ -34,15 +34,33 @@ Ejemplo practico:
 
 Todas las tareas deben evaluar skills aplicables antes de implementar.
 
-| Skill                         | Description                                                                          | Skill File                                                             |
-| ----------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `find-skills`                 | Descubre e identifica skills cuando se busca capacidad nueva o extension funcional.  | `/Users/argtobias/.agents/skills/find-skills/SKILL.md`                 |
-| `gh-fix-ci`                   | Investiga y corrige fallas en checks de GitHub Actions en PRs.                       | `/Users/argtobias/.codex/skills/gh-fix-ci/SKILL.md`                    |
-| `pdf`                         | Lectura, generacion y revision de PDFs con foco en rendering y layout.               | `/Users/argtobias/.codex/skills/pdf/SKILL.md`                          |
-| `sdoat-codex`                 | Flujo autonomo de trabajo agentico de punta a punta (branch/worktree/merge/cleanup). | `/Users/argtobias/.codex/skills/sdoat-codex/SKILL.md`                  |
-| `vercel-react-best-practices` | Buenas practicas de performance para React/Next.js segun Vercel Engineering.         | `/Users/argtobias/.agents/skills/vercel-react-best-practices/SKILL.md` |
-| `skill-creator`               | Guia para crear o actualizar skills de forma efectiva.                               | `/Users/argtobias/.codex/skills/.system/skill-creator/SKILL.md`        |
-| `skill-installer`             | Instalacion de skills curadas o desde rutas/repos.                                   | `/Users/argtobias/.codex/skills/.system/skill-installer/SKILL.md`      |
+| Skill                         | Description                                                                          | Source                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------- |
+| `find-skills`                 | Descubre e identifica skills cuando se busca capacidad nueva o extension funcional.  | Runtime del agente                          |
+| `gh-fix-ci`                   | Investiga y corrige fallas en checks de GitHub Actions en PRs.                       | Runtime del agente                          |
+| `pdf`                         | Lectura, generacion y revision de PDFs con foco en rendering y layout.               | Runtime del agente                          |
+| `sdoat-codex`                 | Flujo autonomo de trabajo agentico de punta a punta (branch/worktree/merge/cleanup). | Runtime del agente                          |
+| `vercel-react-best-practices` | Buenas practicas de performance para React/Next.js segun Vercel Engineering.         | Runtime del agente                          |
+| `skill-creator`               | Guia para crear o actualizar skills de forma efectiva.                               | Runtime del agente                          |
+| `skill-installer`             | Instalacion de skills curadas o desde rutas/repos.                                   | Runtime del agente                          |
+
+### Project Agent Tooling
+
+Las rutas siguientes son parte versionada del repositorio y no dependen de
+paths absolutos de una maquina:
+
+| Path | Ownership and purpose |
+| --- | --- |
+| `.agents/skills/` | Fuente canonica de las skills compartidas por los asistentes del proyecto. |
+| `.kiro/skills/` | Adaptador de Kiro: enlaces simbolicos versionados a `.agents/skills/`. No duplicar contenido aqui. |
+| `.codex/skills/` | Integracion de Codex para el flujo OpenSpec. |
+| `.opencode/commands/` y `.opencode/skills/` | Integracion de OpenCode para el flujo OpenSpec. Sus dependencias se instalan con `npm --prefix .opencode ci` y no se versionan. |
+
+Reglas de mantenimiento:
+
+- Las skills compartidas se crean o modifican una sola vez en `.agents/skills/`.
+- Los adaptadores por herramienta solo contienen enlaces o diferencias de sintaxis requeridas por esa herramienta.
+- No agregar configuracion personal, caches, `node_modules`, archivos `.DS_Store` ni rutas absolutas al repositorio.
 
 ### Skill Invocation Policy
 
@@ -97,6 +115,10 @@ Dominio funcional actual:
 
 | Path                         | Purpose                                                                        |
 | ---------------------------- | ------------------------------------------------------------------------------ |
+| `.agents/skills/`            | Skills compartidas y versionadas para los asistentes del proyecto.             |
+| `.kiro/skills/`              | Enlaces de compatibilidad de Kiro hacia las skills compartidas.                 |
+| `.codex/skills/`             | Skills de Codex para el flujo OpenSpec.                                         |
+| `.opencode/`                 | Comandos, skills y manifiesto reproducible de OpenCode.                         |
 | `.github/workflows/`         | CI/CD (incluye chequeos automatizados como bundle budget de frontend).         |
 | `frontend/`                  | Aplicacion cliente (UI, routing, estado, dominio frontend).                    |
 | `backend/`                   | API Routes y adaptadores de proveedores externos.                              |
