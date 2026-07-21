@@ -52,14 +52,13 @@ paths absolutos de una maquina:
 | Path | Ownership and purpose |
 | --- | --- |
 | `.agents/skills/` | Fuente canonica de las skills compartidas por los asistentes del proyecto. |
-| `.kiro/skills/` | Adaptador de Kiro: enlaces simbolicos versionados a `.agents/skills/`. No duplicar contenido aqui. |
 | `.codex/skills/` | Integracion de Codex para el flujo OpenSpec. |
 | `.opencode/commands/` y `.opencode/skills/` | Integracion de OpenCode para el flujo OpenSpec. Sus dependencias se instalan con `npm --prefix .opencode ci` y no se versionan. |
 
 Reglas de mantenimiento:
 
 - Las skills compartidas se crean o modifican una sola vez en `.agents/skills/`.
-- Los adaptadores por herramienta solo contienen enlaces o diferencias de sintaxis requeridas por esa herramienta.
+- Los adaptadores por herramienta solo contienen las diferencias de sintaxis requeridas por esa herramienta.
 - No agregar configuracion personal, caches, `node_modules`, archivos `.DS_Store` ni rutas absolutas al repositorio.
 
 ### Skill Invocation Policy
@@ -116,7 +115,6 @@ Dominio funcional actual:
 | Path                         | Purpose                                                                        |
 | ---------------------------- | ------------------------------------------------------------------------------ |
 | `.agents/skills/`            | Skills compartidas y versionadas para los asistentes del proyecto.             |
-| `.kiro/skills/`              | Enlaces de compatibilidad de Kiro hacia las skills compartidas.                 |
 | `.codex/skills/`             | Skills de Codex para el flujo OpenSpec.                                         |
 | `.opencode/`                 | Comandos, skills y manifiesto reproducible de OpenCode.                         |
 | `.github/workflows/`         | CI/CD (incluye chequeos automatizados como bundle budget de frontend).         |

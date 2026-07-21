@@ -93,8 +93,8 @@ npm --prefix backend run build
 ## Herramientas de asistentes
 
 Las skills compartidas del proyecto viven en `.agents/skills/` y se versionan
-junto con el código. Kiro las consume mediante enlaces en `.kiro/skills/`;
-Codex y OpenCode mantienen sus adaptadores OpenSpec en `.codex/` y `.opencode/`.
+junto con el código. Codex y OpenCode mantienen sus adaptadores OpenSpec en
+`.codex/` y `.opencode/`.
 
 Para preparar OpenCode en una clonación nueva:
 
